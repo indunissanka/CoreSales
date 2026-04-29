@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weekly Report — Sales Weekly Report</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">Sales Weekly Report</span>
+  <div class="user-info">
+    <span id="topbar-name"></span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<div class="report-page">
+  <div class="report-paper">
+
+    <div class="report-title">Sales Weekly Report</div>
+
+    <!-- Meta / header row -->
+    <div class="report-meta">
+      <div class="meta-field">
+        <label>Date Range:</label>
+        <input type="date" id="weekStart" title="Week start">
+        <span style="margin:0 4px;font-weight:bold;">To</span>
+        <input type="date" id="weekEnd" title="Week end">
+      </div>
+      <div class="meta-field" style="margin-left:auto;">
+        <label>Area:</label>
+        <input type="text" id="area" placeholder="e.g. North" style="width:100px;">
+      </div>
+      <div class="meta-field">
+        <label>Form Filler:</label>
+        <input type="text" id="formFiller" placeholder="Name" style="width:110px;">
+      </div>
+    </div>
+
+    <!-- Entries table -->
+    <div class="report-table-wrap">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th rowspan="2" class="td-item">#</th>
+            <th rowspan="2" style="min-width:80px;">Client</th>
+            <th rowspan="2" class="td-date">Date</th>
+            <th colspan="6" class="th-group">Purpose</th>
+            <th colspan="3" class="th-group">Result</th>
+            <th rowspan="2" style="min-width:60px;">Category</th>
+            <th rowspan="2" class="td-guest">Guest Name</th>
+            <th rowspan="2" class="td-content">Content</th>
+            <th rowspan="2" style="width:28px;"></th>
+          </tr>
+          <tr>
+            <th class="td-chk">New</th>
+            <th class="td-chk">Follow Up</th>
+            <th class="td-chk">Illus&shy;tration</th>
+            <th class="td-chk">After</th>
+            <th style="min-width:80px;">Decision</th>
+            <th class="td-chk">Orders</th>
+            <th class="td-chk">Develop</th>
+            <th class="td-chk">New Client</th>
+            <th class="td-chk">Original</th>
+          </tr>
+        </thead>
+        <tbody id="entries-body">
+          <!-- rows injected by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Add entry form -->
+    <div class="add-entry-section" id="add-entry-section">
+      <h4>Add / Edit Entry</h4>
+      <div class="entry-form-grid">
+        <div class="ef-group">
+          <label>Client *</label>
+          <input type="text" id="ef-client" placeholder="Client name">
+        </div>
+        <div class="ef-group">
+          <label>Date *</label>
+          <input type="date" id="ef-date">
+        </div>
+        <div class="ef-group">
+          <label>Category</label>
+          <input type="text" id="ef-category" placeholder="e.g. B2B">
+        </div>
+        <div class="ef-group">
+          <label>Guest Name</label>
+          <input type="text" id="ef-guestName" placeholder="Contact name">
+        </div>
+        <div class="ef-group full">
+          <label>Purpose</label>
+          <div class="chk-group">
+            <label class="chk-item"><input type="checkbox" id="ef-p-new">New</label>
+            <label class="chk-item"><input type="checkbox" id="ef-p-followUp">Follow Up</label>
+            <label class="chk-item"><input type="checkbox" id="ef-p-illustration">Illustration</label>
+            <label class="chk-item"><input type="checkbox" id="ef-p-after">After</label>
+            <label class="chk-item" style="gap:6px;">Decision:
+              <select id="ef-p-decision" style="border:1px solid #ccc;border-radius:3px;padding:2px 6px;font-size:12px;cursor:pointer;">
+                <option value="">—</option>
+                <option value="Decided">Decided</option>
+                <option value="Undecided">Undecided</option>
+              </select>
+            </label>
+            <label class="chk-item"><input type="checkbox" id="ef-p-orders">Orders</label>
+          </div>
+        </div>
+        <div class="ef-group full">
+          <label>Result</label>
+          <div class="chk-group">
+            <label class="chk-item"><input type="checkbox" id="ef-r-develop">Develop</label>
+            <label class="chk-item"><input type="checkbox" id="ef-r-newClient">New Client</label>
+            <label class="chk-item"><input type="checkbox" id="ef-r-original">Original</label>
+          </div>
+        </div>
+        <div class="ef-group full">
+          <label>Content / Notes</label>
+          <textarea id="ef-content" placeholder="Meeting notes, discussion topics, outcomes…" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="entry-form-actions">
+        <button class="btn-cancel-entry" onclick="cancelEntry()">Cancel</button>
+        <button class="btn-add-row" onclick="commitEntry()">&#10003; Save Entry</button>
+      </div>
+    </div>
+
+    <button class="btn-new" style="margin-bottom:16px;" onclick="startAddEntry()">+ Add Entry</button>
+
+    <!-- Bottom section -->
+    <div class="report-bottom">
+      <div class="bottom-left">
+        <div class="bottom-field">
+          <label>Suggestions</label>
+          <textarea id="suggestions" rows="4" placeholder="Suggestions, competitor notes, market observations…"></textarea>
+        </div>
+      </div>
+      <div class="bottom-right">
+        <div class="bottom-field">
+          <div class="result-box">
+            <label>This week's results:</label>
+            <textarea id="weeklyResults" rows="2" placeholder="Summary of this week…"></textarea>
+          </div>
+        </div>
+        <div class="bottom-field">
+          <div class="result-box">
+            <label>This month's results:</label>
+            <textarea id="monthlyResults" rows="2" placeholder="Summary of this month…"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save bar -->
+    <div class="save-bar" id="save-bar">
+      <button class="btn-back" onclick="location.href='/dashboard.html'">&#8592; Back to Dashboard</button>
+      <span class="save-status" id="save-status"></span>
+      <div style="display:flex;gap:10px;">
+        <label class="btn-back" style="cursor:pointer;" title="Import entries from CSV">
+          &#8593; Upload CSV
+          <input type="file" id="csv-upload" accept=".csv" style="display:none;" onchange="importCSV(event)">
+        </label>
+        <button class="btn-back" onclick="downloadCSV()" title="Export to CSV">&#8595; Download CSV</button>
+        <button class="btn-back" onclick="window.print()" title="Print report">&#128424; Print</button>
+        <button class="btn-save" onclick="saveReport()">Save Report</button>
+      </div>
+    </div>
+
+  </div><!-- /report-paper -->
+</div><!-- /report-page -->
+
+<script src="/js/api.js"></script>
+<script>
+/* ── Auth guard ── */
+const user = JSON.parse(localStorage.getItem('user') || 'null');
+if (!user || !localStorage.getItem('token')) location.replace('/index.html');
+document.getElementById('topbar-name').textContent = user.name || user.username;
+
+function logout() { localStorage.clear(); location.replace('/index.html'); }
+
+/* ── State ── */
+let reportId   = null;
+let entries    = [];
+let editIndex  = -1;     // -1 = new entry, ≥0 = editing existing
+let addMode    = false;
+
+/* ── Init ── */
+const params = new URLSearchParams(location.search);
+if (params.get('id')) {
+  reportId = params.get('id');
+  loadReport(reportId);
+} else {
+  // Pre-fill defaults for new report
+  const now    = new Date();
+  const day    = now.getDay();
+  const mon    = new Date(now); mon.setDate(now.getDate() - ((day + 6) % 7));
+  const sun    = new Date(mon); sun.setDate(mon.getDate() + 6);
+  document.getElementById('weekStart').value = toInputDate(mon);
+  document.getElementById('weekEnd').value   = toInputDate(sun);
+  document.getElementById('formFiller').value = user.name || '';
+  document.getElementById('area').value       = user.area  || '';
+  document.getElementById('ef-date').value    = toInputDate(now);
+  hideAddForm();
+}
+
+/* ── Helpers ── */
+function toInputDate(d) {
+  return d.toISOString().slice(0, 10);
+}
+function fmtDate(d) {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function chk(v) { return v ? '&#10003;' : ''; }
+function decisionBadge(v) {
+  if (!v) return '';
+  const color = v === 'Decided' ? '#2e7d32' : '#e65100';
+  const bg    = v === 'Decided' ? '#e8f5e9'  : '#fff3e0';
+  return `<span style="font-size:10px;font-weight:bold;color:${color};background:${bg};border-radius:10px;padding:1px 7px;white-space:nowrap;">${v}</span>`;
+}
+
+/* ── Table render ── */
+function renderTable() {
+  const tbody = document.getElementById('entries-body');
+  if (!entries.length) {
+    tbody.innerHTML = `<tr><td colspan="16" style="color:#aaa;padding:12px;font-style:italic;">No entries yet — click "+ Add Entry" to begin.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = entries.map((e, i) => `
+    <tr>
+      <td class="td-item">${i + 1}</td>
+      <td style="text-align:left;padding-left:6px;">${esc(e.client)}</td>
+      <td>${fmtDate(e.date)}</td>
+      <td>${chk(e.purpose?.new)}</td>
+      <td>${chk(e.purpose?.followUp)}</td>
+      <td>${chk(e.purpose?.illustration)}</td>
+      <td>${chk(e.purpose?.after)}</td>
+      <td>${decisionBadge(e.purpose?.decision)}</td>
+      <td>${chk(e.purpose?.orders)}</td>
+      <td>${chk(e.result?.develop)}</td>
+      <td>${chk(e.result?.newClient)}</td>
+      <td>${chk(e.result?.original)}</td>
+      <td>${esc(e.category)}</td>
+      <td>${esc(e.guestName)}</td>
+      <td class="td-content" style="text-align:left;padding-left:6px;">${esc(e.content)}</td>
+      <td>
+        <button class="btn-del-row" title="Edit" onclick="startEditEntry(${i})" style="color:#1a3a5c;font-size:13px;">&#9998;</button>
+        <button class="btn-del-row" title="Duplicate" onclick="duplicateEntry(${i})" style="color:#6a1b9a;font-size:13px;">&#10063;</button>
+        <button class="btn-del-row" title="Delete" onclick="deleteEntry(${i})">&#10005;</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* ── Add / Edit entry form ── */
+function startAddEntry() {
+  editIndex = -1;
+  clearEntryForm();
+  document.getElementById('ef-date').value = toInputDate(new Date());
+  showAddForm();
+}
+
+function startEditEntry(i) {
+  editIndex = i;
+  const e = entries[i];
+  document.getElementById('ef-client').value    = e.client    || '';
+  document.getElementById('ef-date').value      = e.date ? toInputDate(new Date(e.date)) : '';
+  document.getElementById('ef-category').value  = e.category  || '';
+  document.getElementById('ef-guestName').value = e.guestName || '';
+  document.getElementById('ef-content').value   = e.content   || '';
+  document.getElementById('ef-p-new').checked          = !!(e.purpose?.new);
+  document.getElementById('ef-p-followUp').checked     = !!(e.purpose?.followUp);
+  document.getElementById('ef-p-illustration').checked = !!(e.purpose?.illustration);
+  document.getElementById('ef-p-after').checked        = !!(e.purpose?.after);
+  document.getElementById('ef-p-decision').value        = e.purpose?.decision || '';
+  document.getElementById('ef-p-orders').checked       = !!(e.purpose?.orders);
+  document.getElementById('ef-r-develop').checked      = !!(e.result?.develop);
+  document.getElementById('ef-r-newClient').checked    = !!(e.result?.newClient);
+  document.getElementById('ef-r-original').checked     = !!(e.result?.original);
+  showAddForm();
+  document.getElementById('add-entry-section').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function commitEntry() {
+  const client = document.getElementById('ef-client').value.trim();
+  if (!client) { alert('Client name is required.'); return; }
+
+  const entry = {
+    client,
+    date:      document.getElementById('ef-date').value || null,
+    category:  document.getElementById('ef-category').value.trim(),
+    guestName: document.getElementById('ef-guestName').value.trim(),
+    content:   document.getElementById('ef-content').value.trim(),
+    purpose: {
+      new:          document.getElementById('ef-p-new').checked,
+      followUp:     document.getElementById('ef-p-followUp').checked,
+      illustration: document.getElementById('ef-p-illustration').checked,
+      after:        document.getElementById('ef-p-after').checked,
+      decision:     document.getElementById('ef-p-decision').value,
+      orders:       document.getElementById('ef-p-orders').checked
+    },
+    result: {
+      develop:   document.getElementById('ef-r-develop').checked,
+      newClient: document.getElementById('ef-r-newClient').checked,
+      original:  document.getElementById('ef-r-original').checked
+    }
+  };
+
+  if (editIndex >= 0) {
+    entries[editIndex] = entry;
+  } else {
+    entries.push(entry);
+  }
+
+  clearEntryForm();
+  hideAddForm();
+  renderTable();
+}
+
+function cancelEntry() {
+  clearEntryForm();
+  hideAddForm();
+}
+
+function duplicateEntry(i) {
+  entries.splice(i + 1, 0, JSON.parse(JSON.stringify(entries[i])));
+  renderTable();
+}
+
+function deleteEntry(i) {
+  if (!confirm('Remove this entry?')) return;
+  entries.splice(i, 1);
+  renderTable();
+}
+
+function clearEntryForm() {
+  ['ef-client','ef-date','ef-category','ef-guestName','ef-content'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  ['ef-p-new','ef-p-followUp','ef-p-illustration','ef-p-after','ef-p-orders',
+   'ef-r-develop','ef-r-newClient','ef-r-original'].forEach(id => {
+    document.getElementById(id).checked = false;
+  });
+  document.getElementById('ef-p-decision').value = '';
+  editIndex = -1;
+}
+
+function showAddForm() {
+  addMode = true;
+  document.getElementById('add-entry-section').style.display = '';
+}
+function hideAddForm() {
+  addMode = false;
+  document.getElementById('add-entry-section').style.display = 'none';
+}
+
+/* ── Load report ── */
+async function loadReport(id) {
+  try {
+    const r = await api.getReport(id);
+    document.getElementById('weekStart').value   = r.weekStart ? toInputDate(new Date(r.weekStart)) : '';
+    document.getElementById('weekEnd').value     = r.weekEnd   ? toInputDate(new Date(r.weekEnd))   : '';
+    document.getElementById('area').value        = r.area        || '';
+    document.getElementById('formFiller').value  = r.formFiller  || '';
+    document.getElementById('suggestions').value = r.suggestions || '';
+    document.getElementById('weeklyResults').value  = r.weeklyResults  || '';
+    document.getElementById('monthlyResults').value = r.monthlyResults || '';
+    entries = r.entries || [];
+    renderTable();
+    hideAddForm();
+  } catch (err) {
+    alert('Failed to load report: ' + err.message);
+    location.replace('/dashboard.html');
+  }
+}
+
+/* ── Save report ── */
+async function saveReport() {
+  const weekStart = document.getElementById('weekStart').value;
+  const weekEnd   = document.getElementById('weekEnd').value;
+  if (!weekStart || !weekEnd) {
+    alert('Please set the week date range before saving.');
+    return;
+  }
+
+  const payload = {
+    weekStart,
+    weekEnd,
+    area:           document.getElementById('area').value.trim(),
+    formFiller:     document.getElementById('formFiller').value.trim(),
+    suggestions:    document.getElementById('suggestions').value.trim(),
+    weeklyResults:  document.getElementById('weeklyResults').value.trim(),
+    monthlyResults: document.getElementById('monthlyResults').value.trim(),
+    entries
+  };
+
+  const statusEl = document.getElementById('save-status');
+  statusEl.className = 'save-status';
+  statusEl.textContent = 'Saving…';
+
+  try {
+    if (reportId) {
+      await api.updateReport(reportId, payload);
+    } else {
+      const created = await api.createReport(payload);
+      reportId = created._id;
+      history.replaceState(null, '', `/report.html?id=${reportId}`);
+    }
+    statusEl.textContent = 'Saved ✓';
+    setTimeout(() => { statusEl.textContent = ''; }, 3000);
+  } catch (err) {
+    statusEl.className = 'save-status error';
+    statusEl.textContent = 'Error: ' + err.message;
+  }
+}
+
+/* ── CSV export ── */
+function downloadCSV() {
+  if (!entries.length) { alert('No entries to export.'); return; }
+
+  const weekStart  = document.getElementById('weekStart').value;
+  const weekEnd    = document.getElementById('weekEnd').value;
+  const area       = document.getElementById('area').value;
+  const filler     = document.getElementById('formFiller').value;
+  const suggestions    = document.getElementById('suggestions').value;
+  const weeklyResults  = document.getElementById('weeklyResults').value;
+  const monthlyResults = document.getElementById('monthlyResults').value;
+
+  function csvCell(v) {
+    const s = (v === null || v === undefined) ? '' : String(v);
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+  function bool(v) { return v ? 'Yes' : ''; }
+
+  const rows = [];
+
+  // Report header block
+  rows.push(['Sales Weekly Report']);
+  rows.push(['Date Range', `${weekStart} to ${weekEnd}`]);
+  rows.push(['Area', area]);
+  rows.push(['Form Filler', filler]);
+  rows.push([]);
+
+  // Column headers
+  rows.push([
+    '#', 'Client', 'Date',
+    'Purpose: New', 'Purpose: Follow Up', 'Purpose: Illustration',
+    'Purpose: After', 'Purpose: Decision', 'Purpose: Orders',
+    'Result: Develop', 'Result: New Client', 'Result: Original',
+    'Category', 'Guest Name', 'Content'
+  ]);
+
+  // Entry rows
+  entries.forEach((e, i) => {
+    rows.push([
+      i + 1,
+      e.client,
+      e.date ? new Date(e.date).toLocaleDateString('en-US') : '',
+      bool(e.purpose?.new),
+      bool(e.purpose?.followUp),
+      bool(e.purpose?.illustration),
+      bool(e.purpose?.after),
+      e.purpose?.decision || '',
+      bool(e.purpose?.orders),
+      bool(e.result?.develop),
+      bool(e.result?.newClient),
+      bool(e.result?.original),
+      e.category,
+      e.guestName,
+      e.content
+    ]);
+  });
+
+  // Summary block
+  rows.push([]);
+  rows.push(['Suggestions', suggestions]);
+  rows.push(["This Week's Results", weeklyResults]);
+  rows.push(["This Month's Results", monthlyResults]);
+
+  const csv = rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const filename = `sales-report_${weekStart || 'draft'}.csv`;
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ── CSV import ── */
+function parseCSV(text) {
+  // Strip BOM if present
+  const raw = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+  const rows = [];
+  let row = [], field = '', inQ = false;
+  for (let i = 0; i < raw.length; i++) {
+    const c = raw[i], n = raw[i + 1];
+    if (inQ) {
+      if (c === '"' && n === '"') { field += '"'; i++; }
+      else if (c === '"') { inQ = false; }
+      else { field += c; }
+    } else {
+      if (c === '"') { inQ = true; }
+      else if (c === ',') { row.push(field.trim()); field = ''; }
+      else if (c === '\r' && n === '\n') { row.push(field.trim()); rows.push(row); row = []; field = ''; i++; }
+      else if (c === '\n' || c === '\r') { row.push(field.trim()); rows.push(row); row = []; field = ''; }
+      else { field += c; }
+    }
+  }
+  if (field || row.length) { row.push(field.trim()); rows.push(row); }
+  return rows;
+}
+
+function importCSV(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  // Reset input so the same file can be re-uploaded if needed
+  event.target.value = '';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const rows = parseCSV(e.target.result);
+      if (!rows.length) { alert('CSV file is empty.'); return; }
+
+      // Find the column-header row (starts with "#")
+      const headerIdx = rows.findIndex(r => r[0] === '#');
+      if (headerIdx === -1) { alert('Could not find the column header row (expected "#" as first column).\nMake sure you are uploading a CSV exported from this app.'); return; }
+
+      const headers = rows[headerIdx].map(h => h.toLowerCase().trim());
+
+      // Helper: find column index by partial match
+      const col = (keyword) => headers.findIndex(h => h.includes(keyword.toLowerCase()));
+
+      const iClient   = col('client');
+      const iDate     = col('date');
+      const iPNew     = col('purpose: new');
+      const iPFollow  = col('purpose: follow');
+      const iPIllus   = col('purpose: illus');
+      const iPAfter   = col('purpose: after');
+      const iPDecision= col('purpose: decision');
+      const iPOrders  = col('purpose: orders');
+      const iRDevelop = col('result: develop');
+      const iRNew     = col('result: new');
+      const iROriginal= col('result: original');
+      const iCategory = col('category');
+      const iGuest    = col('guest');
+      const iContent  = col('content');
+
+      // Parse metadata rows above the header
+      const metaRows = rows.slice(0, headerIdx);
+      metaRows.forEach(r => {
+        const key = (r[0] || '').toLowerCase();
+        const val = r[1] || '';
+        if (key.includes('date range')) {
+          const parts = val.split(/\s+to\s+/i);
+          if (parts[0]) document.getElementById('weekStart').value = parts[0].trim();
+          if (parts[1]) document.getElementById('weekEnd').value   = parts[1].trim();
+        }
+        if (key === 'area')        document.getElementById('area').value       = val;
+        if (key === 'form filler') document.getElementById('formFiller').value = val;
+      });
+
+      // Parse entry rows after the header until an empty or summary row
+      const imported = [];
+      for (let i = headerIdx + 1; i < rows.length; i++) {
+        const r = rows[i];
+        const first = (r[0] || '').toLowerCase();
+        // Stop at summary block
+        if (first === 'suggestions' || first.includes("week's") || first.includes("month's")) {
+          // Fill summary fields
+          const key = first, val = r[1] || '';
+          if (key === 'suggestions') document.getElementById('suggestions').value = val;
+          if (key.includes("week's"))  document.getElementById('weeklyResults').value  = val;
+          if (key.includes("month's")) document.getElementById('monthlyResults').value = val;
+          continue;
+        }
+        // Skip blank rows or the item-number-only rows
+        if (r.every(c => !c)) continue;
+
+        const get = (idx) => (idx >= 0 && r[idx]) ? r[idx] : '';
+        const yes = (idx) => get(idx).toLowerCase() === 'yes';
+
+        imported.push({
+          client:    get(iClient),
+          date:      get(iDate) || null,
+          category:  get(iCategory),
+          guestName: get(iGuest),
+          content:   get(iContent),
+          purpose: {
+            new:          yes(iPNew),
+            followUp:     yes(iPFollow),
+            illustration: yes(iPIllus),
+            after:        yes(iPAfter),
+            decision:     get(iPDecision),
+            orders:       yes(iPOrders)
+          },
+          result: {
+            develop:   yes(iRDevelop),
+            newClient: yes(iRNew),
+            original:  yes(iROriginal)
+          }
+        });
+      }
+
+      if (!imported.length) { alert('No entry rows found in the CSV.'); return; }
+
+      const action = entries.length
+        ? confirm(`Replace the ${entries.length} existing entries with the ${imported.length} entries from the CSV?\n\nClick OK to replace, Cancel to append.`)
+        : true;
+
+      if (action) {
+        entries = imported;
+      } else {
+        entries = entries.concat(imported);
+      }
+
+      renderTable();
+      const statusEl = document.getElementById('save-status');
+      statusEl.className = 'save-status';
+      statusEl.textContent = `Imported ${imported.length} entries ✓`;
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    } catch (err) {
+      alert('Failed to parse CSV: ' + err.message);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+/* ── Initial render ── */
+renderTable();
+</script>
+</body>
+</html>

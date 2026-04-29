@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Weekly Report — Login</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-box">
+    <h1>Sales Weekly Report</h1>
+    <p class="subtitle">Sign in to manage your weekly reports</p>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="showTab('login')">Login</div>
+      <div class="auth-tab"        id="tab-register" onclick="showTab('register')">Register</div>
+    </div>
+
+    <div id="error-box" class="error-msg"></div>
+
+    <!-- Login -->
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="l-username" placeholder="Enter username" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="l-password" placeholder="Enter password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn-primary" id="login-btn">Sign In</button>
+    </form>
+
+    <!-- Register -->
+    <form id="register-form" style="display:none" onsubmit="handleRegister(event)">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="r-name" placeholder="Your full name" required>
+      </div>
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="r-username" placeholder="Choose a username" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="r-password" placeholder="Choose a password" autocomplete="new-password" required>
+      </div>
+      <div class="form-group">
+        <label>Area / Region</label>
+        <input type="text" id="r-area" placeholder="e.g. North Region">
+      </div>
+      <button type="submit" class="btn-primary" id="register-btn">Create Account</button>
+    </form>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  // Redirect if already logged in
+  if (localStorage.getItem('token')) location.replace('/dashboard.html');
+
+  function showTab(tab) {
+    document.getElementById('login-form').style.display    = tab === 'login'    ? '' : 'none';
+    document.getElementById('register-form').style.display = tab === 'register' ? '' : 'none';
+    document.getElementById('tab-login').classList.toggle('active',    tab === 'login');
+    document.getElementById('tab-register').classList.toggle('active', tab === 'register');
+    hideError();
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-box');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+  function hideError() {
+    document.getElementById('error-box').classList.remove('show');
+  }
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    hideError();
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    try {
+      const { token, user } = await api.login({
+        username: document.getElementById('l-username').value.trim(),
+        password: document.getElementById('l-password').value
+      });
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      location.replace('/dashboard.html');
+    } catch (err) {
+      showError(err.message);
+      btn.disabled = false; btn.textContent = 'Sign In';
+    }
+  }
+
+  async function handleRegister(e) {
+    e.preventDefault();
+    hideError();
+    const btn = document.getElementById('register-btn');
+    btn.disabled = true; btn.textContent = 'Creating…';
+    try {
+      const { token, user } = await api.register({
+        name:     document.getElementById('r-name').value.trim(),
+        username: document.getElementById('r-username').value.trim(),
+        password: document.getElementById('r-password').value,
+        area:     document.getElementById('r-area').value.trim()
+      });
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      location.replace('/dashboard.html');
+    } catch (err) {
+      showError(err.message);
+      btn.disabled = false; btn.textContent = 'Create Account';
+    }
+  }
+</script>
+</body>
+</html>
