@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Order — CoreSales CRM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">CoreSales CRM</span>
+  <div class="user-info">
+    <span id="topbar-name"></span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+<nav class="subnav">
+  <a href="/dashboard.html">Reports</a>
+  <a href="/contacts.html">Contacts</a>
+  <a href="/products.html">Products</a>
+  <a href="/orders.html" class="active">Orders</a>
+  <a href="/lc-tracker.html">Trade Docs</a>
+  <a href="/forecast.html">Forecast</a>
+</nav>
+
+<div class="page-wrap" style="max-width:1000px;">
+  <div class="page-header">
+    <h2 id="page-title">New Order</h2>
+    <div style="display:flex;gap:10px;">
+      <button class="btn-back" onclick="location.href='/orders.html'">← Back</button>
+      <button class="btn-new" id="btn-generate-pi" style="display:none;" onclick="generatePI()">Generate P/I</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+    <div class="report-paper">
+      <h3 style="color:#1a3a5c;font-size:14px;margin-bottom:12px;">Order Details</h3>
+      <div class="form-grid-2">
+        <div class="form-group" style="grid-column:1/-1"><label>Contact / Company *</label>
+          <select id="f-contact" class="select-input"><option value="">Loading contacts…</option></select>
+        </div>
+        <div class="form-group"><label>Status</label>
+          <select id="f-status" class="select-input">
+            <option>Enquiry</option><option>Quotation Sent</option><option>PI Issued</option>
+            <option>LC Opened</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Currency</label>
+          <select id="f-currency" class="select-input">
+            <option>USD</option><option>CNY</option><option>TWD</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Incoterm</label>
+          <select id="f-incoterm" class="select-input">
+            <option>FOB</option><option>CIF</option><option>CFR</option><option>EXW</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Port of Loading</label><input id="f-pol" type="text" placeholder="e.g. Shanghai"></div>
+        <div class="form-group" style="grid-column:1/-1"><label>Port of Destination</label><input id="f-pod" type="text" placeholder="e.g. Chittagong"></div>
+        <div class="form-group" style="grid-column:1/-1"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
+      </div>
+    </div>
+
+    <!-- Currency converter widget -->
+    <div class="report-paper">
+      <h3 style="color:#1a3a5c;font-size:14px;margin-bottom:12px;">Currency Converter</h3>
+      <div class="form-grid-2">
+        <div class="form-group"><label>Amount</label><input id="conv-amount" type="number" placeholder="0.00" oninput="convert()"></div>
+        <div class="form-group"><label>From</label>
+          <select id="conv-from" class="select-input" onchange="convert()">
+            <option>USD</option><option>CNY</option><option>TWD</option>
+          </select>
+        </div>
+        <div class="form-group"><label>To</label>
+          <select id="conv-to" class="select-input" onchange="convert()">
+            <option>TWD</option><option>USD</option><option>CNY</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Result</label>
+          <input id="conv-result" type="text" readonly style="background:#f7f9fc;font-weight:bold;">
+        </div>
+      </div>
+      <p style="font-size:11px;color:#aaa;margin-top:4px;">Rates: 1 USD = 7.24 CNY = 32.5 TWD (indicative)</p>
+
+      <!-- LC status widget -->
+      <div id="lc-widget" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid #eee;">
+        <h3 style="color:#1a3a5c;font-size:14px;margin-bottom:8px;">Letter of Credit</h3>
+        <div id="lc-status-info"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Line items -->
+  <div class="report-paper" style="margin-bottom:24px;">
+    <h3 style="color:#1a3a5c;font-size:14px;margin-bottom:12px;">Line Items</h3>
+    <table class="data-table" id="items-table">
+      <thead>
+        <tr><th>Product</th><th>Qty</th><th>Unit</th><th style="text-align:right;">Unit Price</th><th style="text-align:right;">Line Total</th><th></th></tr>
+      </thead>
+      <tbody id="items-tbody"></tbody>
+      <tfoot>
+        <tr>
+          <td colspan="4" style="text-align:right;padding:8px;font-weight:bold;color:#1a3a5c;">Total:</td>
+          <td style="text-align:right;padding:8px;font-weight:bold;font-size:14px;" id="total-display">0.00</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+    <button class="btn-add-row" style="margin-top:10px;" onclick="addItem()">+ Add Line Item</button>
+  </div>
+
+  <div id="save-status" class="save-status" style="margin-bottom:8px;"></div>
+  <div style="display:flex;gap:10px;">
+    <button class="btn-save" onclick="saveOrder()">Save Order</button>
+    <button class="btn-back" onclick="location.href='/orders.html'">Cancel</button>
+  </div>
+</div>
+
+<!-- PI generation modal -->
+<div id="pi-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:8px;padding:28px;width:500px;max-height:90vh;overflow-y:auto;">
+    <h3 style="color:#1a3a5c;margin-bottom:16px;">Generate Proforma Invoice</h3>
+    <div class="form-group"><label>Seller Info (company name, address)</label>
+      <textarea id="pi-seller" rows="3" placeholder="Your company name&#10;Address line 1&#10;Country"></textarea>
+    </div>
+    <div class="form-group"><label>Bank Details</label>
+      <textarea id="pi-bank" rows="3" placeholder="Bank name&#10;Account number&#10;SWIFT code"></textarea>
+    </div>
+    <div class="form-group"><label>Special Terms / Payment Terms</label>
+      <textarea id="pi-terms" rows="2" placeholder="e.g. Payment by irrevocable L/C at sight"></textarea>
+    </div>
+    <div class="form-group"><label>Valid for (days)</label>
+      <input id="pi-valid" type="number" value="30" min="1" style="width:100px;">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn-save" onclick="submitPI()">Generate P/I</button>
+      <button class="btn-back" onclick="closePIModal()">Cancel</button>
+    </div>
+    <div id="pi-modal-status" class="save-status" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || !localStorage.getItem('token')) location.replace('/index.html');
+  document.getElementById('topbar-name').textContent = user.name || user.username;
+  function logout() { localStorage.clear(); location.replace('/index.html'); }
+
+  const params = new URLSearchParams(location.search);
+  let orderId    = params.get('id')        || null;
+  let contactId  = params.get('contactId') || null;
+  let allProducts = [];
+  let items = [];
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function showStatus(msg, isError) {
+    const el = document.getElementById('save-status');
+    el.textContent = msg; el.className = 'save-status' + (isError?' error':'');
+    if (!isError) setTimeout(() => el.textContent = '', 3000);
+  }
+
+  async function convert() {
+    const amount = parseFloat(document.getElementById('conv-amount').value);
+    if (!amount) { document.getElementById('conv-result').value = ''; return; }
+    const from = document.getElementById('conv-from').value;
+    const to   = document.getElementById('conv-to').value;
+    try {
+      const r = await api.convertCurrency({ amount, from, to });
+      document.getElementById('conv-result').value = r.result.toLocaleString(undefined, { maximumFractionDigits: 4 });
+    } catch (e) { document.getElementById('conv-result').value = 'Error'; }
+  }
+
+  function calcTotal() {
+    const total = items.reduce((s, i) => s + (parseFloat(i.qty||0) * parseFloat(i.unitPrice||0)), 0);
+    document.getElementById('total-display').textContent = total.toLocaleString(undefined, { minimumFractionDigits: 2 });
+    return total;
+  }
+
+  function renderItems() {
+    const tbody = document.getElementById('items-tbody');
+    if (!items.length) { tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">No items yet. Click "+ Add Line Item".</td></tr>`; calcTotal(); return; }
+    tbody.innerHTML = items.map((item, idx) => `
+      <tr>
+        <td>
+          <select class="select-input" style="width:100%;" onchange="items[${idx}].productId=this.value;items[${idx}].productName=this.options[this.selectedIndex].text;">
+            <option value="">— select product —</option>
+            ${allProducts.map(p => `<option value="${esc(p._id)}" ${item.productId===p._id?'selected':''}>${esc(p.name)}</option>`).join('')}
+          </select>
+        </td>
+        <td><input type="number" value="${item.qty||''}" min="0" step="0.001" style="width:80px;padding:4px;" oninput="items[${idx}].qty=this.value;calcTotal()"></td>
+        <td>
+          <select class="select-input" style="width:70px;" onchange="items[${idx}].unit=this.value">
+            <option ${item.unit==='ton'?'selected':''}>ton</option>
+            <option ${item.unit==='kg'?'selected':''}>kg</option>
+          </select>
+        </td>
+        <td><input type="number" value="${item.unitPrice||''}" min="0" step="0.01" style="width:100px;padding:4px;text-align:right;" oninput="items[${idx}].unitPrice=this.value;calcTotal()"></td>
+        <td style="text-align:right;padding:0 8px;">${((item.qty||0)*(item.unitPrice||0)).toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+        <td><button class="btn-del-row" onclick="removeItem(${idx})">×</button></td>
+      </tr>
+    `).join('');
+    calcTotal();
+  }
+
+  function addItem() { items.push({ productId:'', qty:'', unit:'ton', unitPrice:'' }); renderItems(); }
+  function removeItem(idx) { items.splice(idx,1); renderItems(); }
+
+  async function saveOrder() {
+    const contact = document.getElementById('f-contact').value;
+    if (!contact) { showStatus('Select a contact.', true); return; }
+    const orderItems = items
+      .filter(i => i.productId && i.qty && i.unitPrice)
+      .map(i => ({ product: i.productId, quantity: parseFloat(i.qty), unit: i.unit, unitPrice: parseFloat(i.unitPrice) }));
+    const body = {
+      contact, items: orderItems,
+      status:            document.getElementById('f-status').value,
+      currency:          document.getElementById('f-currency').value,
+      incoterm:          document.getElementById('f-incoterm').value,
+      portOfLoading:     document.getElementById('f-pol').value.trim(),
+      portOfDestination: document.getElementById('f-pod').value.trim(),
+      notes:             document.getElementById('f-notes').value.trim(),
+    };
+    try {
+      const result = orderId ? await api.updateOrder(orderId, body) : await api.createOrder(body);
+      orderId = result._id;
+      document.getElementById('page-title').textContent = result.orderNo;
+      document.getElementById('btn-generate-pi').style.display = '';
+      showStatus('Saved!');
+    } catch (err) { showStatus(err.message, true); }
+  }
+
+  function generatePI() {
+    document.getElementById('pi-modal').style.display = 'flex';
+  }
+  function closePIModal() {
+    document.getElementById('pi-modal').style.display = 'none';
+  }
+
+  async function submitPI() {
+    const statusEl = document.getElementById('pi-modal-status');
+    statusEl.textContent = 'Generating…'; statusEl.className = 'save-status';
+    try {
+      const pi = await api.generatePI({
+        orderId,
+        sellerInfo:   document.getElementById('pi-seller').value.trim(),
+        bankDetails:  document.getElementById('pi-bank').value.trim(),
+        specialTerms: document.getElementById('pi-terms').value.trim(),
+        validDays:    parseInt(document.getElementById('pi-valid').value) || 30,
+      });
+      closePIModal();
+      location.href = `/pi-view.html?id=${pi._id}`;
+    } catch (err) {
+      statusEl.textContent = err.message; statusEl.className = 'save-status error';
+    }
+  }
+
+  async function load() {
+    try {
+      const [contacts, products] = await Promise.all([api.getContacts(), api.getProducts()]);
+      allProducts = products;
+      const sel = document.getElementById('f-contact');
+      sel.innerHTML = `<option value="">— select contact —</option>` +
+        contacts.map(c => `<option value="${esc(c._id)}">${esc(c.company)} (${esc(c.name)})</option>`).join('');
+      if (contactId) sel.value = contactId;
+    } catch (e) { /* ignore */ }
+
+    if (orderId) {
+      try {
+        const order = await api.getOrder(orderId);
+        document.getElementById('page-title').textContent = order.orderNo;
+        document.getElementById('f-contact').value  = order.contact?._id || order.contact || '';
+        document.getElementById('f-status').value   = order.status    || 'Enquiry';
+        document.getElementById('f-currency').value = order.currency  || 'USD';
+        document.getElementById('f-incoterm').value = order.incoterm  || 'FOB';
+        document.getElementById('f-pol').value      = order.portOfLoading     || '';
+        document.getElementById('f-pod').value      = order.portOfDestination || '';
+        document.getElementById('f-notes').value    = order.notes     || '';
+        items = (order.items || []).map(i => ({
+          productId: i.product?._id || i.product,
+          qty: i.quantity, unit: i.unit, unitPrice: i.unitPrice,
+        }));
+        document.getElementById('btn-generate-pi').style.display = '';
+        if (order.letterOfCredit) {
+          document.getElementById('lc-widget').style.display = 'block';
+          document.getElementById('lc-status-info').innerHTML =
+            `<span class="badge badge-status-${(order.letterOfCredit.status||'pending').replace(/\s+/g,'-').toLowerCase()}">${esc(order.letterOfCredit.status||'Pending')}</span>
+             <a href="/lc-tracker.html" style="margin-left:8px;font-size:12px;color:#2d6a9f;">View L/C Tracker →</a>`;
+        }
+      } catch (err) { alert(err.message); }
+    }
+    renderItems();
+  }
+
+  load();
+</script>
+</body>
+</html>

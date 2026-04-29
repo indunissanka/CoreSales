@@ -452,6 +452,235 @@ a { text-decoration: none; color: inherit; }
 }
 .btn-del-row:hover { color: #e53935; }
 
+/* ── Sub-navigation ── */
+.subnav {
+  background: #132d47;
+  display: flex;
+  gap: 0;
+  padding: 0 24px;
+}
+.subnav a {
+  color: rgba(255,255,255,.7);
+  font-size: 13px;
+  font-weight: bold;
+  padding: 10px 16px;
+  border-bottom: 3px solid transparent;
+  transition: color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.subnav a:hover { color: #fff; }
+.subnav a.active { color: #fff; border-bottom-color: #4d9fe0; }
+
+/* ── Search input ── */
+.search-input {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 7px 12px;
+  font-size: 13px;
+  outline: none;
+  min-width: 220px;
+}
+.search-input:focus { border-color: #2d6a9f; }
+
+/* ── Select input ── */
+.select-input {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 7px 10px;
+  font-size: 13px;
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+}
+.select-input:focus { border-color: #2d6a9f; }
+
+/* ── Form grid ── */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 20px;
+}
+.form-group textarea {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 13px;
+  outline: none;
+  resize: vertical;
+}
+.form-group textarea:focus { border-color: #2d6a9f; }
+.form-group input[type=text],
+.form-group input[type=email],
+.form-group input[type=number],
+.form-group input[type=date] {
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 7px 10px;
+  font-size: 13px;
+  outline: none;
+}
+.form-group input:focus { border-color: #2d6a9f; }
+
+/* ── Data table ── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.data-table th {
+  background: #e8f0fe;
+  color: #1a3a5c;
+  font-weight: bold;
+  font-size: 12px;
+  padding: 9px 12px;
+  text-align: left;
+  border-bottom: 2px solid #c5d8f8;
+  white-space: nowrap;
+}
+.data-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #edf0f5;
+  vertical-align: middle;
+}
+.data-table tbody tr:hover { background: #f7faff; }
+.empty-cell {
+  text-align: center;
+  padding: 40px 20px;
+  color: #aaa;
+  font-style: italic;
+}
+
+/* ── Status tabs ── */
+.status-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.status-tab {
+  background: #f0f4f8;
+  border: 1px solid #dde3eb;
+  color: #555;
+  border-radius: 4px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.status-tab.active {
+  background: #1a3a5c;
+  color: #fff;
+  border-color: #1a3a5c;
+}
+.status-tab:hover:not(.active) { background: #dde3eb; }
+
+/* ── Badges ── */
+.badge {
+  display: inline-block;
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.badge-role { background: #e8f0fe; color: #1a3a5c; }
+
+.badge-status-enquiry            { background: #e8f0fe; color: #1a3a5c; }
+.badge-status-quotation-sent     { background: #fff8e1; color: #f57f17; }
+.badge-status-pi-issued          { background: #e8eaf6; color: #283593; }
+.badge-status-lc-opened          { background: #e0f2f1; color: #00695c; }
+.badge-status-shipped            { background: #e8f5e9; color: #2e7d32; }
+.badge-status-delivered          { background: #c8e6c9; color: #1b5e20; }
+.badge-status-cancelled          { background: #fdecea; color: #c62828; }
+.badge-status-pending            { background: #fff3e0; color: #e65100; }
+.badge-status-opened             { background: #e8f5e9; color: #2e7d32; }
+.badge-status-discrepancy-found  { background: #fce4ec; color: #880e4f; }
+.badge-status-settled            { background: #e8f5e9; color: #1b5e20; }
+.badge-status-draft              { background: #f5f5f5; color: #555; }
+.badge-status-issued             { background: #e3f2fd; color: #0d47a1; }
+.badge-status-superseded         { background: #efebe9; color: #4e342e; }
+
+/* ── Alert banner ── */
+.alert-banner {
+  background: #c62828;
+  color: #fff;
+  border-radius: 4px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+/* ── Proforma Invoice document ── */
+.pi-doc {
+  background: #fff;
+  border: 1px solid #c0c8d4;
+  padding: 32px 36px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.07);
+  font-size: 13px;
+}
+.pi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 24px;
+}
+.pi-seller { font-size: 13px; font-weight: bold; line-height: 1.6; flex: 1; }
+.pi-title-block { text-align: right; }
+.pi-title {
+  font-size: 22px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  color: #1a3a5c;
+  margin-bottom: 10px;
+}
+.pi-meta-table { font-size: 12px; border-collapse: collapse; margin-left: auto; }
+.pi-meta-table td { padding: 2px 8px; }
+.pi-meta-table td:first-child { color: #777; text-align: right; white-space: nowrap; }
+.pi-meta-table td:last-child { font-weight: bold; }
+
+.pi-buyer-block {
+  border: 1px solid #dde3eb;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  background: #f7f9fc;
+}
+.pi-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+.pi-items-table th {
+  background: #1a3a5c;
+  color: #fff;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 12px;
+}
+.pi-items-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #dde3eb;
+}
+.pi-items-table tfoot td {
+  border-top: 2px solid #1a3a5c;
+  border-bottom: none;
+  background: #f7f9fc;
+}
+.pi-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.pi-signature { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 16px; }
+
 /* ── Responsive ── */
 @media (max-width: 700px) {
   .report-bottom { flex-direction: column; }
@@ -462,6 +691,19 @@ a { text-decoration: none; color: inherit; }
 /* ── Print view ── */
 @media print {
   @page { size: A4 landscape; margin: 12mm 10mm; }
+
+  /* PI document uses portrait */
+  .pi-doc ~ * { display: none; }
+  body:has(.pi-doc) { @page { size: A4 portrait; margin: 15mm; } }
+  .no-print { display: none !important; }
+  .subnav   { display: none !important; }
+  .pi-doc {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+  .pi-items-table th { background: #1a3a5c !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
   /* hide everything except the report paper */
   .topbar,

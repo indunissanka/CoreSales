@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Products — CoreSales CRM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">CoreSales CRM</span>
+  <div class="user-info">
+    <span id="topbar-name"></span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+<nav class="subnav">
+  <a href="/dashboard.html">Reports</a>
+  <a href="/contacts.html">Contacts</a>
+  <a href="/products.html" class="active">Products</a>
+  <a href="/orders.html">Orders</a>
+  <a href="/lc-tracker.html">Trade Docs</a>
+  <a href="/forecast.html">Forecast</a>
+</nav>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <h2>Product Catalog</h2>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <input type="text" id="search-input" class="search-input" placeholder="Search product name…" oninput="filterProducts()">
+      <select id="cat-filter" class="select-input" onchange="filterProducts()" style="width:160px;">
+        <option value="">All Categories</option>
+      </select>
+      <button class="btn-new" onclick="location.href='/product-edit.html'">+ New Product</button>
+    </div>
+  </div>
+
+  <div class="report-paper" style="padding:0;overflow:hidden;">
+    <table class="data-table" id="products-table">
+      <thead>
+        <tr>
+          <th>Name</th><th>SKU</th><th>Category</th><th>Grade</th>
+          <th>Base Price (USD/ton)</th><th>Unit</th><th>Updated</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="products-tbody"><tr><td colspan="8" class="empty-cell">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || !localStorage.getItem('token')) location.replace('/index.html');
+  document.getElementById('topbar-name').textContent = user.name || user.username;
+  function logout() { localStorage.clear(); location.replace('/index.html'); }
+
+  let allProducts = [];
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
+
+  function filterProducts() {
+    const q   = document.getElementById('search-input').value.toLowerCase();
+    const cat = document.getElementById('cat-filter').value;
+    const filtered = allProducts.filter(p =>
+      (!q   || p.name.toLowerCase().includes(q)) &&
+      (!cat || p.category === cat)
+    );
+    renderProducts(filtered);
+  }
+
+  function renderProducts(products) {
+    const tbody = document.getElementById('products-tbody');
+    if (!products.length) {
+      tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">No products found.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = products.map(p => `
+      <tr>
+        <td><strong>${esc(p.name)}</strong></td>
+        <td>${esc(p.sku || '—')}</td>
+        <td>${esc(p.category || '—')}</td>
+        <td>${esc(p.grade || '—')}</td>
+        <td style="text-align:right;">${p.basePrice ? p.basePrice.toLocaleString() : '—'}</td>
+        <td>${esc(p.unitOfMeasure || 'ton')}</td>
+        <td>${fmtDate(p.priceLastUpdated)}</td>
+        <td>
+          <button class="btn-sm btn-edit" onclick="location.href='/product-edit.html?id=${p._id}'">Edit</button>
+          <button class="btn-sm btn-delete" onclick="deactivate('${p._id}')">Remove</button>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  async function deactivate(id) {
+    if (!confirm('Remove this product from the catalog?')) return;
+    try {
+      await api.deleteProduct(id);
+      allProducts = allProducts.filter(p => p._id !== id);
+      filterProducts();
+    } catch (err) { alert(err.message); }
+  }
+
+  async function load() {
+    try {
+      allProducts = await api.getProducts();
+      const cats = [...new Set(allProducts.map(p => p.category).filter(Boolean))].sort();
+      const sel = document.getElementById('cat-filter');
+      cats.forEach(c => sel.insertAdjacentHTML('beforeend', `<option value="${esc(c)}">${esc(c)}</option>`));
+      filterProducts();
+    } catch (err) {
+      document.getElementById('products-tbody').innerHTML =
+        `<tr><td colspan="8" class="empty-cell">${err.message}</td></tr>`;
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>

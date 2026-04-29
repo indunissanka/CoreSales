@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forecast — CoreSales CRM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">CoreSales CRM</span>
+  <div class="user-info">
+    <span id="topbar-name"></span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+<nav class="subnav">
+  <a href="/dashboard.html">Reports</a>
+  <a href="/contacts.html">Contacts</a>
+  <a href="/products.html">Products</a>
+  <a href="/orders.html">Orders</a>
+  <a href="/lc-tracker.html">Trade Docs</a>
+  <a href="/forecast.html" class="active">Forecast</a>
+</nav>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <h2>Sales Forecast</h2>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <label style="font-size:13px;font-weight:bold;color:#555;">Year:</label>
+      <select id="year-select" class="select-input" style="width:90px;" onchange="load()"></select>
+      <button class="btn-new" onclick="showAddForm()">+ Add Forecast</button>
+    </div>
+  </div>
+
+  <div class="status-tabs">
+    <button class="status-tab active" onclick="setQuarter(0)">Full Year</button>
+    <button class="status-tab" onclick="setQuarter(1)">Q1</button>
+    <button class="status-tab" onclick="setQuarter(2)">Q2</button>
+    <button class="status-tab" onclick="setQuarter(3)">Q3</button>
+    <button class="status-tab" onclick="setQuarter(4)">Q4</button>
+  </div>
+
+  <div class="report-paper" style="padding:0;overflow:hidden;">
+    <table class="data-table" id="forecast-table">
+      <thead id="forecast-thead"></thead>
+      <tbody id="forecast-tbody"><tr><td colspan="6" class="empty-cell">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add forecast modal -->
+<div id="add-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:8px;padding:28px;width:420px;">
+    <h3 style="color:#1a3a5c;margin-bottom:16px;">Add Forecast Entry</h3>
+    <div class="form-grid-2">
+      <div class="form-group" style="grid-column:1/-1"><label>Product *</label>
+        <select id="add-product" class="select-input"><option value="">Loading…</option></select>
+      </div>
+      <div class="form-group"><label>Year *</label><input id="add-year" type="number" min="2020" max="2040"></div>
+      <div class="form-group"><label>Quarter *</label>
+        <select id="add-quarter" class="select-input">
+          <option value="1">Q1 (Jan–Mar)</option><option value="2">Q2 (Apr–Jun)</option>
+          <option value="3">Q3 (Jul–Sep)</option><option value="4">Q4 (Oct–Dec)</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Forecast Qty *</label><input id="add-forecast" type="number" min="0" step="0.1" placeholder="tons"></div>
+      <div class="form-group"><label>Unit</label>
+        <select id="add-unit" class="select-input"><option>ton</option><option>kg</option></select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1"><label>Notes</label><input id="add-notes" type="text"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn-save" onclick="submitAdd()">Save</button>
+      <button class="btn-back" onclick="document.getElementById('add-modal').style.display='none'">Cancel</button>
+    </div>
+    <div id="add-status" class="save-status" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<!-- Edit actual qty inline modal -->
+<div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:8px;padding:28px;width:360px;">
+    <h3 style="color:#1a3a5c;margin-bottom:16px;" id="edit-modal-title">Edit Forecast</h3>
+    <div class="form-group"><label>Forecast Qty</label><input id="edit-forecast" type="number" min="0" step="0.1"></div>
+    <div class="form-group"><label>Actual Qty</label><input id="edit-actual" type="number" min="0" step="0.1"></div>
+    <div class="form-group"><label>Notes</label><input id="edit-notes" type="text"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn-save" onclick="submitEdit()">Save</button>
+      <button class="btn-back" onclick="document.getElementById('edit-modal').style.display='none'">Cancel</button>
+    </div>
+    <div id="edit-status" class="save-status" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || !localStorage.getItem('token')) location.replace('/index.html');
+  document.getElementById('topbar-name').textContent = user.name || user.username;
+  function logout() { localStorage.clear(); location.replace('/index.html'); }
+
+  let currentQuarter = 0;
+  let allForecasts   = [];
+  let editId         = null;
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  // Populate year selector
+  const yearSel = document.getElementById('year-select');
+  const thisYear = new Date().getFullYear();
+  for (let y = thisYear - 1; y <= thisYear + 2; y++) {
+    yearSel.insertAdjacentHTML('beforeend', `<option ${y===thisYear?'selected':''}>${y}</option>`);
+  }
+  document.getElementById('add-year').value = thisYear;
+
+  function setQuarter(q) {
+    currentQuarter = q;
+    document.querySelectorAll('.status-tab').forEach((t, i) =>
+      t.classList.toggle('active', i === q)
+    );
+    render();
+  }
+
+  function render() {
+    const q = currentQuarter;
+    const thead = document.getElementById('forecast-thead');
+    const tbody = document.getElementById('forecast-tbody');
+
+    if (q === 0) {
+      // Full year view
+      thead.innerHTML = `<tr><th>Product</th><th>Q1 Forecast</th><th>Q1 Actual</th><th>Q2 Forecast</th><th>Q2 Actual</th><th>Q3 Forecast</th><th>Q3 Actual</th><th>Q4 Forecast</th><th>Q4 Actual</th><th>Total Forecast</th><th>Total Actual</th><th>Actions</th></tr>`;
+      const byProduct = {};
+      allForecasts.forEach(f => {
+        const pid = f.product?._id || f.product;
+        if (!byProduct[pid]) byProduct[pid] = { name: f.product?.name||pid, quarters: {} };
+        byProduct[pid].quarters[f.quarter] = f;
+      });
+      if (!Object.keys(byProduct).length) { tbody.innerHTML = `<tr><td colspan="12" class="empty-cell">No forecast entries yet.</td></tr>`; return; }
+      tbody.innerHTML = Object.values(byProduct).map(p => {
+        const qs = p.quarters;
+        const totalF = [1,2,3,4].reduce((s,q) => s + (qs[q]?.forecastQty||0), 0);
+        const totalA = [1,2,3,4].reduce((s,q) => s + (qs[q]?.actualQty||0), 0);
+        return `<tr>
+          <td><strong>${esc(p.name)}</strong></td>
+          ${[1,2,3,4].map(q => `<td style="text-align:right;">${qs[q]?.forecastQty||'—'}</td><td style="text-align:right;">${qs[q]?.actualQty||'—'}</td>`).join('')}
+          <td style="text-align:right;font-weight:bold;">${totalF}</td>
+          <td style="text-align:right;font-weight:bold;">${totalA}</td>
+          <td></td>
+        </tr>`;
+      }).join('');
+    } else {
+      const qLabel = ['','Q1','Q2','Q3','Q4'];
+      thead.innerHTML = `<tr><th>Product</th><th>Unit</th><th style="text-align:right;">Forecast</th><th style="text-align:right;">Actual</th><th style="text-align:right;">Variance</th><th>Progress</th><th>Actions</th></tr>`;
+      const filtered = allForecasts.filter(f => f.quarter === q);
+      if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">No entries for ${qLabel[q]}.</td></tr>`; return; }
+      tbody.innerHTML = filtered.map(f => {
+        const forecast = f.forecastQty || 0;
+        const actual   = f.actualQty   || 0;
+        const variance = actual - forecast;
+        const pct      = forecast > 0 ? Math.min(100, Math.round(actual/forecast*100)) : 0;
+        const varColor = variance >= 0 ? '#2e7d32' : '#c62828';
+        return `<tr>
+          <td>${esc(f.product?.name||'—')}</td>
+          <td>${esc(f.unit||'ton')}</td>
+          <td style="text-align:right;">${forecast.toLocaleString()}</td>
+          <td style="text-align:right;">${actual.toLocaleString()}</td>
+          <td style="text-align:right;color:${varColor};font-weight:bold;">${variance>=0?'+':''}${variance.toLocaleString()}</td>
+          <td style="min-width:100px;">
+            <div style="background:#e0e0e0;border-radius:4px;height:10px;overflow:hidden;">
+              <div style="background:${pct>=100?'#2e7d32':'#1a3a5c'};width:${pct}%;height:100%;"></div>
+            </div>
+            <span style="font-size:10px;color:#777;">${pct}%</span>
+          </td>
+          <td><button class="btn-sm btn-edit" onclick="openEdit('${f._id}',${forecast},${actual},'${esc(f.notes||'')}')">Edit</button>
+              <button class="btn-sm btn-delete" onclick="deleteForecast('${f._id}')">Del</button></td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
+  function openEdit(id, forecast, actual, notes) {
+    editId = id;
+    document.getElementById('edit-forecast').value = forecast;
+    document.getElementById('edit-actual').value   = actual;
+    document.getElementById('edit-notes').value    = notes;
+    document.getElementById('edit-status').textContent = '';
+    document.getElementById('edit-modal').style.display = 'flex';
+  }
+
+  async function submitEdit() {
+    const statusEl = document.getElementById('edit-status');
+    statusEl.textContent = 'Saving…'; statusEl.className = 'save-status';
+    try {
+      await api.updateForecast(editId, {
+        forecastQty: parseFloat(document.getElementById('edit-forecast').value),
+        actualQty:   parseFloat(document.getElementById('edit-actual').value),
+        notes:       document.getElementById('edit-notes').value.trim(),
+      });
+      document.getElementById('edit-modal').style.display = 'none';
+      load();
+    } catch (err) { statusEl.textContent = err.message; statusEl.className = 'save-status error'; }
+  }
+
+  async function deleteForecast(id) {
+    if (!confirm('Delete this forecast entry?')) return;
+    try { await api.deleteForecast(id); load(); } catch (err) { alert(err.message); }
+  }
+
+  async function showAddForm() {
+    document.getElementById('add-status').textContent = '';
+    document.getElementById('add-modal').style.display = 'flex';
+    try {
+      const products = await api.getProducts();
+      const sel = document.getElementById('add-product');
+      sel.innerHTML = `<option value="">— select product —</option>` +
+        products.map(p => `<option value="${esc(p._id)}">${esc(p.name)}</option>`).join('');
+    } catch (e) { /* ignore */ }
+  }
+
+  async function submitAdd() {
+    const statusEl = document.getElementById('add-status');
+    statusEl.textContent = 'Saving…'; statusEl.className = 'save-status';
+    const product = document.getElementById('add-product').value;
+    const forecastQty = parseFloat(document.getElementById('add-forecast').value);
+    if (!product || !forecastQty) { statusEl.textContent = 'Product and forecast qty required.'; statusEl.className = 'save-status error'; return; }
+    try {
+      await api.createForecast({
+        product, forecastQty,
+        year:    parseInt(document.getElementById('add-year').value),
+        quarter: parseInt(document.getElementById('add-quarter').value),
+        unit:    document.getElementById('add-unit').value,
+        notes:   document.getElementById('add-notes').value.trim(),
+      });
+      document.getElementById('add-modal').style.display = 'none';
+      load();
+    } catch (err) { statusEl.textContent = err.message; statusEl.className = 'save-status error'; }
+  }
+
+  async function load() {
+    const year = parseInt(document.getElementById('year-select').value);
+    try {
+      allForecasts = await api.getForecasts({ year });
+      render();
+    } catch (err) {
+      document.getElementById('forecast-tbody').innerHTML =
+        `<tr><td colspan="12" class="empty-cell">${err.message}</td></tr>`;
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>

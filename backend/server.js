@@ -9,8 +9,15 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/coresa
 app.use(cors());
 app.use(express.json());
 
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/reports', require('./routes/reports'));
+app.use('/api/auth',      require('./routes/auth'));
+app.use('/api/reports',   require('./routes/reports'));
+app.use('/api/contacts',  require('./routes/contacts'));
+app.use('/api/products',  require('./routes/products'));
+app.use('/api/orders',    require('./routes/orders'));
+app.use('/api/pi',        require('./routes/proformaInvoices'));
+app.use('/api/lc',        require('./routes/letterOfCredits'));
+app.use('/api/forecasts', require('./routes/forecasts'));
+app.use('/api/currency',  require('./routes/currency'));
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

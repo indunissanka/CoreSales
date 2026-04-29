@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orders — CoreSales CRM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">CoreSales CRM</span>
+  <div class="user-info">
+    <span id="topbar-name"></span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+<nav class="subnav">
+  <a href="/dashboard.html">Reports</a>
+  <a href="/contacts.html">Contacts</a>
+  <a href="/products.html">Products</a>
+  <a href="/orders.html" class="active">Orders</a>
+  <a href="/lc-tracker.html">Trade Docs</a>
+  <a href="/forecast.html">Forecast</a>
+</nav>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <h2>Orders</h2>
+    <button class="btn-new" onclick="location.href='/order-edit.html'">+ New Order</button>
+  </div>
+
+  <div class="status-tabs" id="status-tabs">
+    <button class="status-tab active" onclick="setStatus('')">All</button>
+    <button class="status-tab" onclick="setStatus('Enquiry')">Enquiry</button>
+    <button class="status-tab" onclick="setStatus('Quotation Sent')">Quotation Sent</button>
+    <button class="status-tab" onclick="setStatus('PI Issued')">PI Issued</button>
+    <button class="status-tab" onclick="setStatus('LC Opened')">LC Opened</button>
+    <button class="status-tab" onclick="setStatus('Shipped')">Shipped</button>
+    <button class="status-tab" onclick="setStatus('Delivered')">Delivered</button>
+    <button class="status-tab" onclick="setStatus('Cancelled')">Cancelled</button>
+  </div>
+
+  <div class="report-paper" style="padding:0;overflow:hidden;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Order No</th><th>Company</th><th>Products</th>
+          <th>Total</th><th>Incoterm</th><th>Destination</th>
+          <th>Status</th><th>Date</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="orders-tbody"><tr><td colspan="9" class="empty-cell">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || !localStorage.getItem('token')) location.replace('/index.html');
+  document.getElementById('topbar-name').textContent = user.name || user.username;
+  function logout() { localStorage.clear(); location.replace('/index.html'); }
+
+  let currentStatus = '';
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
+
+  function setStatus(status) {
+    currentStatus = status;
+    document.querySelectorAll('.status-tab').forEach(t => {
+      t.classList.toggle('active', t.textContent === (status || 'All'));
+    });
+    load();
+  }
+
+  async function load() {
+    const tbody = document.getElementById('orders-tbody');
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">Loading…</td></tr>`;
+    try {
+      const params = currentStatus ? { status: currentStatus } : {};
+      const orders = await api.getOrders(params);
+      if (!orders.length) {
+        tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">No orders found.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = orders.map(o => {
+        const products = (o.items || []).map(i => i.product ? i.product.name : '').filter(Boolean).join(', ') || '—';
+        return `
+          <tr style="cursor:pointer;" onclick="location.href='/order-edit.html?id=${o._id}'">
+            <td><strong>${esc(o.orderNo)}</strong></td>
+            <td>${esc(o.contact ? o.contact.company : '—')}</td>
+            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(products)}">${esc(products)}</td>
+            <td style="text-align:right;">${esc(o.currency||'USD')} ${(o.totalAmount||0).toLocaleString()}</td>
+            <td style="text-align:center;">${esc(o.incoterm||'—')}</td>
+            <td>${esc(o.portOfDestination||'—')}</td>
+            <td style="text-align:center;"><span class="badge badge-status-${(o.status||'').replace(/\s+/g,'-').toLowerCase()}">${esc(o.status)}</span></td>
+            <td>${fmtDate(o.createdAt)}</td>
+            <td onclick="event.stopPropagation()">
+              <button class="btn-sm btn-edit" onclick="location.href='/order-edit.html?id=${o._id}'">Edit</button>
+            </td>
+          </tr>`;
+      }).join('');
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">${err.message}</td></tr>`;
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>

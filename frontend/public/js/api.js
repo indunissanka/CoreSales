@@ -12,11 +12,65 @@ async function apiFetch(path, options = {}) {
 }
 
 const api = {
-  login:         (body)    => apiFetch('/auth/login',      { method: 'POST', body: JSON.stringify(body) }),
-  register:      (body)    => apiFetch('/auth/register',   { method: 'POST', body: JSON.stringify(body) }),
+  // Auth
+  login:         (body)    => apiFetch('/auth/login',    { method: 'POST', body: JSON.stringify(body) }),
+  register:      (body)    => apiFetch('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
+
+  // Reports (existing)
   getReports:    ()        => apiFetch('/reports'),
   getReport:     (id)      => apiFetch(`/reports/${id}`),
-  createReport:  (body)    => apiFetch('/reports',         { method: 'POST', body: JSON.stringify(body) }),
-  updateReport:  (id,body) => apiFetch(`/reports/${id}`,   { method: 'PUT',  body: JSON.stringify(body) }),
-  deleteReport:  (id)      => apiFetch(`/reports/${id}`,   { method: 'DELETE' }),
+  createReport:  (body)    => apiFetch('/reports',       { method: 'POST',   body: JSON.stringify(body) }),
+  updateReport:  (id,body) => apiFetch(`/reports/${id}`, { method: 'PUT',    body: JSON.stringify(body) }),
+  deleteReport:  (id)      => apiFetch(`/reports/${id}`, { method: 'DELETE' }),
+
+  // Contacts
+  getContacts:      (params)    => apiFetch('/contacts' + toQS(params)),
+  getContact:       (id)        => apiFetch(`/contacts/${id}`),
+  createContact:    (body)      => apiFetch('/contacts',       { method: 'POST',   body: JSON.stringify(body) }),
+  updateContact:    (id,body)   => apiFetch(`/contacts/${id}`, { method: 'PUT',    body: JSON.stringify(body) }),
+  deleteContact:    (id)        => apiFetch(`/contacts/${id}`, { method: 'DELETE' }),
+  addCommLog:       (id,body)   => apiFetch(`/contacts/${id}/comm`,          { method: 'POST',   body: JSON.stringify(body) }),
+  deleteCommLog:    (id,logId)  => apiFetch(`/contacts/${id}/comm/${logId}`, { method: 'DELETE' }),
+
+  // Products
+  getProducts:      (params)    => apiFetch('/products' + toQS(params)),
+  getProduct:       (id)        => apiFetch(`/products/${id}`),
+  createProduct:    (body)      => apiFetch('/products',       { method: 'POST',   body: JSON.stringify(body) }),
+  updateProduct:    (id,body)   => apiFetch(`/products/${id}`, { method: 'PUT',    body: JSON.stringify(body) }),
+  deleteProduct:    (id)        => apiFetch(`/products/${id}`, { method: 'DELETE' }),
+
+  // Orders
+  getOrders:        (params)    => apiFetch('/orders' + toQS(params)),
+  getOrder:         (id)        => apiFetch(`/orders/${id}`),
+  createOrder:      (body)      => apiFetch('/orders',       { method: 'POST',   body: JSON.stringify(body) }),
+  updateOrder:      (id,body)   => apiFetch(`/orders/${id}`, { method: 'PUT',    body: JSON.stringify(body) }),
+
+  // Proforma Invoices
+  getPIs:           ()          => apiFetch('/pi'),
+  getPI:            (id)        => apiFetch(`/pi/${id}`),
+  generatePI:       (body)      => apiFetch('/pi',       { method: 'POST', body: JSON.stringify(body) }),
+  updatePI:         (id,body)   => apiFetch(`/pi/${id}`, { method: 'PUT',  body: JSON.stringify(body) }),
+
+  // Letters of Credit
+  getLCAlerts:      ()          => apiFetch('/lc/alerts'),
+  getLCs:           (params)    => apiFetch('/lc' + toQS(params)),
+  getLC:            (id)        => apiFetch(`/lc/${id}`),
+  createLC:         (body)      => apiFetch('/lc',       { method: 'POST', body: JSON.stringify(body) }),
+  updateLC:         (id,body)   => apiFetch(`/lc/${id}`, { method: 'PUT',  body: JSON.stringify(body) }),
+
+  // Forecasts
+  getForecasts:     (params)    => apiFetch('/forecasts' + toQS(params)),
+  createForecast:   (body)      => apiFetch('/forecasts',       { method: 'POST',   body: JSON.stringify(body) }),
+  updateForecast:   (id,body)   => apiFetch(`/forecasts/${id}`, { method: 'PUT',    body: JSON.stringify(body) }),
+  deleteForecast:   (id)        => apiFetch(`/forecasts/${id}`, { method: 'DELETE' }),
+
+  // Currency
+  getCurrencyRates: ()          => apiFetch('/currency/rates'),
+  convertCurrency:  (body)      => apiFetch('/currency/convert', { method: 'POST', body: JSON.stringify(body) }),
 };
+
+function toQS(params) {
+  if (!params || !Object.keys(params).length) return '';
+  const p = Object.entries(params).filter(([,v]) => v !== undefined && v !== null && v !== '');
+  return p.length ? '?' + p.map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&') : '';
+}

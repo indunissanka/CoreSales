@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trade Docs — CoreSales CRM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">CoreSales CRM</span>
+  <div class="user-info">
+    <span id="topbar-name"></span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+<nav class="subnav">
+  <a href="/dashboard.html">Reports</a>
+  <a href="/contacts.html">Contacts</a>
+  <a href="/products.html">Products</a>
+  <a href="/orders.html">Orders</a>
+  <a href="/lc-tracker.html" class="active">Trade Docs</a>
+  <a href="/forecast.html">Forecast</a>
+</nav>
+
+<div class="page-wrap">
+  <!-- Alert banner -->
+  <div id="alert-banner" class="alert-banner" style="display:none;"></div>
+
+  <div class="page-header">
+    <h2>L/C Tracker</h2>
+    <button class="btn-new" onclick="showLCForm()">+ Link L/C to Order</button>
+  </div>
+
+  <div class="status-tabs">
+    <button class="status-tab active" onclick="setStatus('')">All</button>
+    <button class="status-tab" onclick="setStatus('Pending')">Pending</button>
+    <button class="status-tab" onclick="setStatus('Opened')">Opened</button>
+    <button class="status-tab" onclick="setStatus('Discrepancy Found')">Discrepancy</button>
+    <button class="status-tab" onclick="setStatus('Settled')">Settled</button>
+  </div>
+
+  <div class="report-paper" style="padding:0;overflow:hidden;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Order No</th><th>PI Number</th><th>PI Date</th>
+          <th>Days Since PI</th><th>L/C Number</th><th>Issuing Bank</th>
+          <th>Status</th><th>Expiry</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="lc-tbody"><tr><td colspan="9" class="empty-cell">Loading…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add LC modal -->
+<div id="lc-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:8px;padding:28px;width:460px;">
+    <h3 style="color:#1a3a5c;margin-bottom:16px;">Link Letter of Credit to Order</h3>
+    <div class="form-group"><label>Order (PI Issued)</label>
+      <select id="lc-order-select" class="select-input"><option value="">Loading…</option></select>
+    </div>
+    <div id="lc-pi-display" style="font-size:12px;color:#777;margin-bottom:12px;"></div>
+    <div class="form-grid-2">
+      <div class="form-group"><label>L/C Number</label><input id="lc-number" type="text" placeholder="Bank reference"></div>
+      <div class="form-group"><label>Issuing Bank</label><input id="lc-bank" type="text"></div>
+      <div class="form-group"><label>Amount</label><input id="lc-amount" type="number" min="0" step="0.01"></div>
+      <div class="form-group"><label>Currency</label>
+        <select id="lc-currency" class="select-input"><option>USD</option><option>CNY</option><option>TWD</option></select>
+      </div>
+      <div class="form-group"><label>Expiry Date</label><input id="lc-expiry" type="date"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn-save" onclick="submitLC()">Save L/C</button>
+      <button class="btn-back" onclick="document.getElementById('lc-modal').style.display='none'">Cancel</button>
+    </div>
+    <div id="lc-modal-status" class="save-status" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<!-- Mark Opened / Discrepancy inline modal -->
+<div id="update-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:8px;padding:28px;width:400px;">
+    <h3 style="color:#1a3a5c;margin-bottom:16px;" id="update-modal-title">Update L/C</h3>
+    <div id="update-modal-fields"></div>
+    <div style="display:flex;gap:10px;margin-top:12px;">
+      <button class="btn-save" onclick="submitUpdate()">Save</button>
+      <button class="btn-back" onclick="document.getElementById('update-modal').style.display='none'">Cancel</button>
+    </div>
+    <div id="update-modal-status" class="save-status" style="margin-top:8px;"></div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || !localStorage.getItem('token')) location.replace('/index.html');
+  document.getElementById('topbar-name').textContent = user.name || user.username;
+  function logout() { localStorage.clear(); location.replace('/index.html'); }
+
+  let currentStatus = '';
+  let currentUpdateId = null;
+  let currentUpdateAction = null;
+  let piOrderMap = {};
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
+
+  function daysSince(d) {
+    if (!d) return null;
+    return Math.floor((Date.now() - new Date(d)) / (1000*60*60*24));
+  }
+
+  function setStatus(status) {
+    currentStatus = status;
+    document.querySelectorAll('.status-tab').forEach(t =>
+      t.classList.toggle('active', t.textContent === (status||'All'))
+    );
+    load();
+  }
+
+  async function load() {
+    const tbody = document.getElementById('lc-tbody');
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">Loading…</td></tr>`;
+    try {
+      const [lcs, alerts] = await Promise.all([
+        api.getLCs(currentStatus ? { status: currentStatus } : {}),
+        api.getLCAlerts(),
+      ]);
+
+      const banner = document.getElementById('alert-banner');
+      if (alerts.length) {
+        banner.style.display = 'block';
+        banner.innerHTML = `⚠ <strong>${alerts.length}</strong> Proforma Invoice${alerts.length>1?'s are':' is'} awaiting L/C — issued more than 14 days ago. ` +
+          alerts.map(a => `<a href="/order-edit.html?id=${a.order?._id||a.order}" style="color:#fff;text-decoration:underline;">${esc(a.order?.orderNo||'Order')}</a>`).join(', ');
+      } else { banner.style.display = 'none'; }
+
+      if (!lcs.length) {
+        tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">No letters of credit found.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = lcs.map(lc => {
+        const days = daysSince(lc.piDate);
+        const overdue = lc.status === 'Pending' && days > 14;
+        return `
+          <tr>
+            <td>${esc(lc.order?.orderNo||'—')}</td>
+            <td>${esc(lc.proformaInvoice?.piNumber||'—')}</td>
+            <td>${fmtDate(lc.piDate)}</td>
+            <td style="text-align:center;${overdue?'color:#c62828;font-weight:bold;':''}">${days !== null ? days + 'd' : '—'}${overdue?' ⚠':''}</td>
+            <td>${esc(lc.lcNumber||'—')}</td>
+            <td>${esc(lc.issuingBank||'—')}</td>
+            <td style="text-align:center;"><span class="badge badge-status-${(lc.status||'').replace(/\s+/g,'-').toLowerCase()}">${esc(lc.status)}</span></td>
+            <td>${fmtDate(lc.expiryDate)}</td>
+            <td style="white-space:nowrap;">
+              ${lc.status==='Pending' ? `<button class="btn-sm btn-edit" onclick="openUpdate('${lc._id}','opened')">Mark Opened</button>` : ''}
+              ${lc.status!=='Discrepancy Found' && lc.status!=='Settled' ? `<button class="btn-sm btn-delete" onclick="openUpdate('${lc._id}','discrepancy')">Discrepancy</button>` : ''}
+            </td>
+          </tr>`;
+      }).join('');
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">${err.message}</td></tr>`;
+    }
+  }
+
+  function openUpdate(id, action) {
+    currentUpdateId = id; currentUpdateAction = action;
+    const modal = document.getElementById('update-modal');
+    const title = document.getElementById('update-modal-title');
+    const fields = document.getElementById('update-modal-fields');
+    document.getElementById('update-modal-status').textContent = '';
+    if (action === 'opened') {
+      title.textContent = 'Mark L/C as Opened';
+      fields.innerHTML = `
+        <div class="form-group"><label>L/C Number (from bank)</label><input id="u-lcnumber" type="text"></div>
+        <div class="form-group"><label>Date Opened</label><input id="u-opened-date" type="date" value="${new Date().toISOString().split('T')[0]}"></div>`;
+    } else {
+      title.textContent = 'Record Discrepancy';
+      fields.innerHTML = `<div class="form-group"><label>Discrepancy Notes</label><textarea id="u-disc-notes" rows="3" placeholder="Describe the discrepancy…"></textarea></div>`;
+    }
+    modal.style.display = 'flex';
+  }
+
+  async function submitUpdate() {
+    const statusEl = document.getElementById('update-modal-status');
+    statusEl.textContent = 'Saving…'; statusEl.className = 'save-status';
+    try {
+      let body;
+      if (currentUpdateAction === 'opened') {
+        body = { status: 'Opened', lcNumber: document.getElementById('u-lcnumber').value.trim(), openedDate: document.getElementById('u-opened-date').value };
+      } else {
+        body = { status: 'Discrepancy Found', discrepancyNotes: document.getElementById('u-disc-notes').value.trim() };
+      }
+      await api.updateLC(currentUpdateId, body);
+      document.getElementById('update-modal').style.display = 'none';
+      load();
+    } catch (err) { statusEl.textContent = err.message; statusEl.className = 'save-status error'; }
+  }
+
+  async function showLCForm() {
+    const sel = document.getElementById('lc-order-select');
+    sel.innerHTML = '<option value="">Loading…</option>';
+    document.getElementById('lc-pi-display').textContent = '';
+    document.getElementById('lc-modal-status').textContent = '';
+    document.getElementById('lc-modal').style.display = 'flex';
+    try {
+      const orders = await api.getOrders({ status: 'PI Issued' });
+      piOrderMap = {};
+      orders.forEach(o => { piOrderMap[o._id] = o; });
+      sel.innerHTML = `<option value="">— select order —</option>` +
+        orders.map(o => `<option value="${esc(o._id)}">${esc(o.orderNo)} — ${esc(o.contact?.company||'')}</option>`).join('');
+    } catch (e) { sel.innerHTML = '<option value="">Error loading orders</option>'; }
+  }
+
+  document.getElementById('lc-order-select').onchange = function() {
+    const o = piOrderMap[this.value];
+    const el = document.getElementById('lc-pi-display');
+    if (o && o.proformaInvoice) {
+      el.textContent = `PI: ${o.proformaInvoice.piNumber || o.proformaInvoice} | Amount: ${o.currency} ${(o.totalAmount||0).toLocaleString()}`;
+    } else { el.textContent = o ? 'No PI found for this order.' : ''; }
+  };
+
+  async function submitLC() {
+    const statusEl = document.getElementById('lc-modal-status');
+    statusEl.textContent = 'Saving…'; statusEl.className = 'save-status';
+    const orderId = document.getElementById('lc-order-select').value;
+    const order   = piOrderMap[orderId];
+    if (!orderId || !order) { statusEl.textContent = 'Select an order.'; statusEl.className = 'save-status error'; return; }
+    const piId = order.proformaInvoice?._id || order.proformaInvoice;
+    if (!piId) { statusEl.textContent = 'This order has no PI yet. Generate a PI first.'; statusEl.className = 'save-status error'; return; }
+    try {
+      await api.createLC({
+        orderId, piId,
+        piDate:      order.proformaInvoice?.issuedDate || new Date().toISOString(),
+        lcNumber:    document.getElementById('lc-number').value.trim(),
+        issuingBank: document.getElementById('lc-bank').value.trim(),
+        amount:      parseFloat(document.getElementById('lc-amount').value)||undefined,
+        currency:    document.getElementById('lc-currency').value,
+        expiryDate:  document.getElementById('lc-expiry').value || undefined,
+      });
+      document.getElementById('lc-modal').style.display = 'none';
+      load();
+    } catch (err) { statusEl.textContent = err.message; statusEl.className = 'save-status error'; }
+  }
+
+  load();
+</script>
+</body>
+</html>

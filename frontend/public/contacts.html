@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contacts — CoreSales CRM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">CoreSales CRM</span>
+  <div class="user-info">
+    <span id="topbar-name"></span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+<nav class="subnav">
+  <a href="/dashboard.html">Reports</a>
+  <a href="/contacts.html" class="active">Contacts</a>
+  <a href="/products.html">Products</a>
+  <a href="/orders.html">Orders</a>
+  <a href="/lc-tracker.html">Trade Docs</a>
+  <a href="/forecast.html">Forecast</a>
+</nav>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <h2>Contacts</h2>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <input type="text" id="search-input" class="search-input" placeholder="Search company or name…" oninput="filterContacts()">
+      <button class="btn-new" onclick="location.href='/contact-detail.html'">+ New Contact</button>
+    </div>
+  </div>
+
+  <div class="reports-grid" id="contacts-grid">
+    <div class="empty-state"><p>Loading…</p></div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || !localStorage.getItem('token')) location.replace('/index.html');
+  document.getElementById('topbar-name').textContent = user.name || user.username;
+
+  function logout() { localStorage.clear(); location.replace('/index.html'); }
+
+  let allContacts = [];
+
+  function filterContacts() {
+    const q = document.getElementById('search-input').value.toLowerCase();
+    const filtered = q
+      ? allContacts.filter(c => (c.company + c.name).toLowerCase().includes(q))
+      : allContacts;
+    renderContacts(filtered);
+  }
+
+  function renderContacts(contacts) {
+    const grid = document.getElementById('contacts-grid');
+    if (!contacts.length) {
+      grid.innerHTML = `<div class="empty-state"><p>No contacts found.</p></div>`;
+      return;
+    }
+    grid.innerHTML = contacts.map(c => `
+      <div class="report-card" onclick="location.href='/contact-detail.html?id=${c._id}'">
+        <div class="week-label">${esc(c.company)}</div>
+        <div class="meta">${esc(c.name)}</div>
+        <div class="meta" style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+          <span class="badge badge-role">${esc(c.role || 'Other')}</span>
+          <span style="color:#aaa">${esc(c.country || '')}</span>
+        </div>
+        ${c.phone ? `<div class="meta" style="margin-top:4px;">📱 ${esc(c.phone)}</div>` : ''}
+        <div class="card-actions">
+          <button class="btn-sm btn-edit" onclick="event.stopPropagation();location.href='/contact-detail.html?id=${c._id}'">Edit</button>
+          <button class="btn-sm btn-delete" onclick="event.stopPropagation();deleteContact('${c._id}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function deleteContact(id) {
+    if (!confirm('Delete this contact?')) return;
+    try {
+      await api.deleteContact(id);
+      allContacts = allContacts.filter(c => c._id !== id);
+      filterContacts();
+    } catch (err) { alert(err.message); }
+  }
+
+  async function load() {
+    try {
+      allContacts = await api.getContacts();
+      filterContacts();
+    } catch (err) {
+      document.getElementById('contacts-grid').innerHTML =
+        `<div class="empty-state"><p>${err.message}</p></div>`;
+    }
+  }
+
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  load();
+</script>
+</body>
+</html>
