@@ -27,14 +27,21 @@
 <div class="page-wrap">
   <div class="page-header">
     <h2>Product Catalog</h2>
-    <div style="display:flex;gap:10px;align-items:center;">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
       <input type="text" id="search-input" class="search-input" placeholder="Search product name…" oninput="filterProducts()">
       <select id="cat-filter" class="select-input" onchange="filterProducts()" style="width:160px;">
         <option value="">All Categories</option>
       </select>
+      <label class="btn-back" style="cursor:pointer;" title="Import products from CSV">
+        ↑ Upload CSV
+        <input type="file" id="csv-upload" accept=".csv" style="display:none;" onchange="importCSV(event)">
+      </label>
+      <button class="btn-back" onclick="downloadCSV()" title="Export products to CSV">↓ Download CSV</button>
       <button class="btn-new" onclick="location.href='/product-edit.html'">+ New Product</button>
     </div>
   </div>
+
+  <div id="import-status" style="display:none;" class="import-status-bar"></div>
 
   <div class="report-paper" style="padding:0;overflow:hidden;">
     <table class="data-table" id="products-table">
@@ -57,6 +64,8 @@
   function logout() { localStorage.clear(); location.replace('/index.html'); }
 
   let allProducts = [];
+
+  const CSV_HEADERS = ['name','sku','category','grade','casNumber','packagingTypes','unitOfMeasure','basePrice','priceLinkNote','technicalNotes'];
 
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
@@ -103,11 +112,130 @@
     } catch (err) { alert(err.message); }
   }
 
+  /* ── CSV Download ── */
+  function csvCell(v) {
+    const s = String(v == null ? '' : v);
+    return s.includes(',') || s.includes('"') || s.includes('\n')
+      ? '"' + s.replace(/"/g, '""') + '"'
+      : s;
+  }
+
+  function downloadCSV() {
+    if (!allProducts.length) { alert('No products to export.'); return; }
+    const rows = [CSV_HEADERS];
+    allProducts.forEach(p => {
+      rows.push([
+        csvCell(p.name || ''),
+        csvCell(p.sku || ''),
+        csvCell(p.category || ''),
+        csvCell(p.grade || ''),
+        csvCell(p.casNumber || ''),
+        csvCell((p.packagingTypes || []).join('; ')),
+        csvCell(p.unitOfMeasure || 'ton'),
+        csvCell(p.basePrice != null ? p.basePrice : ''),
+        csvCell(p.priceLinkNote || ''),
+        csvCell(p.technicalNotes || ''),
+      ]);
+    });
+    const csv = rows.map(r => r.join(',')).join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'products.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  /* ── CSV Upload ── */
+  function parseCSV(text) {
+    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    return lines.map(line => {
+      const cells = []; let cur = ''; let inQuote = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQuote && line[i+1] === '"') { cur += '"'; i++; }
+          else inQuote = !inQuote;
+        } else if (ch === ',' && !inQuote) {
+          cells.push(cur.trim()); cur = '';
+        } else { cur += ch; }
+      }
+      cells.push(cur.trim());
+      return cells;
+    }).filter(r => r.some(c => c));
+  }
+
+  function showImportStatus(msg, isError) {
+    const el = document.getElementById('import-status');
+    el.textContent = msg;
+    el.style.display = msg ? 'block' : 'none';
+    el.style.background = isError ? '#fdecea' : '#e8f5e9';
+    el.style.color      = isError ? '#c62828' : '#2e7d32';
+  }
+
+  async function importCSV(event) {
+    const file = event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+
+    const text = await file.text();
+    const rows = parseCSV(text);
+    if (!rows.length) { alert('CSV file is empty.'); return; }
+
+    // Find header row — look for a row containing "name" (case-insensitive)
+    const headerIdx = rows.findIndex(r => r.some(c => c.toLowerCase() === 'name'));
+    if (headerIdx === -1) {
+      alert('Could not find header row.\nMake sure the CSV has a "name" column header.\nDownload the template first to see the expected format.');
+      return;
+    }
+
+    const headers = rows[headerIdx].map(h => h.toLowerCase().trim());
+    const dataRows = rows.slice(headerIdx + 1).filter(r => r.some(c => c));
+
+    if (!dataRows.length) { alert('No data rows found after the header.'); return; }
+
+    if (!confirm(`Import ${dataRows.length} product(s) from CSV?\nThis will ADD them to your existing catalog.`)) return;
+
+    showImportStatus(`Importing 0 / ${dataRows.length}…`, false);
+
+    let imported = 0, failed = 0;
+    for (const row of dataRows) {
+      const obj = {};
+      headers.forEach((h, i) => {
+        const val = row[i] || '';
+        if (h === 'packagingtypes') {
+          obj.packagingTypes = val ? val.split(';').map(s => s.trim()).filter(Boolean) : [];
+        } else if (h === 'baseprice') {
+          obj.basePrice = val ? parseFloat(val) : undefined;
+        } else {
+          // Map lowercase header back to camelCase field
+          const fieldMap = {
+            name:'name', sku:'sku', category:'category', grade:'grade',
+            casnumber:'casNumber', unitofmeasure:'unitOfMeasure',
+            pricelinknote:'priceLinkNote', technicalnotes:'technicalNotes',
+          };
+          if (fieldMap[h]) obj[fieldMap[h]] = val;
+        }
+      });
+      if (!obj.name) { failed++; continue; }
+      try {
+        await api.createProduct(obj);
+        imported++;
+        showImportStatus(`Importing ${imported} / ${dataRows.length}…`, false);
+      } catch (e) { failed++; }
+    }
+
+    const msg = `Import complete: ${imported} added${failed ? `, ${failed} skipped (missing name or duplicate SKU)` : ''}.`;
+    showImportStatus(msg, failed > 0 && imported === 0);
+    await load();
+  }
+
   async function load() {
     try {
       allProducts = await api.getProducts();
       const cats = [...new Set(allProducts.map(p => p.category).filter(Boolean))].sort();
       const sel = document.getElementById('cat-filter');
+      // Keep existing options, rebuild dynamic ones
+      while (sel.options.length > 1) sel.remove(1);
       cats.forEach(c => sel.insertAdjacentHTML('beforeend', `<option value="${esc(c)}">${esc(c)}</option>`));
       filterProducts();
     } catch (err) {
