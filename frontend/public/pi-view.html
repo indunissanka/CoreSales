@@ -32,63 +32,91 @@
   </div>
 </div>
 
-<!-- PI Document (printed) -->
-<div class="page-wrap pi-doc" id="pi-doc" style="max-width:900px;">
-  <div class="pi-header">
-    <div class="pi-seller" id="pi-seller-block"></div>
-    <div class="pi-title-block">
-      <div class="pi-title">PROFORMA INVOICE</div>
-      <table class="pi-meta-table">
-        <tr><td>PI No.</td><td id="pi-number">—</td></tr>
-        <tr><td>Date</td><td id="pi-date">—</td></tr>
-        <tr><td>Valid Until</td><td id="pi-valid-until">—</td></tr>
-        <tr><td>Incoterm</td><td id="pi-incoterm">—</td></tr>
-        <tr><td>Port of Loading</td><td id="pi-pol">—</td></tr>
-        <tr><td>Port of Destination</td><td id="pi-pod">—</td></tr>
+<!-- PI Document -->
+<div class="page-wrap pi-doc" id="pi-doc" style="max-width:900px;padding:0;">
+
+  <!-- 1. Top: Company name + Invoice title -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:14px 16px;border:1px solid #ccc;">
+    <div>
+      <div id="pi-company-name" style="font-size:20px;font-weight:bold;color:#111;"></div>
+      <div id="pi-company-slogan" style="font-size:11px;font-style:italic;color:#777;margin-top:2px;"></div>
+    </div>
+    <div style="font-size:22px;font-weight:bold;letter-spacing:3px;color:#111;">PROFORMA INVOICE</div>
+  </div>
+
+  <!-- 2. Seller Information header bar -->
+  <div class="pi-bar">Seller Information</div>
+
+  <!-- 3. Seller address | Invoice meta -->
+  <div class="pi-row">
+    <div class="pi-cell" style="white-space:pre-line;" id="pi-seller-address"></div>
+    <div class="pi-cell">
+      <table class="pi-meta">
+        <tr><td>INVOICE DATE:</td><td id="pi-date">—</td></tr>
+        <tr><td>Proforma Invoice Number</td><td id="pi-number">—</td></tr>
+        <tr><td>Payment Terms:</td><td id="pi-payment-terms">—</td></tr>
+        <tr><td>Valid Until:</td><td id="pi-valid-until">—</td></tr>
+        <tr><td>Incoterm:</td><td id="pi-incoterm">—</td></tr>
+        <tr><td>Port of Loading:</td><td id="pi-pol">—</td></tr>
+        <tr><td>Port of Destination:</td><td id="pi-pod">—</td></tr>
       </table>
     </div>
   </div>
 
-  <div class="pi-buyer-block">
-    <strong>BILL TO / BUYER:</strong>
-    <div id="pi-buyer" style="margin-top:4px;white-space:pre-line;"></div>
+  <!-- 4. Buyer | Bank -->
+  <div class="pi-row">
+    <div class="pi-cell" style="padding:0;">
+      <div class="pi-bar">Buyer Information</div>
+      <div style="padding:8px 12px;white-space:pre-line;" id="pi-buyer">—</div>
+    </div>
+    <div class="pi-cell" style="padding:0;">
+      <div class="pi-bar-underline">Bank Information</div>
+      <div style="padding:8px 12px;white-space:pre-line;" id="pi-bank">—</div>
+    </div>
   </div>
 
+  <!-- 5. Line Items -->
   <table class="pi-items-table">
     <thead>
       <tr>
-        <th>#</th><th>Description</th><th>SKU</th>
-        <th>Qty</th><th>Unit</th>
+        <th style="width:35%;">Description</th>
+        <th>SKU</th>
+        <th style="text-align:right;">Qty</th>
+        <th>Unit</th>
         <th style="text-align:right;">Unit Price</th>
-        <th style="text-align:right;">Line Total</th>
+        <th style="text-align:right;">AMOUNT</th>
       </tr>
     </thead>
     <tbody id="pi-items-tbody"></tbody>
     <tfoot>
       <tr>
-        <td colspan="6" style="text-align:right;font-weight:bold;padding:8px;">TOTAL (<span id="pi-currency">USD</span>)</td>
-        <td style="text-align:right;font-weight:bold;padding:8px;font-size:14px;" id="pi-total">0.00</td>
+        <td colspan="5" style="text-align:right;font-weight:bold;">SUBTOTAL</td>
+        <td style="text-align:right;font-weight:bold;" id="pi-subtotal">0.00</td>
       </tr>
     </tfoot>
   </table>
 
-  <div class="pi-two-col">
-    <div>
-      <strong>BANK DETAILS:</strong>
-      <div id="pi-bank" style="white-space:pre-line;margin-top:4px;font-size:12px;"></div>
+  <!-- 6. Notes + Totals -->
+  <div class="pi-footer">
+    <div class="pi-footer-notes">
+      <strong>Additional Terms and Notes:</strong>
+      <div id="pi-special-terms" style="margin-top:6px;white-space:pre-line;color:#444;min-height:56px;line-height:1.6;"></div>
+      <div style="margin-top:20px;color:#444;">
+        Authorized Signature: ___________________________<br>
+        <span id="pi-sig-block" style="display:inline-block;margin-top:6px;"></span>
+      </div>
     </div>
-    <div>
-      <strong>SPECIAL TERMS:</strong>
-      <div id="pi-terms" style="white-space:pre-line;margin-top:4px;font-size:12px;"></div>
+    <div class="pi-footer-totals">
+      <div class="pi-totals-line">
+        <span class="pi-totals-label">TOTAL (<span id="pi-currency">USD</span>)</span>
+        <span id="pi-total" style="font-weight:bold;">0.00</span>
+      </div>
     </div>
   </div>
 
-  <div class="pi-signature">
-    <div>
-      <div style="border-top:1px solid #333;width:220px;padding-top:4px;margin-top:40px;">Authorized Signature</div>
-    </div>
-    <div style="text-align:right;font-size:10px;color:#999;">Generated by CoreSales CRM</div>
-  </div>
+  <!-- 7. Thank you bar -->
+  <div class="pi-thank-you">THANK YOU FOR YOUR BUSINESS!</div>
+
 </div>
 
 <script src="/js/api.js"></script>
@@ -99,7 +127,7 @@
   function logout() { localStorage.clear(); location.replace('/index.html'); }
 
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) : '—'; }
 
   const params = new URLSearchParams(location.search);
   const piId = params.get('id');
@@ -108,33 +136,45 @@
   async function load() {
     try {
       const pi = await api.getPI(piId);
+
       document.getElementById('btn-back').onclick =
         () => location.href = pi.order ? `/order-edit.html?id=${pi.order._id||pi.order}` : '/orders.html';
-      document.getElementById('pi-seller-block').innerHTML = (pi.sellerInfo||'').replace(/\n/g,'<br>');
-      document.getElementById('pi-number').textContent     = pi.piNumber   || '—';
-      document.getElementById('pi-date').textContent       = fmtDate(pi.issuedDate);
-      document.getElementById('pi-valid-until').textContent= fmtDate(pi.validUntil);
-      document.getElementById('pi-incoterm').textContent   = pi.incoterm   || '—';
-      document.getElementById('pi-pol').textContent        = pi.portOfLoading     || '—';
-      document.getElementById('pi-pod').textContent        = pi.portOfDestination || '—';
-      document.getElementById('pi-buyer').textContent      = pi.buyerInfo  || '—';
-      document.getElementById('pi-currency').textContent   = pi.currency   || 'USD';
-      document.getElementById('pi-bank').textContent       = pi.bankDetails|| '—';
-      document.getElementById('pi-terms').textContent      = pi.specialTerms|| '—';
-      document.getElementById('pi-total').textContent      = (pi.totalAmount||0).toLocaleString(undefined,{minimumFractionDigits:2});
+
+      // Extract company name from first line of sellerInfo
+      const sellerLines = (pi.sellerInfo || '').split('\n');
+      document.getElementById('pi-company-name').textContent  = sellerLines[0] || '—';
+      document.getElementById('pi-seller-address').textContent = sellerLines.slice(1).join('\n');
+
+      document.getElementById('pi-number').textContent       = pi.piNumber        || '—';
+      document.getElementById('pi-date').textContent         = fmtDate(pi.issuedDate);
+      document.getElementById('pi-valid-until').textContent  = fmtDate(pi.validUntil);
+      document.getElementById('pi-incoterm').textContent     = pi.incoterm        || '—';
+      document.getElementById('pi-pol').textContent          = pi.portOfLoading   || '—';
+      document.getElementById('pi-pod').textContent          = pi.portOfDestination || '—';
+      document.getElementById('pi-currency').textContent     = pi.currency        || 'USD';
+      document.getElementById('pi-buyer').textContent        = pi.buyerInfo       || '—';
+      document.getElementById('pi-bank').textContent         = pi.bankDetails     || '—';
+      document.getElementById('pi-special-terms').textContent = pi.specialTerms   || '';
+      document.getElementById('pi-payment-terms').textContent = (pi.specialTerms || '').split('\n')[0] || '—';
+
+      const total = (pi.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 });
+      document.getElementById('pi-subtotal').textContent = total;
+      document.getElementById('pi-total').textContent    = total;
+
       document.getElementById('pi-status-badge').innerHTML =
         `<span class="badge badge-status-${(pi.status||'draft').toLowerCase()}">${esc(pi.status||'Draft')}</span>`;
 
+      document.getElementById('pi-sig-block').textContent = sellerLines[0] || '';
+
       const tbody = document.getElementById('pi-items-tbody');
-      tbody.innerHTML = (pi.items||[]).map((item, i) => `
+      tbody.innerHTML = (pi.items || []).map((item, i) => `
         <tr>
-          <td style="text-align:center;">${i+1}</td>
           <td>${esc(item.productName)}</td>
-          <td>${esc(item.sku||'')}</td>
-          <td style="text-align:right;">${item.quantity}</td>
+          <td>${esc(item.sku || '')}</td>
+          <td style="text-align:right;">${Number(item.quantity).toLocaleString()}</td>
           <td>${esc(item.unit)}</td>
-          <td style="text-align:right;">${(item.unitPrice||0).toLocaleString(undefined,{minimumFractionDigits:2})}</td>
-          <td style="text-align:right;">${(item.lineTotal||0).toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+          <td style="text-align:right;">${(item.unitPrice || 0).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
+          <td style="text-align:right;">${(item.lineTotal || 0).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
         </tr>
       `).join('');
     } catch (err) { alert(err.message); }

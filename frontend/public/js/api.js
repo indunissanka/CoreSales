@@ -40,6 +40,7 @@ const api = {
   deleteProduct:    (id)        => apiFetch(`/products/${id}`, { method: 'DELETE' }),
 
   // Orders
+  getNextOrderNo:   ()          => apiFetch('/orders/next-number'),
   getOrders:        (params)    => apiFetch('/orders' + toQS(params)),
   getOrder:         (id)        => apiFetch(`/orders/${id}`),
   createOrder:      (body)      => apiFetch('/orders',       { method: 'POST',   body: JSON.stringify(body) }),

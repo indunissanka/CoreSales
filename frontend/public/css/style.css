@@ -127,9 +127,11 @@ a { text-decoration: none; color: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #d6e4f0;
 }
-.page-header h2 { font-size: 20px; color: #1a3a5c; }
+.page-header h2 { font-size: 17px; color: #1a3a5c; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; }
 
 .btn-new {
   background: #1a3a5c;
@@ -152,7 +154,7 @@ a { text-decoration: none; color: inherit; }
 .report-card {
   background: #fff;
   border-radius: 6px;
-  border: 1px solid #dde3eb;
+  border: 1px solid #c0c8d4;
   padding: 16px 20px;
   box-shadow: 0 2px 6px rgba(0,0,0,.05);
   cursor: pointer;
@@ -528,24 +530,25 @@ a { text-decoration: none; color: inherit; }
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 12px;
 }
 .data-table th {
-  background: #e8f0fe;
+  background: #d6e4f0;
   color: #1a3a5c;
   font-weight: bold;
-  font-size: 12px;
-  padding: 9px 12px;
+  font-size: 11.5px;
+  padding: 6px 10px;
   text-align: left;
-  border-bottom: 2px solid #c5d8f8;
+  border: 1px solid #b0bac4;
   white-space: nowrap;
 }
 .data-table td {
-  padding: 8px 12px;
-  border-bottom: 1px solid #edf0f5;
+  padding: 5px 10px;
+  border: 1px solid #b0bac4;
   vertical-align: middle;
 }
-.data-table tbody tr:hover { background: #f7faff; }
+.data-table tbody tr:nth-child(even) { background: #f7f9fc; }
+.data-table tbody tr:hover { background: #eaf1fb; }
 .empty-cell {
   text-align: center;
   padding: 40px 20px;
@@ -712,68 +715,115 @@ a { text-decoration: none; color: inherit; }
 /* ── Proforma Invoice document ── */
 .pi-doc {
   background: #fff;
-  border: 1px solid #c0c8d4;
-  padding: 32px 36px;
+  border: 1px solid #bbb;
   box-shadow: 0 2px 8px rgba(0,0,0,.07);
-  font-size: 13px;
+  font-size: 12px;
+  font-family: Arial, sans-serif;
 }
-.pi-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 20px;
-  gap: 24px;
-}
-.pi-seller { font-size: 13px; font-weight: bold; line-height: 1.6; flex: 1; }
-.pi-title-block { text-align: right; }
-.pi-title {
-  font-size: 22px;
-  font-weight: bold;
-  letter-spacing: 2px;
-  color: #1a3a5c;
-  margin-bottom: 10px;
-}
-.pi-meta-table { font-size: 12px; border-collapse: collapse; margin-left: auto; }
-.pi-meta-table td { padding: 2px 8px; }
-.pi-meta-table td:first-child { color: #777; text-align: right; white-space: nowrap; }
-.pi-meta-table td:last-child { font-weight: bold; }
 
-.pi-buyer-block {
-  border: 1px solid #dde3eb;
-  border-radius: 4px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  font-size: 13px;
-  background: #f7f9fc;
+/* Section header bars */
+.pi-bar {
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: bold;
+  padding: 5px 12px;
 }
+.pi-bar-underline {
+  font-size: 11.5px;
+  font-weight: bold;
+  padding: 5px 12px;
+  border-bottom: 1px solid #333;
+  text-decoration: underline;
+}
+
+/* Two-column grid row */
+.pi-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid #ccc;
+  border-top: none;
+}
+.pi-cell {
+  padding: 8px 12px;
+  font-size: 12px;
+  vertical-align: top;
+}
+.pi-cell + .pi-cell { border-left: 1px solid #ccc; }
+
+/* Invoice meta table (right column of seller section) */
+.pi-meta { width: 100%; border-collapse: collapse; }
+.pi-meta td { padding: 2px 0; font-size: 11px; vertical-align: top; }
+.pi-meta td:first-child { color: #666; white-space: nowrap; padding-right: 8px; }
+.pi-meta td:last-child { font-weight: bold; }
+
+/* Items table */
 .pi-items-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
-  margin-bottom: 20px;
+  font-size: 12px;
+  margin: 12px 0 0;
 }
 .pi-items-table th {
-  background: #1a3a5c;
-  color: #fff;
-  padding: 8px 10px;
+  background: #d0d0d0;
+  color: #111;
+  padding: 7px 10px;
   text-align: left;
-  font-size: 12px;
+  font-size: 11.5px;
+  border: 1px solid #bbb;
 }
 .pi-items-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid #dde3eb;
+  padding: 6px 10px;
+  border: 1px solid #ccc;
 }
+.pi-items-table tbody tr:nth-child(even) { background: #e8e8e8; }
 .pi-items-table tfoot td {
-  border-top: 2px solid #1a3a5c;
-  border-bottom: none;
-  background: #f7f9fc;
+  border: 1px solid #bbb;
+  background: #d8d8d8;
+  font-weight: bold;
 }
-.pi-two-col {
+
+/* Footer: notes + totals */
+.pi-footer {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-bottom: 24px;
+  grid-template-columns: 1fr 220px;
+  border: 1px solid #ccc;
+  border-top: none;
 }
+.pi-footer-notes {
+  padding: 12px 14px;
+  border-right: 1px solid #ccc;
+  font-size: 11px;
+}
+.pi-footer-totals { font-size: 12px; }
+.pi-totals-line {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 12px;
+  border-bottom: 1px solid #ddd;
+}
+.pi-totals-line.grand {
+  background: #d0d0d0;
+  font-weight: bold;
+  font-size: 13px;
+  padding: 7px 12px;
+}
+.pi-totals-label { color: #555; }
+
+/* Thank-you footer bar */
+.pi-thank-you {
+  background: #1a1a1a;
+  color: #fff;
+  text-align: center;
+  padding: 10px 14px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+/* Legacy aliases kept for backward compat */
+.pi-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
 .pi-signature { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 16px; }
 
 /* ── Responsive ── */
@@ -789,16 +839,20 @@ a { text-decoration: none; color: inherit; }
 
   /* PI document uses portrait */
   .pi-doc ~ * { display: none; }
-  body:has(.pi-doc) { @page { size: A4 portrait; margin: 15mm; } }
+  body:has(.pi-doc) { @page { size: A4 portrait; margin: 10mm; } }
   .no-print { display: none !important; }
   .subnav   { display: none !important; }
   .pi-doc {
     border: none !important;
     box-shadow: none !important;
-    padding: 0 !important;
     max-width: 100% !important;
   }
-  .pi-items-table th { background: #1a3a5c !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pi-bar { background: #1a1a1a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pi-items-table th { background: #d0d0d0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pi-items-table tbody tr:nth-child(even) { background: #e8e8e8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pi-items-table tfoot td { background: #d8d8d8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pi-totals-line.grand { background: #d0d0d0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .pi-thank-you { background: #1a1a1a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
   /* hide everything except the report paper */
   .topbar,

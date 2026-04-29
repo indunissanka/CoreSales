@@ -22,6 +22,15 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/next-number', async (req, res) => {
+  try {
+    const orderNo = await generateOrderNo();
+    res.json({ orderNo });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   try {
     const order = await Order.findOne({ _id: req.params.id, createdBy: req.userId })
@@ -36,7 +45,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const orderNo = await generateOrderNo();
+    const orderNo = (req.body.orderNo && req.body.orderNo.trim()) || await generateOrderNo();
     const items = (req.body.items || []).map(item => ({
       ...item,
       lineTotal: item.quantity * item.unitPrice,
