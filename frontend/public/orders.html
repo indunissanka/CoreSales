@@ -55,6 +55,20 @@
   </div>
 </div>
 
+<!-- Preview panel -->
+<div class="preview-overlay" id="preview-overlay" onclick="closePreview()">
+  <div class="preview-panel" id="preview-panel" onclick="event.stopPropagation()">
+    <div class="preview-header">
+      <span id="preview-title"></span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm btn-edit" id="preview-edit-btn">Edit</button>
+        <button class="btn-sm" style="background:#e0e0e0;color:#444;" onclick="closePreview()">✕</button>
+      </div>
+    </div>
+    <div class="preview-body" id="preview-body"></div>
+  </div>
+</div>
+
 <script src="/js/api.js"></script>
 <script>
   const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -68,40 +82,96 @@
 
   function setStatus(status) {
     currentStatus = status;
-    document.querySelectorAll('.status-tab').forEach(t => {
-      t.classList.toggle('active', t.textContent === (status || 'All'));
-    });
+    document.querySelectorAll('.status-tab').forEach(t =>
+      t.classList.toggle('active', t.textContent === (status || 'All'))
+    );
     load();
+  }
+
+  function closePreview() {
+    document.getElementById('preview-overlay').classList.remove('open');
+  }
+
+  async function openPreview(id) {
+    document.getElementById('preview-title').textContent = 'Loading…';
+    document.getElementById('preview-body').innerHTML = '<p style="padding:16px;color:#aaa;">Loading…</p>';
+    document.getElementById('preview-overlay').classList.add('open');
+    document.getElementById('preview-edit-btn').onclick = () => location.href = `/order-edit.html?id=${id}`;
+
+    try {
+      const o = await api.getOrder(id);
+      document.getElementById('preview-title').textContent = o.orderNo;
+
+      const itemsHtml = (o.items||[]).length ? `
+        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;">
+          <thead><tr style="background:#e8f0fe;">
+            <th style="padding:5px 8px;text-align:left;">Product</th>
+            <th style="padding:5px 8px;text-align:right;">Qty</th>
+            <th style="padding:5px 8px;">Unit</th>
+            <th style="padding:5px 8px;text-align:right;">Unit Price</th>
+            <th style="padding:5px 8px;text-align:right;">Line Total</th>
+          </tr></thead>
+          <tbody>
+            ${(o.items||[]).map(i => `
+              <tr style="border-bottom:1px solid #f0f0f0;">
+                <td style="padding:5px 8px;">${esc(i.product?.name||'—')}</td>
+                <td style="padding:5px 8px;text-align:right;">${i.quantity}</td>
+                <td style="padding:5px 8px;">${esc(i.unit||'ton')}</td>
+                <td style="padding:5px 8px;text-align:right;">${(i.unitPrice||0).toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+                <td style="padding:5px 8px;text-align:right;">${(i.lineTotal||0).toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+              </tr>`).join('')}
+            <tr style="font-weight:bold;background:#f7f9fc;">
+              <td colspan="4" style="padding:6px 8px;text-align:right;">Total (${esc(o.currency||'USD')})</td>
+              <td style="padding:6px 8px;text-align:right;">${(o.totalAmount||0).toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+            </tr>
+          </tbody>
+        </table>` : '<p style="color:#aaa;font-size:12px;">No line items.</p>';
+
+      document.getElementById('preview-body').innerHTML = `
+        <div class="preview-meta-grid">
+          <div><span class="preview-label">Company</span><span>${esc(o.contact?.company||'—')}</span></div>
+          <div><span class="preview-label">Status</span><span><span class="badge badge-status-${(o.status||'').replace(/\s+/g,'-').toLowerCase()}">${esc(o.status)}</span></span></div>
+          <div><span class="preview-label">Incoterm</span><span>${esc(o.incoterm||'—')}</span></div>
+          <div><span class="preview-label">Currency</span><span>${esc(o.currency||'USD')}</span></div>
+          <div><span class="preview-label">Port of Loading</span><span>${esc(o.portOfLoading||'—')}</span></div>
+          <div><span class="preview-label">Destination</span><span>${esc(o.portOfDestination||'—')}</span></div>
+          <div><span class="preview-label">Created</span><span>${fmtDate(o.createdAt)}</span></div>
+          <div><span class="preview-label">PI</span><span>${o.proformaInvoice ? `<a href="/pi-view.html?id=${o.proformaInvoice._id||o.proformaInvoice}" style="color:#2d6a9f;">View P/I →</a>` : '—'}</span></div>
+        </div>
+        <div class="preview-section-title">Line Items</div>
+        ${itemsHtml}
+        ${o.notes ? `<div class="preview-section-title" style="margin-top:14px;">Notes</div><p style="font-size:13px;">${esc(o.notes)}</p>` : ''}
+      `;
+    } catch(err) {
+      document.getElementById('preview-body').innerHTML = `<p style="padding:16px;color:#c62828;">${err.message}</p>`;
+    }
   }
 
   async function load() {
     const tbody = document.getElementById('orders-tbody');
     tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">Loading…</td></tr>`;
     try {
-      const params = currentStatus ? { status: currentStatus } : {};
-      const orders = await api.getOrders(params);
-      if (!orders.length) {
-        tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">No orders found.</td></tr>`;
-        return;
-      }
+      const orders = await api.getOrders(currentStatus ? { status: currentStatus } : {});
+      if (!orders.length) { tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">No orders found.</td></tr>`; return; }
       tbody.innerHTML = orders.map(o => {
-        const products = (o.items || []).map(i => i.product ? i.product.name : '').filter(Boolean).join(', ') || '—';
+        const products = (o.items||[]).map(i=>i.product?.name||'').filter(Boolean).join(', ')||'—';
         return `
           <tr style="cursor:pointer;" onclick="location.href='/order-edit.html?id=${o._id}'">
             <td><strong>${esc(o.orderNo)}</strong></td>
-            <td>${esc(o.contact ? o.contact.company : '—')}</td>
+            <td>${esc(o.contact?.company||'—')}</td>
             <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(products)}">${esc(products)}</td>
             <td style="text-align:right;">${esc(o.currency||'USD')} ${(o.totalAmount||0).toLocaleString()}</td>
             <td style="text-align:center;">${esc(o.incoterm||'—')}</td>
             <td>${esc(o.portOfDestination||'—')}</td>
             <td style="text-align:center;"><span class="badge badge-status-${(o.status||'').replace(/\s+/g,'-').toLowerCase()}">${esc(o.status)}</span></td>
             <td>${fmtDate(o.createdAt)}</td>
-            <td onclick="event.stopPropagation()">
-              <button class="btn-sm btn-edit" onclick="location.href='/order-edit.html?id=${o._id}'">Edit</button>
+            <td style="white-space:nowrap;" onclick="event.stopPropagation()">
+              <button class="btn-sm btn-preview" onclick="openPreview('${o._id}')">Preview</button>
+              <button class="btn-sm btn-edit"    onclick="location.href='/order-edit.html?id=${o._id}'">Edit</button>
             </td>
           </tr>`;
       }).join('');
-    } catch (err) {
+    } catch(err) {
       tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">${err.message}</td></tr>`;
     }
   }

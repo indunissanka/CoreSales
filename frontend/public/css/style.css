@@ -604,6 +604,90 @@ a { text-decoration: none; color: inherit; }
 .badge-status-issued             { background: #e3f2fd; color: #0d47a1; }
 .badge-status-superseded         { background: #efebe9; color: #4e342e; }
 
+/* ── Preview popup ── */
+.preview-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.45);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.preview-overlay.open { display: flex; }
+
+.preview-panel {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.3);
+  display: flex;
+  flex-direction: column;
+  width: 660px;
+  max-width: 95vw;
+  max-height: 82vh;
+  animation: preview-in .18s ease;
+}
+@keyframes preview-in {
+  from { opacity: 0; transform: scale(.96) translateY(10px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0);    }
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #1a3a5c;
+  color: #fff;
+  font-size: 15px;
+  font-weight: bold;
+  flex-shrink: 0;
+  border-radius: 10px 10px 0 0;
+}
+.preview-header .btn-sm { font-size: 12px; }
+
+.preview-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.preview-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  margin-bottom: 16px;
+}
+.preview-meta-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.preview-label {
+  font-size: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #999;
+  letter-spacing: .5px;
+}
+.preview-section-title {
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #1a3a5c;
+  letter-spacing: .5px;
+  border-bottom: 2px solid #e8f0fe;
+  padding-bottom: 4px;
+  margin: 14px 0 8px;
+}
+
+/* Preview button style */
+.btn-preview {
+  background: #f0f4ff;
+  color: #1a3a5c;
+  border: 1px solid #c5d8f8;
+}
+.btn-preview:hover { background: #dce8fb; }
+
 /* ── Import status bar ── */
 .import-status-bar {
   border-radius: 4px;

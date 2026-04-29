@@ -45,161 +45,169 @@
   </div>
 </div>
 
+<!-- Preview modal -->
+<div class="preview-overlay" id="preview-overlay" onclick="closePreview()">
+  <div class="preview-panel" id="preview-panel" onclick="event.stopPropagation()">
+    <div class="preview-header">
+      <span id="preview-title"></span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm btn-edit" id="preview-edit-btn">Edit</button>
+        <button class="btn-sm" style="background:#e0e0e0;color:#444;" onclick="closePreview()">✕</button>
+      </div>
+    </div>
+    <div class="preview-body" id="preview-body"></div>
+  </div>
+</div>
+
 <script src="/js/api.js"></script>
 <script>
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   if (!user || !localStorage.getItem('token')) location.replace('/index.html');
   document.getElementById('topbar-name').textContent = user.name || user.username;
-
   function logout() { localStorage.clear(); location.replace('/index.html'); }
 
   let allContacts = [];
-
   const CSV_HEADERS = ['company','name','role','email','phone','country','city','notes'];
+  const CHANNEL_COLORS = { WhatsApp:'#25d366', Email:'#1a73e8', Phone:'#ff6d00', 'In-Person':'#9c27b0' };
 
-  function esc(s) {
-    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
 
   function filterContacts() {
     const q = document.getElementById('search-input').value.toLowerCase();
-    const filtered = q
-      ? allContacts.filter(c => (c.company + c.name).toLowerCase().includes(q))
-      : allContacts;
+    const filtered = q ? allContacts.filter(c => (c.company+c.name).toLowerCase().includes(q)) : allContacts;
     renderContacts(filtered);
   }
 
   function renderContacts(contacts) {
     const grid = document.getElementById('contacts-grid');
-    if (!contacts.length) {
-      grid.innerHTML = `<div class="empty-state"><p>No contacts found.</p></div>`;
-      return;
-    }
+    if (!contacts.length) { grid.innerHTML = `<div class="empty-state"><p>No contacts found.</p></div>`; return; }
     grid.innerHTML = contacts.map(c => `
       <div class="report-card" onclick="location.href='/contact-detail.html?id=${c._id}'">
         <div class="week-label">${esc(c.company)}</div>
         <div class="meta">${esc(c.name)}</div>
         <div class="meta" style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-          <span class="badge badge-role">${esc(c.role || 'Other')}</span>
-          <span style="color:#aaa">${esc(c.country || '')}</span>
+          <span class="badge badge-role">${esc(c.role||'Other')}</span>
+          <span style="color:#aaa">${esc(c.country||'')}</span>
         </div>
         ${c.phone ? `<div class="meta" style="margin-top:4px;">📱 ${esc(c.phone)}</div>` : ''}
         <div class="card-actions">
-          <button class="btn-sm btn-edit" onclick="event.stopPropagation();location.href='/contact-detail.html?id=${c._id}'">Edit</button>
-          <button class="btn-sm btn-delete" onclick="event.stopPropagation();deleteContact('${c._id}')">Delete</button>
+          <button class="btn-sm btn-preview" onclick="event.stopPropagation();openPreview('${c._id}')">Preview</button>
+          <button class="btn-sm btn-edit"    onclick="event.stopPropagation();location.href='/contact-detail.html?id=${c._id}'">Edit</button>
+          <button class="btn-sm btn-delete"  onclick="event.stopPropagation();deleteContact('${c._id}')">Delete</button>
         </div>
       </div>
     `).join('');
   }
 
+  function closePreview() {
+    document.getElementById('preview-overlay').classList.remove('open');
+  }
+
+  async function openPreview(id) {
+    document.getElementById('preview-title').textContent = 'Loading…';
+    document.getElementById('preview-body').innerHTML = '<p style="padding:16px;color:#aaa;">Loading…</p>';
+    document.getElementById('preview-overlay').classList.add('open');
+    document.getElementById('preview-edit-btn').onclick = () => location.href = `/contact-detail.html?id=${id}`;
+
+    try {
+      const c = await api.getContact(id);
+      document.getElementById('preview-title').textContent = c.company;
+
+      const logsHtml = (c.commHistory||[]).length
+        ? [...c.commHistory].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,5).map(l => `
+            <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #f0f0f0;align-items:flex-start;">
+              <span style="background:${CHANNEL_COLORS[l.channel]||'#666'};color:#fff;border-radius:3px;padding:1px 7px;font-size:10px;white-space:nowrap;">${esc(l.channel)}</span>
+              <div style="flex:1;font-size:12px;">
+                <div style="color:#888;font-size:11px;margin-bottom:2px;">${l.direction==='Outbound'?'↑':'↓'} ${fmtDate(l.date)}</div>
+                ${esc(l.summary)}
+              </div>
+            </div>`).join('')
+        : '<p style="color:#aaa;font-size:12px;">No communication logs.</p>';
+
+      document.getElementById('preview-body').innerHTML = `
+        <div class="preview-meta-grid">
+          <div><span class="preview-label">Name</span><span>${esc(c.name)}</span></div>
+          <div><span class="preview-label">Role</span><span><span class="badge badge-role">${esc(c.role||'Other')}</span></span></div>
+          <div><span class="preview-label">Email</span><span>${c.email ? `<a href="mailto:${esc(c.email)}" style="color:#2d6a9f;">${esc(c.email)}</a>` : '—'}</span></div>
+          <div><span class="preview-label">Phone</span><span>${esc(c.phone||'—')}</span></div>
+          <div><span class="preview-label">Location</span><span>${esc([c.city,c.country].filter(Boolean).join(', ')||'—')}</span></div>
+          <div><span class="preview-label">Logs</span><span>${(c.commHistory||[]).length}</span></div>
+        </div>
+        ${c.notes ? `<div class="preview-section-title">Notes</div><p style="font-size:13px;">${esc(c.notes)}</p>` : ''}
+        <div class="preview-section-title">Recent Communication</div>
+        ${logsHtml}
+      `;
+    } catch(err) {
+      document.getElementById('preview-body').innerHTML = `<p style="padding:16px;color:#c62828;">${err.message}</p>`;
+    }
+  }
+
   async function deleteContact(id) {
     if (!confirm('Delete this contact?')) return;
-    try {
-      await api.deleteContact(id);
-      allContacts = allContacts.filter(c => c._id !== id);
-      filterContacts();
-    } catch (err) { alert(err.message); }
+    try { await api.deleteContact(id); allContacts = allContacts.filter(c=>c._id!==id); filterContacts(); }
+    catch (err) { alert(err.message); }
   }
 
   /* ── CSV Download ── */
   function csvCell(v) {
-    const s = String(v == null ? '' : v);
-    return s.includes(',') || s.includes('"') || s.includes('\n')
-      ? '"' + s.replace(/"/g, '""') + '"'
-      : s;
+    const s = String(v==null?'':v);
+    return s.includes(',')||s.includes('"')||s.includes('\n') ? '"'+s.replace(/"/g,'""')+'"' : s;
   }
-
   function downloadCSV() {
     if (!allContacts.length) { alert('No contacts to export.'); return; }
     const rows = [CSV_HEADERS];
-    allContacts.forEach(c => {
-      rows.push(CSV_HEADERS.map(h => csvCell(c[h] || '')));
-    });
-    const csv = rows.map(r => r.join(',')).join('\r\n');
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
+    allContacts.forEach(c => rows.push(CSV_HEADERS.map(h => csvCell(c[h]||''))));
+    const csv = rows.map(r=>r.join(',')).join('\r\n');
     const a = document.createElement('a');
-    a.href = url; a.download = 'contacts.csv'; a.click();
-    URL.revokeObjectURL(url);
+    a.href = URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
+    a.download = 'contacts.csv'; a.click();
   }
 
   /* ── CSV Upload ── */
   function parseCSV(text) {
-    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-    return lines.map(line => {
-      const cells = []; let cur = ''; let inQuote = false;
-      for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (ch === '"') {
-          if (inQuote && line[i+1] === '"') { cur += '"'; i++; }
-          else inQuote = !inQuote;
-        } else if (ch === ',' && !inQuote) {
-          cells.push(cur.trim()); cur = '';
-        } else { cur += ch; }
+    return text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').map(line => {
+      const cells=[]; let cur=''; let inQ=false;
+      for(let i=0;i<line.length;i++){
+        const ch=line[i];
+        if(ch==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}
+        else if(ch===','&&!inQ){cells.push(cur.trim());cur='';}
+        else cur+=ch;
       }
-      cells.push(cur.trim());
-      return cells;
-    }).filter(r => r.some(c => c));
+      cells.push(cur.trim()); return cells;
+    }).filter(r=>r.some(c=>c));
   }
-
-  function showImportStatus(msg, isError) {
-    const el = document.getElementById('import-status');
-    el.textContent = msg;
-    el.style.display = msg ? 'block' : 'none';
-    el.style.background = isError ? '#fdecea' : '#e8f5e9';
-    el.style.color      = isError ? '#c62828' : '#2e7d32';
+  function showImportStatus(msg,isError){
+    const el=document.getElementById('import-status');
+    el.textContent=msg; el.style.display=msg?'block':'none';
+    el.style.background=isError?'#fdecea':'#e8f5e9'; el.style.color=isError?'#c62828':'#2e7d32';
   }
-
   async function importCSV(event) {
-    const file = event.target.files[0];
-    event.target.value = '';
-    if (!file) return;
-
-    const text = await file.text();
-    const rows = parseCSV(text);
-    if (!rows.length) { alert('CSV file is empty.'); return; }
-
-    // Find header row — look for a row containing "company" (case-insensitive)
-    const headerIdx = rows.findIndex(r => r.some(c => c.toLowerCase() === 'company'));
-    if (headerIdx === -1) {
-      alert('Could not find header row.\nMake sure the CSV has a "company" column header.\nDownload the template first to see the expected format.');
-      return;
+    const file=event.target.files[0]; event.target.value='';
+    if(!file) return;
+    const rows=parseCSV(await file.text());
+    if(!rows.length){alert('CSV file is empty.');return;}
+    const hi=rows.findIndex(r=>r.some(c=>c.toLowerCase()==='company'));
+    if(hi===-1){alert('Could not find header row. Download a template first.');return;}
+    const headers=rows[hi].map(h=>h.toLowerCase().trim());
+    const dataRows=rows.slice(hi+1).filter(r=>r.some(c=>c));
+    if(!dataRows.length){alert('No data rows found.');return;}
+    if(!confirm(`Import ${dataRows.length} contact(s)?`))return;
+    showImportStatus(`Importing 0 / ${dataRows.length}…`,false);
+    let imported=0,failed=0;
+    for(const row of dataRows){
+      const obj={}; headers.forEach((h,i)=>{if(CSV_HEADERS.includes(h))obj[h]=row[i]||'';});
+      if(!obj.company||!obj.name){failed++;continue;}
+      try{await api.createContact(obj);imported++;showImportStatus(`Importing ${imported} / ${dataRows.length}…`,false);}
+      catch(e){failed++;}
     }
-
-    const headers = rows[headerIdx].map(h => h.toLowerCase().trim());
-    const dataRows = rows.slice(headerIdx + 1).filter(r => r.some(c => c));
-
-    if (!dataRows.length) { alert('No data rows found after the header.'); return; }
-
-    if (!confirm(`Import ${dataRows.length} contact(s) from CSV?\nThis will ADD them to your existing contacts.`)) return;
-
-    showImportStatus(`Importing 0 / ${dataRows.length}…`, false);
-
-    let imported = 0, failed = 0;
-    for (const row of dataRows) {
-      const obj = {};
-      headers.forEach((h, i) => { if (CSV_HEADERS.includes(h)) obj[h] = row[i] || ''; });
-      if (!obj.company || !obj.name) { failed++; continue; }
-      try {
-        await api.createContact(obj);
-        imported++;
-        showImportStatus(`Importing ${imported} / ${dataRows.length}…`, false);
-      } catch (e) { failed++; }
-    }
-
-    const msg = `Import complete: ${imported} added${failed ? `, ${failed} skipped (missing company/name)` : ''}.`;
-    showImportStatus(msg, failed > 0 && imported === 0);
+    showImportStatus(`Import complete: ${imported} added${failed?`, ${failed} skipped`:''}`,failed>0&&imported===0);
     await load();
   }
 
   async function load() {
-    try {
-      allContacts = await api.getContacts();
-      filterContacts();
-    } catch (err) {
-      document.getElementById('contacts-grid').innerHTML =
-        `<div class="empty-state"><p>${err.message}</p></div>`;
-    }
+    try { allContacts=await api.getContacts(); filterContacts(); }
+    catch(err){ document.getElementById('contacts-grid').innerHTML=`<div class="empty-state"><p>${err.message}</p></div>`; }
   }
 
   load();

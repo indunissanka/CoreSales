@@ -44,7 +44,7 @@
   <div id="import-status" style="display:none;" class="import-status-bar"></div>
 
   <div class="report-paper" style="padding:0;overflow:hidden;">
-    <table class="data-table" id="products-table">
+    <table class="data-table">
       <thead>
         <tr>
           <th>Name</th><th>SKU</th><th>Category</th><th>Grade</th>
@@ -56,6 +56,20 @@
   </div>
 </div>
 
+<!-- Preview modal -->
+<div class="preview-overlay" id="preview-overlay" onclick="closePreview()">
+  <div class="preview-panel" id="preview-panel" onclick="event.stopPropagation()">
+    <div class="preview-header">
+      <span id="preview-title"></span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm btn-edit" id="preview-edit-btn">Edit</button>
+        <button class="btn-sm" style="background:#e0e0e0;color:#444;" onclick="closePreview()">✕</button>
+      </div>
+    </div>
+    <div class="preview-body" id="preview-body"></div>
+  </div>
+</div>
+
 <script src="/js/api.js"></script>
 <script>
   const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -64,7 +78,6 @@
   function logout() { localStorage.clear(); location.replace('/index.html'); }
 
   let allProducts = [];
-
   const CSV_HEADERS = ['name','sku','category','grade','casNumber','packagingTypes','unitOfMeasure','basePrice','priceLinkNote','technicalNotes'];
 
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -73,174 +86,119 @@
   function filterProducts() {
     const q   = document.getElementById('search-input').value.toLowerCase();
     const cat = document.getElementById('cat-filter').value;
-    const filtered = allProducts.filter(p =>
-      (!q   || p.name.toLowerCase().includes(q)) &&
-      (!cat || p.category === cat)
-    );
-    renderProducts(filtered);
+    renderProducts(allProducts.filter(p => (!q||p.name.toLowerCase().includes(q)) && (!cat||p.category===cat)));
   }
 
   function renderProducts(products) {
     const tbody = document.getElementById('products-tbody');
-    if (!products.length) {
-      tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">No products found.</td></tr>`;
-      return;
-    }
+    if (!products.length) { tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">No products found.</td></tr>`; return; }
     tbody.innerHTML = products.map(p => `
       <tr>
         <td><strong>${esc(p.name)}</strong></td>
-        <td>${esc(p.sku || '—')}</td>
-        <td>${esc(p.category || '—')}</td>
-        <td>${esc(p.grade || '—')}</td>
+        <td>${esc(p.sku||'—')}</td>
+        <td>${esc(p.category||'—')}</td>
+        <td>${esc(p.grade||'—')}</td>
         <td style="text-align:right;">${p.basePrice ? p.basePrice.toLocaleString() : '—'}</td>
-        <td>${esc(p.unitOfMeasure || 'ton')}</td>
+        <td>${esc(p.unitOfMeasure||'ton')}</td>
         <td>${fmtDate(p.priceLastUpdated)}</td>
-        <td>
-          <button class="btn-sm btn-edit" onclick="location.href='/product-edit.html?id=${p._id}'">Edit</button>
-          <button class="btn-sm btn-delete" onclick="deactivate('${p._id}')">Remove</button>
+        <td style="white-space:nowrap;">
+          <button class="btn-sm btn-preview" onclick="openPreview('${p._id}')">Preview</button>
+          <button class="btn-sm btn-edit"    onclick="location.href='/product-edit.html?id=${p._id}'">Edit</button>
+          <button class="btn-sm btn-delete"  onclick="deactivate('${p._id}')">Remove</button>
         </td>
       </tr>
     `).join('');
   }
 
+  function closePreview() {
+    document.getElementById('preview-overlay').classList.remove('open');
+  }
+
+  async function openPreview(id) {
+    document.getElementById('preview-title').textContent = 'Loading…';
+    document.getElementById('preview-body').innerHTML = '<p style="padding:16px;color:#aaa;">Loading…</p>';
+    document.getElementById('preview-overlay').classList.add('open');
+    document.getElementById('preview-edit-btn').onclick = () => location.href = `/product-edit.html?id=${id}`;
+
+    try {
+      const p = await api.getProduct(id);
+      document.getElementById('preview-title').textContent = p.name;
+
+      document.getElementById('preview-body').innerHTML = `
+        <div class="preview-meta-grid">
+          <div><span class="preview-label">SKU</span><span>${esc(p.sku||'—')}</span></div>
+          <div><span class="preview-label">Category</span><span>${esc(p.category||'—')}</span></div>
+          <div><span class="preview-label">Grade</span><span>${esc(p.grade||'—')}</span></div>
+          <div><span class="preview-label">CAS Number</span><span>${esc(p.casNumber||'—')}</span></div>
+          <div><span class="preview-label">Unit</span><span>${esc(p.unitOfMeasure||'ton')}</span></div>
+          <div><span class="preview-label">Base Price</span><span>${p.basePrice ? 'USD '+p.basePrice.toLocaleString() : '—'}</span></div>
+        </div>
+        ${p.priceLinkNote ? `<div class="preview-section-title">Price Indicator</div><p style="font-size:13px;">${esc(p.priceLinkNote)}</p>` : ''}
+        ${(p.packagingTypes||[]).length ? `<div class="preview-section-title">Packaging</div><p style="font-size:13px;">${p.packagingTypes.map(t=>`<span style="background:#e8f0fe;border-radius:3px;padding:2px 8px;margin-right:6px;font-size:12px;">${esc(t)}</span>`).join('')}</p>` : ''}
+        ${p.technicalNotes ? `<div class="preview-section-title">Technical Notes / Grade Specifications</div><p style="font-size:13px;white-space:pre-wrap;">${esc(p.technicalNotes)}</p>` : ''}
+        <div style="margin-top:12px;font-size:11px;color:#aaa;">Price last updated: ${fmtDate(p.priceLastUpdated)}</div>
+      `;
+    } catch(err) {
+      document.getElementById('preview-body').innerHTML = `<p style="padding:16px;color:#c62828;">${err.message}</p>`;
+    }
+  }
+
   async function deactivate(id) {
     if (!confirm('Remove this product from the catalog?')) return;
-    try {
-      await api.deleteProduct(id);
-      allProducts = allProducts.filter(p => p._id !== id);
-      filterProducts();
-    } catch (err) { alert(err.message); }
+    try { await api.deleteProduct(id); allProducts=allProducts.filter(p=>p._id!==id); filterProducts(); }
+    catch(err) { alert(err.message); }
   }
 
-  /* ── CSV Download ── */
-  function csvCell(v) {
-    const s = String(v == null ? '' : v);
-    return s.includes(',') || s.includes('"') || s.includes('\n')
-      ? '"' + s.replace(/"/g, '""') + '"'
-      : s;
+  /* ── CSV ── */
+  function csvCell(v){const s=String(v==null?'':v);return s.includes(',')||s.includes('"')||s.includes('\n')?'"'+s.replace(/"/g,'""')+'"':s;}
+  function downloadCSV(){
+    if(!allProducts.length){alert('No products to export.');return;}
+    const rows=[CSV_HEADERS];
+    allProducts.forEach(p=>rows.push([csvCell(p.name||''),csvCell(p.sku||''),csvCell(p.category||''),csvCell(p.grade||''),csvCell(p.casNumber||''),csvCell((p.packagingTypes||[]).join('; ')),csvCell(p.unitOfMeasure||'ton'),csvCell(p.basePrice!=null?p.basePrice:''),csvCell(p.priceLinkNote||''),csvCell(p.technicalNotes||'')]));
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(new Blob(['﻿'+rows.map(r=>r.join(',')).join('\r\n')],{type:'text/csv;charset=utf-8;'}));
+    a.download='products.csv';a.click();
   }
-
-  function downloadCSV() {
-    if (!allProducts.length) { alert('No products to export.'); return; }
-    const rows = [CSV_HEADERS];
-    allProducts.forEach(p => {
-      rows.push([
-        csvCell(p.name || ''),
-        csvCell(p.sku || ''),
-        csvCell(p.category || ''),
-        csvCell(p.grade || ''),
-        csvCell(p.casNumber || ''),
-        csvCell((p.packagingTypes || []).join('; ')),
-        csvCell(p.unitOfMeasure || 'ton'),
-        csvCell(p.basePrice != null ? p.basePrice : ''),
-        csvCell(p.priceLinkNote || ''),
-        csvCell(p.technicalNotes || ''),
-      ]);
-    });
-    const csv = rows.map(r => r.join(',')).join('\r\n');
-    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'products.csv'; a.click();
-    URL.revokeObjectURL(url);
+  function parseCSV(text){
+    return text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').map(line=>{
+      const cells=[];let cur='';let inQ=false;
+      for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(inQ&&line[i+1]==='"'){cur+='"';i++;}else inQ=!inQ;}else if(ch===','&&!inQ){cells.push(cur.trim());cur='';}else cur+=ch;}
+      cells.push(cur.trim());return cells;
+    }).filter(r=>r.some(c=>c));
   }
-
-  /* ── CSV Upload ── */
-  function parseCSV(text) {
-    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
-    return lines.map(line => {
-      const cells = []; let cur = ''; let inQuote = false;
-      for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (ch === '"') {
-          if (inQuote && line[i+1] === '"') { cur += '"'; i++; }
-          else inQuote = !inQuote;
-        } else if (ch === ',' && !inQuote) {
-          cells.push(cur.trim()); cur = '';
-        } else { cur += ch; }
-      }
-      cells.push(cur.trim());
-      return cells;
-    }).filter(r => r.some(c => c));
-  }
-
-  function showImportStatus(msg, isError) {
-    const el = document.getElementById('import-status');
-    el.textContent = msg;
-    el.style.display = msg ? 'block' : 'none';
-    el.style.background = isError ? '#fdecea' : '#e8f5e9';
-    el.style.color      = isError ? '#c62828' : '#2e7d32';
-  }
-
-  async function importCSV(event) {
-    const file = event.target.files[0];
-    event.target.value = '';
-    if (!file) return;
-
-    const text = await file.text();
-    const rows = parseCSV(text);
-    if (!rows.length) { alert('CSV file is empty.'); return; }
-
-    // Find header row — look for a row containing "name" (case-insensitive)
-    const headerIdx = rows.findIndex(r => r.some(c => c.toLowerCase() === 'name'));
-    if (headerIdx === -1) {
-      alert('Could not find header row.\nMake sure the CSV has a "name" column header.\nDownload the template first to see the expected format.');
-      return;
+  function showImportStatus(msg,isError){const el=document.getElementById('import-status');el.textContent=msg;el.style.display=msg?'block':'none';el.style.background=isError?'#fdecea':'#e8f5e9';el.style.color=isError?'#c62828':'#2e7d32';}
+  async function importCSV(event){
+    const file=event.target.files[0];event.target.value='';if(!file)return;
+    const rows=parseCSV(await file.text());if(!rows.length){alert('CSV is empty.');return;}
+    const hi=rows.findIndex(r=>r.some(c=>c.toLowerCase()==='name'));
+    if(hi===-1){alert('No "name" header found. Download template first.');return;}
+    const headers=rows[hi].map(h=>h.toLowerCase().trim());
+    const dataRows=rows.slice(hi+1).filter(r=>r.some(c=>c));
+    if(!dataRows.length){alert('No data rows found.');return;}
+    if(!confirm(`Import ${dataRows.length} product(s)?`))return;
+    showImportStatus(`Importing 0 / ${dataRows.length}…`,false);
+    let imported=0,failed=0;
+    const fieldMap={name:'name',sku:'sku',category:'category',grade:'grade',casnumber:'casNumber',unitofmeasure:'unitOfMeasure',pricelinknote:'priceLinkNote',technicalnotes:'technicalNotes'};
+    for(const row of dataRows){
+      const obj={};
+      headers.forEach((h,i)=>{const val=row[i]||'';if(h==='packagingtypes'){obj.packagingTypes=val?val.split(';').map(s=>s.trim()).filter(Boolean):[];}else if(h==='baseprice'){obj.basePrice=val?parseFloat(val):undefined;}else if(fieldMap[h]){obj[fieldMap[h]]=val;}});
+      if(!obj.name){failed++;continue;}
+      try{await api.createProduct(obj);imported++;showImportStatus(`Importing ${imported} / ${dataRows.length}…`,false);}catch(e){failed++;}
     }
-
-    const headers = rows[headerIdx].map(h => h.toLowerCase().trim());
-    const dataRows = rows.slice(headerIdx + 1).filter(r => r.some(c => c));
-
-    if (!dataRows.length) { alert('No data rows found after the header.'); return; }
-
-    if (!confirm(`Import ${dataRows.length} product(s) from CSV?\nThis will ADD them to your existing catalog.`)) return;
-
-    showImportStatus(`Importing 0 / ${dataRows.length}…`, false);
-
-    let imported = 0, failed = 0;
-    for (const row of dataRows) {
-      const obj = {};
-      headers.forEach((h, i) => {
-        const val = row[i] || '';
-        if (h === 'packagingtypes') {
-          obj.packagingTypes = val ? val.split(';').map(s => s.trim()).filter(Boolean) : [];
-        } else if (h === 'baseprice') {
-          obj.basePrice = val ? parseFloat(val) : undefined;
-        } else {
-          // Map lowercase header back to camelCase field
-          const fieldMap = {
-            name:'name', sku:'sku', category:'category', grade:'grade',
-            casnumber:'casNumber', unitofmeasure:'unitOfMeasure',
-            pricelinknote:'priceLinkNote', technicalnotes:'technicalNotes',
-          };
-          if (fieldMap[h]) obj[fieldMap[h]] = val;
-        }
-      });
-      if (!obj.name) { failed++; continue; }
-      try {
-        await api.createProduct(obj);
-        imported++;
-        showImportStatus(`Importing ${imported} / ${dataRows.length}…`, false);
-      } catch (e) { failed++; }
-    }
-
-    const msg = `Import complete: ${imported} added${failed ? `, ${failed} skipped (missing name or duplicate SKU)` : ''}.`;
-    showImportStatus(msg, failed > 0 && imported === 0);
+    showImportStatus(`Import complete: ${imported} added${failed?`, ${failed} skipped`:''}`,failed>0&&imported===0);
     await load();
   }
 
   async function load() {
     try {
       allProducts = await api.getProducts();
-      const cats = [...new Set(allProducts.map(p => p.category).filter(Boolean))].sort();
+      const cats = [...new Set(allProducts.map(p=>p.category).filter(Boolean))].sort();
       const sel = document.getElementById('cat-filter');
-      // Keep existing options, rebuild dynamic ones
-      while (sel.options.length > 1) sel.remove(1);
-      cats.forEach(c => sel.insertAdjacentHTML('beforeend', `<option value="${esc(c)}">${esc(c)}</option>`));
+      while(sel.options.length>1) sel.remove(1);
+      cats.forEach(c=>sel.insertAdjacentHTML('beforeend',`<option value="${esc(c)}">${esc(c)}</option>`));
       filterProducts();
-    } catch (err) {
-      document.getElementById('products-tbody').innerHTML =
-        `<tr><td colspan="8" class="empty-cell">${err.message}</td></tr>`;
+    } catch(err) {
+      document.getElementById('products-tbody').innerHTML=`<tr><td colspan="8" class="empty-cell">${err.message}</td></tr>`;
     }
   }
 
