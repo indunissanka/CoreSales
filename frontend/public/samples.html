@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Samples — CoreSales CRM</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* Modal */
+    .sample-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.45); z-index: 1000;
+      align-items: center; justify-content: center;
+    }
+    .sample-overlay.open { display: flex; }
+    .sample-modal {
+      background: #fff; border-radius: 10px; width: 580px; max-width: 96vw;
+      max-height: 92vh; overflow-y: auto;
+      box-shadow: 0 8px 40px rgba(0,0,0,.25); animation: preview-in .15s ease;
+      display: flex; flex-direction: column;
+    }
+    .sample-modal-head {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 24px; border-bottom: 1px solid #e0e8f0;
+    }
+    .sample-modal-head h3 { margin: 0; font-size: 16px; color: #1a3a5c; }
+    .sample-modal-body { padding: 20px 24px; flex: 1; }
+    .sample-modal-foot {
+      padding: 14px 24px; border-top: 1px solid #e0e8f0;
+      display: flex; justify-content: flex-end; gap: 10px;
+    }
+    .field-group { margin-bottom: 14px; }
+    .field-group label {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600; color: #555;
+      text-transform: uppercase; letter-spacing: .4px; margin-bottom: 5px;
+    }
+    .field-group label svg { opacity: .5; }
+    .field-group input, .field-group select, .field-group textarea {
+      width: 100%; box-sizing: border-box; padding: 8px 11px;
+      border: 1px solid #c8d4e0; border-radius: 5px; font-size: 13px;
+      font-family: inherit; background: #fff;
+    }
+    .field-group input:focus, .field-group select:focus, .field-group textarea:focus {
+      outline: none; border-color: #1a3a5c;
+    }
+    .field-group textarea { resize: vertical; min-height: 80px; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    /* Products list */
+    .products-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+    .product-row { display: flex; gap: 8px; align-items: center; }
+    .product-row select { flex: 1; }
+    .product-row input  { width: 80px; flex-shrink: 0; }
+    .btn-add-product {
+      margin-top: 6px; background: none; border: 1px dashed #aab; color: #667;
+      padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%;
+    }
+    .btn-add-product:hover { background: #f5f8fc; border-color: #1a3a5c; color: #1a3a5c; }
+    .btn-remove-row {
+      background: #ffebee; border: none; color: #c62828; border-radius: 4px;
+      padding: 4px 8px; cursor: pointer; font-size: 13px; flex-shrink: 0;
+    }
+    /* Status badges */
+    .badge-pending    { background: #fff8e1; color: #e65100; }
+    .badge-dispatched { background: #e3f2fd; color: #1565c0; }
+    .badge-delivered  { background: #e8f5e9; color: #2e7d32; }
+    .badge-returned   { background: #fce4ec; color: #880e4f; }
+    .badge-cancelled  { background: #fdecea; color: #c62828; }
+    .btn-primary { background: #1a3a5c; color: #fff; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: 600; }
+    .btn-primary:hover { background: #14304f; }
+    .btn-cancel  { background: #e8ecf0; color: #444; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; font-size: 13px; }
+    .btn-delete  { background: #ffebee; color: #c62828; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 13px; margin-right: auto; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">CoreSales CRM</span>
+  <div class="user-info">
+    <span id="topbar-name"></span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+<nav class="subnav">
+  <a href="/dashboard.html">Reports</a>
+  <a href="/contacts.html">Contacts</a>
+  <a href="/products.html">Products</a>
+  <a href="/orders.html">Orders</a>
+  <a href="/pricing.html">Pricing</a>
+  <a href="/samples.html" class="active">Samples</a>
+  <a href="/lc-tracker.html">Trade Docs</a>
+  <a href="/forecast.html">Forecast</a>
+  <a href="/meetings.html">Meetings</a>
+  <a href="/settings.html">Settings</a>
+</nav>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <h2>Sample Shipments</h2>
+    <button class="btn-new" onclick="openModal()">+ New Sample</button>
+  </div>
+
+  <div class="status-tabs">
+    <button class="status-tab active" onclick="setStatus('')">All</button>
+    <button class="status-tab" onclick="setStatus('Pending')">Pending</button>
+    <button class="status-tab" onclick="setStatus('Dispatched')">Dispatched</button>
+    <button class="status-tab" onclick="setStatus('Delivered')">Delivered</button>
+    <button class="status-tab" onclick="setStatus('Returned')">Returned</button>
+    <button class="status-tab" onclick="setStatus('Cancelled')">Cancelled</button>
+  </div>
+
+  <div class="report-paper" style="padding:0;overflow:hidden;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>Products</th>
+          <th>Courier</th>
+          <th>Waybill No.</th>
+          <th>Status</th>
+          <th>Related Order</th>
+          <th>Date</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="samples-tbody">
+        <tr><td colspan="8" class="empty-cell">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Preview panel -->
+<div class="preview-overlay" id="preview-overlay" onclick="closePreview()">
+  <div class="preview-panel" onclick="event.stopPropagation()">
+    <div class="preview-header">
+      <span id="preview-title">Sample Shipment</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm btn-edit" id="preview-edit-btn">Edit</button>
+        <button class="btn-sm" style="background:#e0e0e0;color:#444;" onclick="closePreview()">✕</button>
+      </div>
+    </div>
+    <div class="preview-body" id="preview-body"></div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="sample-overlay" id="sample-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="sample-modal">
+    <div class="sample-modal-head">
+      <h3 id="modal-title">New Sample Shipment</h3>
+      <button onclick="closeModal()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#888;">×</button>
+    </div>
+    <div class="sample-modal-body">
+
+      <div class="field-row">
+        <div class="field-group">
+          <label>🏢 Company *</label>
+          <select id="f-company"><option value="">Select company…</option></select>
+        </div>
+        <div class="field-group">
+          <label>📦 Products</label>
+          <div class="products-list" id="products-list"></div>
+          <button class="btn-add-product" type="button" onclick="addProductRow()">+ Add Product</button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>📍 Receiving Address</label>
+        <textarea id="f-address" rows="4" placeholder="Full delivery address…"></textarea>
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label>📞 Telephone</label>
+          <input type="text" id="f-telephone" placeholder="e.g. 662-641-4383">
+        </div>
+        <div class="field-group">
+          <label>🧾 Waybill Number</label>
+          <input type="text" id="f-waybill" placeholder="e.g. 870630287016">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label>📄 Related Document</label>
+          <select id="f-order">
+            <option value="">— Select document (optional) —</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>🚚 Courier</label>
+          <select id="f-courier">
+            <option>FedEx</option>
+            <option>DHL</option>
+            <option>UPS</option>
+            <option>TNT</option>
+            <option>SF Express</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label>📶 Status</label>
+        <select id="f-status">
+          <option>Pending</option>
+          <option>Dispatched</option>
+          <option>Delivered</option>
+          <option>Returned</option>
+          <option>Cancelled</option>
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label>≡ Notes</label>
+        <textarea id="f-notes" rows="3" placeholder="Special handling, recipient contact, etc."></textarea>
+      </div>
+
+    </div>
+    <div class="sample-modal-foot">
+      <button class="btn-delete" id="btn-delete" style="display:none;" onclick="deleteSample()">✕ Delete</button>
+      <button class="btn-cancel" onclick="closeModal()">✕ Cancel</button>
+      <button class="btn-primary" onclick="saveSample()">✓ Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || !localStorage.getItem('token')) location.replace('/index.html');
+  document.getElementById('topbar-name').textContent = user.name || user.username;
+  function logout() { localStorage.clear(); location.replace('/index.html'); }
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
+
+  let editingId   = null;
+  let currentStatus = '';
+  let allContacts = [];
+  let allProducts = [];
+  let allOrders   = [];
+
+  function closePreview() {
+    document.getElementById('preview-overlay').classList.remove('open');
+  }
+
+  async function openPreview(id) {
+    document.getElementById('preview-title').textContent = 'Loading…';
+    document.getElementById('preview-body').innerHTML = '<p style="padding:16px;color:#aaa;">Loading…</p>';
+    document.getElementById('preview-overlay').classList.add('open');
+    document.getElementById('preview-edit-btn').onclick = () => { closePreview(); openModal(id); };
+
+    try {
+      const s = await api.getSample(id);
+      const company = s.company?.company || s.company?.name || '—';
+      document.getElementById('preview-title').textContent = `Sample — ${company}`;
+
+      const prodsHtml = (s.products||[]).length
+        ? `<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:4px;">
+            <thead><tr style="background:#d6e4f0;">
+              <th style="padding:5px 8px;text-align:left;">Product</th>
+              <th style="padding:5px 8px;text-align:left;">SKU</th>
+              <th style="padding:5px 8px;text-align:right;">Qty</th>
+            </tr></thead>
+            <tbody>${(s.products||[]).map((p,i) => `
+              <tr style="background:${i%2===0?'#fff':'#f7f9fc'};">
+                <td style="padding:5px 8px;">${esc(p.product?.name||'—')}</td>
+                <td style="padding:5px 8px;color:#888;">${esc(p.product?.sku||'')}</td>
+                <td style="padding:5px 8px;text-align:right;">${p.quantity}</td>
+              </tr>`).join('')}
+            </tbody>
+           </table>`
+        : '<p style="color:#aaa;font-size:12px;">No products.</p>';
+
+      const statusSlug = (s.status||'').toLowerCase();
+
+      document.getElementById('preview-body').innerHTML = `
+        <div class="preview-meta-grid" style="grid-template-columns:1fr 1fr 1fr;">
+          <div><span class="preview-label">Company</span><span>${esc(company)}</span></div>
+          <div><span class="preview-label">Status</span><span><span class="badge badge-${statusSlug}">${esc(s.status)}</span></span></div>
+          <div><span class="preview-label">Courier</span><span>${esc(s.courier||'—')}</span></div>
+          <div><span class="preview-label">Waybill No.</span><span>${trackingLink(s.courier, s.waybillNumber)}</span></div>
+          <div><span class="preview-label">Telephone</span><span>${esc(s.telephone||'—')}</span></div>
+          <div><span class="preview-label">Related Order</span><span>${s.relatedDocument
+            ? `<a href="/order-edit.html?id=${s.relatedDocument._id||s.relatedDocument}" style="color:#2d6a9f;">${esc(s.relatedDocument.orderNo||'Order')} →</a>`
+            : '—'}</span></div>
+          <div><span class="preview-label">Date</span><span>${fmtDate(s.createdAt)}</span></div>
+        </div>
+        ${s.receivingAddress ? `<div class="preview-section-title">Receiving Address</div>
+          <p style="font-size:13px;white-space:pre-line;">${esc(s.receivingAddress)}</p>` : ''}
+        <div class="preview-section-title">Products</div>
+        ${prodsHtml}
+        ${s.notes ? `<div class="preview-section-title">Notes</div>
+          <p style="font-size:13px;white-space:pre-line;">${esc(s.notes)}</p>` : ''}
+      `;
+    } catch (err) {
+      document.getElementById('preview-body').innerHTML = `<p style="padding:16px;color:#c62828;">${err.message}</p>`;
+    }
+  }
+
+  function setStatus(s) {
+    currentStatus = s;
+    document.querySelectorAll('.status-tab').forEach(t =>
+      t.classList.toggle('active', t.textContent === (s || 'All'))
+    );
+    loadSamples();
+  }
+
+  // ── Product rows ──
+  function addProductRow(productId = '', qty = 0.1) {
+    const list = document.getElementById('products-list');
+    const div  = document.createElement('div');
+    div.className = 'product-row';
+    const opts = allProducts.map(p =>
+      `<option value="${p._id}" ${p._id === productId ? 'selected' : ''}>${esc(p.name)}${p.sku?' ('+p.sku+')':''}</option>`
+    ).join('');
+    div.innerHTML = `
+      <select class="prod-select">${opts}</select>
+      <input class="prod-qty" type="number" value="${qty}" min="0" step="0.01" placeholder="Qty">
+      <button class="btn-remove-row" onclick="this.parentElement.remove()">✕</button>`;
+    list.appendChild(div);
+  }
+
+  function getProductRows() {
+    return [...document.querySelectorAll('.product-row')].map(row => ({
+      product:  row.querySelector('.prod-select').value,
+      quantity: parseFloat(row.querySelector('.prod-qty').value) || 0,
+    })).filter(r => r.product);
+  }
+
+  // ── Modal ──
+  function openModal(id) {
+    editingId = id || null;
+    document.getElementById('modal-title').textContent = id ? 'Edit Sample Shipment' : 'New Sample Shipment';
+    document.getElementById('btn-delete').style.display = id ? 'inline-block' : 'none';
+    clearForm();
+    if (id) loadIntoForm(id);
+    document.getElementById('sample-overlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('sample-overlay').classList.remove('open');
+    editingId = null;
+  }
+
+  function clearForm() {
+    document.getElementById('f-company').value   = '';
+    document.getElementById('f-address').value   = '';
+    document.getElementById('f-telephone').value = '';
+    document.getElementById('f-waybill').value   = '';
+    document.getElementById('f-order').value     = '';
+    document.getElementById('f-courier').value   = 'FedEx';
+    document.getElementById('f-status').value    = 'Pending';
+    document.getElementById('f-notes').value     = '';
+    document.getElementById('products-list').innerHTML = '';
+    addProductRow();
+  }
+
+  async function loadIntoForm(id) {
+    try {
+      const s = await api.getSample(id);
+      document.getElementById('f-company').value   = s.company?._id || s.company || '';
+      document.getElementById('f-address').value   = s.receivingAddress || '';
+      document.getElementById('f-telephone').value = s.telephone || '';
+      document.getElementById('f-waybill').value   = s.waybillNumber || '';
+      document.getElementById('f-order').value     = s.relatedDocument?._id || s.relatedDocument || '';
+      document.getElementById('f-courier').value   = s.courier || 'FedEx';
+      document.getElementById('f-status').value    = s.status  || 'Pending';
+      document.getElementById('f-notes').value     = s.notes   || '';
+      document.getElementById('products-list').innerHTML = '';
+      if (s.products && s.products.length) {
+        s.products.forEach(p => addProductRow(p.product?._id || p.product, p.quantity));
+      } else {
+        addProductRow();
+      }
+      // Auto-fill address from contact if empty
+      if (!s.receivingAddress) autofillAddress(s.company?._id || s.company);
+    } catch (err) { alert(err.message); }
+  }
+
+  async function autofillAddress(contactId) {
+    if (!contactId) return;
+    const c = allContacts.find(x => x._id === contactId);
+    if (c && !document.getElementById('f-address').value) {
+      const parts = [c.company, c.city, c.country].filter(Boolean);
+      document.getElementById('f-address').value = parts.join('\n');
+      document.getElementById('f-telephone').value = document.getElementById('f-telephone').value || c.phone || '';
+    }
+  }
+
+  document.getElementById('f-company').addEventListener('change', function() {
+    autofillAddress(this.value);
+  });
+
+  async function saveSample() {
+    const company = document.getElementById('f-company').value;
+    if (!company) { alert('Please select a company.'); return; }
+    const body = {
+      company,
+      receivingAddress: document.getElementById('f-address').value.trim(),
+      telephone:        document.getElementById('f-telephone').value.trim(),
+      waybillNumber:    document.getElementById('f-waybill').value.trim(),
+      relatedDocument:  document.getElementById('f-order').value || undefined,
+      courier:          document.getElementById('f-courier').value,
+      status:           document.getElementById('f-status').value,
+      notes:            document.getElementById('f-notes').value.trim(),
+      products:         getProductRows(),
+    };
+    try {
+      if (editingId) await api.updateSample(editingId, body);
+      else           await api.createSample(body);
+      closeModal();
+      loadSamples();
+    } catch (err) { alert(err.message); }
+  }
+
+  async function deleteSample() {
+    if (!editingId || !confirm('Delete this sample shipment?')) return;
+    try { await api.deleteSample(editingId); closeModal(); loadSamples(); }
+    catch (err) { alert(err.message); }
+  }
+
+  // ── Tracking URLs ──
+  const TRACKING_URLS = {
+    'FedEx':      w => `https://www.fedex.com/fedextrack/?trknbr=${w}`,
+    'DHL':        w => `https://www.dhl.com/en/express/tracking.html?AWB=${w}`,
+    'UPS':        w => `https://www.ups.com/track?tracknum=${w}`,
+    'TNT':        w => `https://www.tnt.com/express/en_gc/site/shipping-tools/tracking.html?searchType=CON&cons=${w}`,
+    'SF Express': w => `https://www.sf-express.com/us/en/dynamic_function/waybill/#search/bill-number/${w}`,
+  };
+
+  function trackingLink(courier, waybill) {
+    if (!waybill) return '—';
+    const fn = TRACKING_URLS[courier];
+    if (!fn) return `<span style="font-family:monospace;">${esc(waybill)}</span>`;
+    return `<a href="${fn(encodeURIComponent(waybill))}" target="_blank" rel="noopener"
+               style="font-family:monospace;color:#2d6a9f;text-decoration:underline;"
+               title="Track on ${esc(courier)}">${esc(waybill)} ↗</a>`;
+  }
+
+  // ── Table ──
+  async function loadSamples() {
+    const tbody = document.getElementById('samples-tbody');
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">Loading…</td></tr>`;
+    try {
+      const samples = await api.getSamples(currentStatus ? { status: currentStatus } : {});
+      if (!samples.length) {
+        tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">No sample shipments found.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = samples.map(s => {
+        const prods = (s.products||[]).map(p => `${p.product?.name||'?'} (${p.quantity})`).join(', ') || '—';
+        const statusSlug = (s.status||'').toLowerCase();
+        return `<tr>
+          <td><strong>${esc(s.company?.company || s.company?.name || '—')}</strong></td>
+          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(prods)}">${esc(prods)}</td>
+          <td>${esc(s.courier||'—')}</td>
+          <td style="font-family:monospace;">${trackingLink(s.courier, s.waybillNumber)}</td>
+          <td><span class="badge badge-${statusSlug}">${esc(s.status)}</span></td>
+          <td>${s.relatedDocument ? `<a href="/order-edit.html?id=${s.relatedDocument._id||s.relatedDocument}" style="color:#2d6a9f;">${esc(s.relatedDocument.orderNo||'Order')}</a>` : '—'}</td>
+          <td>${fmtDate(s.createdAt)}</td>
+          <td style="white-space:nowrap;">
+            <button class="btn-sm btn-preview" onclick="openPreview('${s._id}')">Preview</button>
+            <button class="btn-sm btn-edit"    onclick="openModal('${s._id}')">Edit</button>
+          </td>
+        </tr>`;
+      }).join('');
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">${err.message}</td></tr>`;
+    }
+  }
+
+  // ── Init ──
+  async function init() {
+    try {
+      [allContacts, allProducts, allOrders] = await Promise.all([
+        api.getContacts(), api.getProducts(), api.getOrders(),
+      ]);
+
+      const compSel = document.getElementById('f-company');
+      allContacts.forEach(c => {
+        const o = document.createElement('option');
+        o.value = c._id;
+        o.textContent = c.company || c.name;
+        compSel.appendChild(o);
+      });
+
+      const orderSel = document.getElementById('f-order');
+      allOrders.forEach(o => {
+        const opt = document.createElement('option');
+        opt.value = o._id;
+        opt.textContent = `${o.orderNo} — ${o.contact?.company||''}`;
+        orderSel.appendChild(opt);
+      });
+    } catch (err) { console.error(err); }
+
+    loadSamples();
+  }
+
+  init();
+</script>
+</body>
+</html>

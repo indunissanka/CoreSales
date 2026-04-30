@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing — CoreSales CRM</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .pricing-filters {
+      display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px;
+    }
+    .pricing-filters input, .pricing-filters select {
+      padding: 7px 11px; border: 1px solid #c0c8d4; border-radius: 4px;
+      font-size: 13px; background: #fff;
+    }
+    .pricing-filters input { width: 200px; }
+    .summary-cards {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px; margin-bottom: 20px;
+    }
+    .summary-card {
+      background: #fff; border: 1px solid #d0d8e4; border-radius: 7px;
+      padding: 14px 18px;
+    }
+    .summary-card .sc-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #999; }
+    .summary-card .sc-value { font-size: 20px; font-weight: 700; color: #1a3a5c; margin-top: 4px; }
+    .summary-card .sc-sub   { font-size: 11px; color: #888; margin-top: 2px; }
+    th.sortable { cursor: pointer; user-select: none; }
+    th.sortable:hover { background: #c6d8ec; }
+    th.sort-asc::after  { content: ' ▲'; font-size: 10px; }
+    th.sort-desc::after { content: ' ▼'; font-size: 10px; }
+    .group-header td {
+      background: #1a3a5c; color: #fff; font-weight: 700;
+      font-size: 12px; padding: 6px 10px; letter-spacing: .4px;
+    }
+    .no-items { text-align: center; color: #aaa; padding: 32px; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">CoreSales CRM</span>
+  <div class="user-info">
+    <span id="topbar-name"></span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+<nav class="subnav">
+  <a href="/dashboard.html">Reports</a>
+  <a href="/contacts.html">Contacts</a>
+  <a href="/products.html">Products</a>
+  <a href="/orders.html">Orders</a>
+  <a href="/pricing.html" class="active">Pricing</a>
+  <a href="/lc-tracker.html">Trade Docs</a>
+  <a href="/forecast.html">Forecast</a>
+  <a href="/meetings.html">Meetings</a>
+  <a href="/settings.html">Settings</a>
+</nav>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <h2>Pricing</h2>
+    <button class="btn-back" onclick="downloadCSV()">↓ Download CSV</button>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="summary-cards" id="summary-cards">
+    <div class="summary-card"><div class="sc-label">Total Line Items</div><div class="sc-value" id="sc-count">—</div></div>
+    <div class="summary-card"><div class="sc-label">Total Qty (ton)</div><div class="sc-value" id="sc-qty">—</div></div>
+    <div class="summary-card"><div class="sc-label">Total Value (USD)</div><div class="sc-value" id="sc-value">—</div></div>
+    <div class="summary-card"><div class="sc-label">Avg Unit Price</div><div class="sc-value" id="sc-avg">—</div></div>
+    <div class="summary-card"><div class="sc-label">Companies</div><div class="sc-value" id="sc-companies">—</div></div>
+    <div class="summary-card"><div class="sc-label">Products</div><div class="sc-value" id="sc-products">—</div></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="pricing-filters">
+    <input type="text" id="f-search" placeholder="Search product / company…" oninput="applyFilters()">
+    <select id="f-status" onchange="applyFilters()">
+      <option value="">All Statuses</option>
+      <option>Enquiry</option>
+      <option>Quotation Sent</option>
+      <option>PI Issued</option>
+      <option>LC Opened</option>
+      <option>Shipped</option>
+      <option>Delivered</option>
+      <option>Cancelled</option>
+      <option>Rejected</option>
+    </select>
+    <select id="f-group" onchange="applyFilters()">
+      <option value="">No Grouping</option>
+      <option value="company">Group by Company</option>
+      <option value="product">Group by Product</option>
+      <option value="status">Group by Status</option>
+    </select>
+    <select id="f-currency" onchange="applyFilters()">
+      <option value="">All Currencies</option>
+      <option>USD</option>
+      <option>CNY</option>
+      <option>TWD</option>
+    </select>
+    <input type="date" id="f-date-from" onchange="applyFilters()" title="From date">
+    <input type="date" id="f-date-to"   onchange="applyFilters()" title="To date">
+    <span id="filter-count" style="font-size:12px;color:#888;margin-left:4px;"></span>
+  </div>
+
+  <div class="report-paper" style="padding:0;overflow:auto;">
+    <table class="data-table" id="pricing-table" style="width:100%;">
+      <thead>
+        <tr>
+          <th class="sortable" data-col="company"      onclick="sortBy('company')">Company</th>
+          <th class="sortable" data-col="orderNo"      onclick="sortBy('orderNo')">Order No</th>
+          <th class="sortable" data-col="productName"  onclick="sortBy('productName')">Product</th>
+          <th>SKU</th>
+          <th class="sortable" data-col="quantity"     onclick="sortBy('quantity')" style="text-align:right;">Qty</th>
+          <th>Unit</th>
+          <th class="sortable" data-col="unitPrice"    onclick="sortBy('unitPrice')" style="text-align:right;">Unit Price</th>
+          <th style="text-align:right;">Drums</th>
+          <th style="text-align:right;">Bank Chg</th>
+          <th style="text-align:right;">Shipping</th>
+          <th style="text-align:right;">Commission</th>
+          <th class="sortable" data-col="unitTotal"    onclick="sortBy('unitTotal')" style="text-align:right;">Unit Total</th>
+          <th class="sortable" data-col="lineTotal"    onclick="sortBy('lineTotal')" style="text-align:right;">Line Total</th>
+          <th>Currency</th>
+          <th>Status</th>
+          <th class="sortable" data-col="orderDate"    onclick="sortBy('orderDate')">Date</th>
+        </tr>
+      </thead>
+      <tbody id="pricing-tbody">
+        <tr><td colspan="16" class="no-items">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || !localStorage.getItem('token')) location.replace('/index.html');
+  document.getElementById('topbar-name').textContent = user.name || user.username;
+  function logout() { localStorage.clear(); location.replace('/index.html'); }
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
+  function fmt2(n) { return (n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+  let allRows = [];
+  let sortCol = 'orderDate';
+  let sortDir = -1; // -1 = desc
+
+  function sortBy(col, forceDir) {
+    if (forceDir !== undefined) sortDir = forceDir;
+    else if (sortCol === col) sortDir *= -1;
+    else sortDir = -1;
+    sortCol = col;
+    document.querySelectorAll('th.sortable').forEach(th => {
+      th.classList.remove('sort-asc','sort-desc');
+      if (th.dataset.col === col) th.classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
+    });
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const search    = document.getElementById('f-search').value.toLowerCase();
+    const status    = document.getElementById('f-status').value;
+    const currency  = document.getElementById('f-currency').value;
+    const group     = document.getElementById('f-group').value;
+    const dateFrom  = document.getElementById('f-date-from').value;
+    const dateTo    = document.getElementById('f-date-to').value;
+    const tsFrom    = dateFrom ? new Date(dateFrom).getTime() : null;
+    const tsTo      = dateTo   ? new Date(dateTo + 'T23:59:59').getTime() : null;
+
+    let rows = allRows.filter(r => {
+      if (status   && r.orderStatus !== status)   return false;
+      if (currency && r.currency    !== currency) return false;
+      if (tsFrom && new Date(r.orderDate).getTime() < tsFrom) return false;
+      if (tsTo   && new Date(r.orderDate).getTime() > tsTo)   return false;
+      if (search && !( (r.productName||'').toLowerCase().includes(search) ||
+                       (r.company   ||'').toLowerCase().includes(search)  ||
+                       (r.orderNo   ||'').toLowerCase().includes(search)  ||
+                       (r.sku       ||'').toLowerCase().includes(search)  )) return false;
+      return true;
+    });
+
+    // Sort — dates compared numerically, strings case-insensitively
+    const dateCols = new Set(['orderDate']);
+    rows.sort((a, b) => {
+      let av = a[sortCol], bv = b[sortCol];
+      if (dateCols.has(sortCol)) {
+        av = av ? new Date(av).getTime() : 0;
+        bv = bv ? new Date(bv).getTime() : 0;
+      } else if (typeof av === 'string') {
+        av = av.toLowerCase();
+        bv = (bv || '').toLowerCase();
+      }
+      if (av < bv) return -sortDir;
+      if (av > bv) return  sortDir;
+      return 0;
+    });
+
+    document.getElementById('filter-count').textContent = `${rows.length} line item${rows.length !== 1 ? 's' : ''}`;
+    updateSummary(rows);
+    renderTable(rows, group);
+  }
+
+  function updateSummary(rows) {
+    const totalQty   = rows.reduce((s, r) => s + (r.quantity || 0), 0);
+    const totalValue = rows.reduce((s, r) => s + (r.lineTotal || 0), 0);
+    const avgPrice   = rows.length ? rows.reduce((s, r) => s + (r.unitPrice || 0), 0) / rows.length : 0;
+    const companies  = new Set(rows.map(r => r.company)).size;
+    const products   = new Set(rows.map(r => r.productName)).size;
+    document.getElementById('sc-count').textContent     = rows.length.toLocaleString();
+    document.getElementById('sc-qty').textContent       = totalQty.toLocaleString();
+    document.getElementById('sc-value').textContent     = fmt2(totalValue);
+    document.getElementById('sc-avg').textContent       = fmt2(avgPrice);
+    document.getElementById('sc-companies').textContent = companies;
+    document.getElementById('sc-products').textContent  = products;
+  }
+
+  function rowHtml(r) {
+    const statusSlug = (r.orderStatus||'').replace(/\s+/g,'-').toLowerCase();
+    return `<tr>
+      <td>${esc(r.company)}</td>
+      <td><a href="/order-edit.html?id=${r.orderId}" style="color:#2d6a9f;font-weight:600;">${esc(r.orderNo)}</a></td>
+      <td>${esc(r.productName)}</td>
+      <td style="color:#888;font-size:11px;">${esc(r.sku)}</td>
+      <td style="text-align:right;">${Number(r.quantity).toLocaleString()}</td>
+      <td>${esc(r.unit||'ton')}</td>
+      <td style="text-align:right;">${fmt2(r.unitPrice)}</td>
+      <td style="text-align:right;">${fmt2(r.drumsPrice)}</td>
+      <td style="text-align:right;">${fmt2(r.bankCharge)}</td>
+      <td style="text-align:right;">${fmt2(r.shipping)}</td>
+      <td style="text-align:right;">${fmt2(r.commission)}</td>
+      <td style="text-align:right;font-weight:600;">${fmt2(r.unitTotal)}</td>
+      <td style="text-align:right;font-weight:600;">${fmt2(r.lineTotal)}</td>
+      <td>${esc(r.currency||'USD')}</td>
+      <td><span class="badge badge-status-${statusSlug}">${esc(r.orderStatus)}</span></td>
+      <td>${fmtDate(r.orderDate)}</td>
+    </tr>`;
+  }
+
+  function renderTable(rows, group) {
+    const tbody = document.getElementById('pricing-tbody');
+    if (!rows.length) {
+      tbody.innerHTML = `<tr><td colspan="16" class="no-items">No line items found.</td></tr>`;
+      return;
+    }
+    if (!group) {
+      tbody.innerHTML = rows.map(rowHtml).join('');
+      return;
+    }
+    // Grouped rendering
+    const grouped = {};
+    rows.forEach(r => {
+      const key = group === 'company' ? r.company : group === 'product' ? r.productName : r.orderStatus;
+      (grouped[key] = grouped[key] || []).push(r);
+    });
+    let html = '';
+    Object.keys(grouped).sort().forEach(key => {
+      const grpRows = grouped[key];
+      const grpTotal = grpRows.reduce((s, r) => s + (r.lineTotal || 0), 0);
+      const grpQty   = grpRows.reduce((s, r) => s + (r.quantity  || 0), 0);
+      html += `<tr class="group-header"><td colspan="16">${esc(key)} — ${grpRows.length} item${grpRows.length!==1?'s':''} &nbsp;|&nbsp; Qty: ${grpQty.toLocaleString()} &nbsp;|&nbsp; Total: ${fmt2(grpTotal)}</td></tr>`;
+      html += grpRows.map(rowHtml).join('');
+    });
+    tbody.innerHTML = html;
+  }
+
+  function csvCell(v) {
+    const s = String(v == null ? '' : v);
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  function downloadCSV() {
+    const search   = document.getElementById('f-search').value.toLowerCase();
+    const status   = document.getElementById('f-status').value;
+    const currency = document.getElementById('f-currency').value;
+    const rows = allRows.filter(r => {
+      if (status   && r.orderStatus !== status)   return false;
+      if (currency && r.currency    !== currency) return false;
+      if (search && !((r.productName||'').toLowerCase().includes(search) ||
+                      (r.company   ||'').toLowerCase().includes(search)  ||
+                      (r.orderNo   ||'').toLowerCase().includes(search)  ||
+                      (r.sku       ||'').toLowerCase().includes(search))) return false;
+      return true;
+    });
+
+    const headers = ['Company','Order No','Order Status','Date','Product','SKU','Qty','Unit',
+                     'Unit Price','Drums Price','Bank Charge','Shipping','Commission',
+                     'Unit Total','Line Total','Currency'];
+    const lines = [headers.join(',')];
+    rows.forEach(r => {
+      lines.push([
+        r.company, r.orderNo, r.orderStatus,
+        r.orderDate ? new Date(r.orderDate).toISOString().slice(0,10) : '',
+        r.productName, r.sku, r.quantity, r.unit||'ton',
+        r.unitPrice||0, r.drumsPrice||0, r.bankCharge||0,
+        r.shipping||0, r.commission||0, r.unitTotal||0, r.lineTotal||0, r.currency||'USD',
+      ].map(csvCell).join(','));
+    });
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `pricing_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  async function load() {
+    try {
+      allRows = await api.getLineItems();
+      sortBy('orderDate', -1);
+    } catch (err) {
+      document.getElementById('pricing-tbody').innerHTML = `<tr><td colspan="16" class="no-items">${err.message}</td></tr>`;
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>

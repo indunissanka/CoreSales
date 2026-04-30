@@ -7,7 +7,7 @@ const forecastSchema = new mongoose.Schema({
   quarter:     { type: Number, enum: [1, 2, 3, 4], required: true },
   forecastQty: { type: Number, required: true },
   actualQty:   { type: Number, default: 0 },
-  unit:        { type: String, enum: ['kg', 'ton'], default: 'ton' },
+  unit:        { type: String, enum: ['kg', 'ton'], default: 'kg' },
   notes:       String,
 }, { timestamps: true });
 

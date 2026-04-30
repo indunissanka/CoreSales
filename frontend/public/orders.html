@@ -20,6 +20,8 @@
   <a href="/contacts.html">Contacts</a>
   <a href="/products.html">Products</a>
   <a href="/orders.html" class="active">Orders</a>
+  <a href="/pricing.html">Pricing</a>
+  <a href="/samples.html">Samples</a>
   <a href="/lc-tracker.html">Trade Docs</a>
   <a href="/forecast.html">Forecast</a>
   <a href="/meetings.html">Meetings</a>
@@ -41,6 +43,7 @@
     <button class="status-tab" onclick="setStatus('Shipped')">Shipped</button>
     <button class="status-tab" onclick="setStatus('Delivered')">Delivered</button>
     <button class="status-tab" onclick="setStatus('Cancelled')">Cancelled</button>
+    <button class="status-tab" onclick="setStatus('Rejected')">Rejected</button>
   </div>
 
   <div class="report-paper" style="padding:0;overflow:hidden;">
@@ -105,6 +108,7 @@
     const companySlogan  = cs.companySlogan  || '';
     const sellerAddress  = cs.sellerAddress  || '';
     const logoBase64     = cs.logoBase64     || '';
+    const bankDetails    = cs.bankDetails    || '';
 
     const logoHtml = logoBase64
       ? `<img src="${logoBase64}" alt="${companyName}" style="height:52px;max-width:180px;object-fit:contain;">`
@@ -122,6 +126,7 @@
         <div style="text-align:right;">
           <div style="font-size:18px;font-weight:bold;letter-spacing:2px;color:#1a3a5c;">ORDER SHEET</div>
           <div style="font-size:16px;font-weight:600;color:#333;margin-top:4px;">${title}</div>
+          ${bankDetails ? `<div style="font-size:11px;color:#555;margin-top:10px;white-space:pre-line;line-height:1.5;text-align:right;border-top:1px solid #ddd;padding-top:8px;">${bankDetails}</div>` : ''}
         </div>
       </div>`;
 
@@ -150,6 +155,7 @@
         .badge-status-shipped{background:#e0f2f1;color:#00695c;}
         .badge-status-delivered{background:#e8f5e9;color:#1b5e20;}
         .badge-status-cancelled{background:#ffebee;color:#b71c1c;}
+        .badge-status-rejected{background:#4a0000;color:#fff;}
         @media print{body{padding:12px 16px;}}
       </style></head><body>
       ${headerHtml}
@@ -246,8 +252,14 @@
         <div class="preview-section-title">Line Items</div>
         ${itemsHtml}
         ${shippingHtml}
+        ${o.paymentTerms && o.paymentTerms.length ? `
+          <div class="preview-section-title">Remarks</div>
+          <ol style="margin:0 0 12px 18px;padding:0;font-size:13px;line-height:1.7;">
+            ${o.paymentTerms.map(t => `<li>${esc(t)}</li>`).join('')}
+          </ol>` : ''}
         ${o.orderTerms ? `<div class="preview-section-title">Order Terms</div><p style="font-size:13px;white-space:pre-line;">${esc(o.orderTerms)}</p>` : ''}
         ${o.notes ? `<div class="preview-section-title">Notes</div><p style="font-size:13px;white-space:pre-line;">${esc(o.notes)}</p>` : ''}
+        ${(() => { try { const cs = JSON.parse(localStorage.getItem('companySettings')||'{}'); return cs.bankDetails ? `<div class="preview-section-title">Bank Details</div><p style="font-size:13px;white-space:pre-line;">${esc(cs.bankDetails)}</p>` : ''; } catch(_){return '';} })()}
       `;
     } catch(err) {
       document.getElementById('preview-body').innerHTML = `<p style="padding:16px;color:#c62828;">${err.message}</p>`;

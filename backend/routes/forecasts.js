@@ -2,8 +2,33 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const Forecast = require('../models/Forecast');
+const Order = require('../models/Order');
 
 router.use(auth);
+
+// Returns actual qty sold per product per quarter from real orders
+async function getActualsMap(userId, year) {
+  const startOfYear = new Date(year, 0, 1);
+  const endOfYear   = new Date(year + 1, 0, 1);
+  const orders = await Order.find({
+    createdBy: userId,
+    status: { $nin: ['Cancelled', 'Rejected'] },
+    createdAt: { $gte: startOfYear, $lt: endOfYear },
+  }).populate('items.product', '_id');
+
+  // map: productId_quarter -> total qty
+  const map = {};
+  for (const o of orders) {
+    const month   = new Date(o.createdAt).getMonth(); // 0-11
+    const quarter = Math.floor(month / 3) + 1;        // 1-4
+    for (const item of (o.items || [])) {
+      const pid = String(item.product?._id || item.product);
+      const key = `${pid}_${quarter}`;
+      map[key] = (map[key] || 0) + (item.quantity || 0);
+    }
+  }
+  return map;
+}
 
 router.get('/summary', async (req, res) => {
   try {
@@ -31,12 +56,22 @@ router.get('/', async (req, res) => {
   try {
     const { year, quarter } = req.query;
     const filter = { createdBy: req.userId };
-    if (year) filter.year = Number(year);
+    const yr = year ? Number(year) : new Date().getFullYear();
+    filter.year = yr;
     if (quarter) filter.quarter = Number(quarter);
     const forecasts = await Forecast.find(filter)
       .populate('product', 'name sku unitOfMeasure')
       .sort({ year: 1, quarter: 1 });
-    res.json(forecasts);
+
+    const actuals = await getActualsMap(req.userId, yr);
+    const result = forecasts.map(f => {
+      const pid = String(f.product?._id || f.product);
+      const key = `${pid}_${f.quarter}`;
+      const obj = f.toObject();
+      obj.actualQty = actuals[key] || 0;
+      return obj;
+    });
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

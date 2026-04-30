@@ -20,6 +20,8 @@
   <a href="/contacts.html">Contacts</a>
   <a href="/products.html">Products</a>
   <a href="/orders.html">Orders</a>
+  <a href="/pricing.html">Pricing</a>
+  <a href="/samples.html">Samples</a>
   <a href="/lc-tracker.html">Trade Docs</a>
   <a href="/forecast.html" class="active">Forecast</a>
   <a href="/meetings.html">Meetings</a>
@@ -69,7 +71,7 @@
       </div>
       <div class="form-group"><label>Forecast Qty *</label><input id="add-forecast" type="number" min="0" step="0.1" placeholder="tons"></div>
       <div class="form-group"><label>Unit</label>
-        <select id="add-unit" class="select-input"><option>ton</option><option>kg</option></select>
+        <select id="add-unit" class="select-input"><option>kg</option><option>ton</option></select>
       </div>
       <div class="form-group" style="grid-column:1/-1"><label>Notes</label><input id="add-notes" type="text"></div>
     </div>
@@ -169,11 +171,11 @@
           <td style="text-align:right;">${forecast.toLocaleString()}</td>
           <td style="text-align:right;">${actual.toLocaleString()}</td>
           <td style="text-align:right;color:${varColor};font-weight:bold;">${variance>=0?'+':''}${variance.toLocaleString()}</td>
-          <td style="min-width:100px;">
-            <div style="background:#e0e0e0;border-radius:4px;height:10px;overflow:hidden;">
-              <div style="background:${pct>=100?'#2e7d32':'#1a3a5c'};width:${pct}%;height:100%;"></div>
+          <td style="min-width:120px;">
+            <div style="background:#e0e0e0;border-radius:4px;height:10px;overflow:hidden;width:100px;">
+              <div style="background:${pct>=100?'#2e7d32':'#1a3a5c'};width:${pct}%;height:100%;transition:width .3s;"></div>
             </div>
-            <span style="font-size:10px;color:#777;">${pct}%</span>
+            <span style="font-size:11px;color:#555;">${pct}%</span>
           </td>
           <td><button class="btn-sm btn-edit" onclick="openEdit('${f._id}',${forecast},${actual},'${esc(f.notes||'')}')">Edit</button>
               <button class="btn-sm btn-delete" onclick="deleteForecast('${f._id}')">Del</button></td>

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const orderItemSchema = new mongoose.Schema({
   product:    { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
   quantity:   { type: Number, required: true },
-  unit:       { type: String, enum: ['kg', 'ton'], default: 'ton' },
+  unit:       { type: String, enum: ['kg', 'ton'], default: 'kg' },
   unitPrice:  { type: Number, required: true },
   drumsPrice: { type: Number, default: 0 },
   bankCharge: { type: Number, default: 0 },
@@ -32,7 +32,7 @@ const orderSchema = new mongoose.Schema({
   contact:           { type: mongoose.Schema.Types.ObjectId, ref: 'Contact', required: true },
   status:            {
     type: String,
-    enum: ['Enquiry', 'Quotation Sent', 'PI Issued', 'LC Opened', 'Shipped', 'Delivered', 'Cancelled'],
+    enum: ['Enquiry', 'Quotation Sent', 'PI Issued', 'LC Opened', 'Shipped', 'Delivered', 'Cancelled', 'Rejected'],
     default: 'Enquiry',
   },
   items:             [orderItemSchema],
@@ -46,6 +46,7 @@ const orderSchema = new mongoose.Schema({
   taxRate:           { type: Number, default: 0 },
   bankChargeMethod:  String,
   orderTerms:        String,
+  paymentTerms:      [String],
   notes:             String,
   shippingSchedule:  shippingScheduleSchema,
   proformaInvoice:   { type: mongoose.Schema.Types.ObjectId, ref: 'ProformaInvoice' },

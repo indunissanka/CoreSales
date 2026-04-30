@@ -20,6 +20,8 @@
   <a href="/contacts.html">Contacts</a>
   <a href="/products.html">Products</a>
   <a href="/orders.html" class="active">Orders</a>
+  <a href="/pricing.html">Pricing</a>
+  <a href="/samples.html">Samples</a>
   <a href="/lc-tracker.html">Trade Docs</a>
   <a href="/forecast.html">Forecast</a>
   <a href="/meetings.html">Meetings</a>
@@ -48,7 +50,7 @@
         <div class="form-group"><label>Status</label>
           <select id="f-status" class="select-input">
             <option>Enquiry</option><option>Quotation Sent</option><option>PI Issued</option>
-            <option>LC Opened</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option>
+            <option>LC Opened</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option><option>Rejected</option>
           </select>
         </div>
         <div class="form-group"><label>Currency</label>
@@ -160,6 +162,13 @@
     <div class="form-group">
       <label>≡ Notes / Terms</label>
       <textarea id="f-order-terms" rows="3" placeholder="Payment terms, delivery timelines, or special notes."></textarea>
+    </div>
+    <div class="form-group" style="grid-column:1/-1;">
+      <label style="display:flex;justify-content:space-between;align-items:center;">
+        Remarks
+        <button type="button" class="btn-sm" style="background:#1a3a5c;color:#fff;font-size:11px;padding:3px 10px;" onclick="addTermLine()">+ Add Line</button>
+      </label>
+      <div id="payment-terms-list" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;"></div>
     </div>
   </div>
 
@@ -320,8 +329,32 @@
     calcTotal();
   }
 
-  function addItem() { items.push({ productId:'', qty:1, unit:'ton', unitPrice:0, drumsPrice:0, bankCharge:0, shipping:0, commission:0 }); renderItems(); }
+  function addItem() { items.push({ productId:'', qty:1, unit:'kg', unitPrice:0, drumsPrice:0, bankCharge:0, shipping:0, commission:0 }); renderItems(); }
   function removeItem(idx) { items.splice(idx,1); renderItems(); }
+
+  function addTermLine(val) {
+    const list = document.getElementById('payment-terms-list');
+    const idx  = list.children.length;
+    const row  = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:6px;align-items:center;';
+    row.innerHTML = `
+      <span style="color:#999;font-size:12px;min-width:16px;">${idx+1}.</span>
+      <input type="text" value="${esc(val||'')}" placeholder="e.g. 30% advance, balance before shipment"
+             style="flex:1;padding:5px 8px;border:1px solid #ccc;border-radius:4px;font-size:13px;">
+      <button type="button" onclick="this.parentElement.remove();reindexTerms();"
+              style="background:#ffebee;border:none;color:#c62828;font-size:15px;cursor:pointer;padding:2px 7px;border-radius:4px;">×</button>`;
+    list.appendChild(row);
+  }
+
+  function reindexTerms() {
+    document.querySelectorAll('#payment-terms-list > div').forEach((row, i) => {
+      row.querySelector('span').textContent = (i+1) + '.';
+    });
+  }
+
+  function getTermLines() {
+    return [...document.querySelectorAll('#payment-terms-list input')].map(i => i.value.trim()).filter(Boolean);
+  }
 
   async function saveOrder() {
     const contact = document.getElementById('f-contact').value;
@@ -352,6 +385,7 @@
       taxRate:           parseFloat(document.getElementById('f-taxrate').value)    || 0,
       bankChargeMethod:  document.getElementById('f-bank-method').value,
       orderTerms:        document.getElementById('f-order-terms').value.trim(),
+      paymentTerms:      getTermLines(),
       shippingSchedule: {
         productionDate:   document.getElementById('ss-production-date').value || null,
         bookingDate:      document.getElementById('ss-booking-date').value    || null,
@@ -376,6 +410,19 @@
   }
 
   function generatePI() {
+    // Pre-fill from company settings
+    try {
+      const cs = JSON.parse(localStorage.getItem('companySettings') || '{}');
+      const sellerEl = document.getElementById('pi-seller');
+      const bankEl   = document.getElementById('pi-bank');
+      if (!sellerEl.value && cs.sellerAddress) {
+        const name = cs.companyName || '';
+        sellerEl.value = (name ? name + '\n' : '') + cs.sellerAddress;
+      }
+      if (!bankEl.value && cs.bankDetails) {
+        bankEl.value = cs.bankDetails;
+      }
+    } catch (_) {}
     document.getElementById('pi-modal').style.display = 'flex';
   }
   function closePIModal() {
@@ -443,6 +490,7 @@
         document.getElementById('f-taxrate').value      = order.taxRate           || 0;
         document.getElementById('f-bank-method').value = order.bankChargeMethod  || '';
         document.getElementById('f-order-terms').value = order.orderTerms        || '';
+        (order.paymentTerms || []).forEach(line => addTermLine(line));
         // Populate shipping schedule
         const ss = order.shippingSchedule || {};
         const toDateInput = d => d ? new Date(d).toISOString().split('T')[0] : '';

@@ -121,7 +121,7 @@ a { text-decoration: none; color: inherit; }
 .error-msg.show { display: block; }
 
 /* ── Dashboard ── */
-.page-wrap { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+.page-wrap { max-width: 1600px; margin: 0 auto; padding: 24px 16px; }
 
 .page-header {
   display: flex;
@@ -599,6 +599,7 @@ a { text-decoration: none; color: inherit; }
 .badge-status-shipped            { background: #e8f5e9; color: #2e7d32; }
 .badge-status-delivered          { background: #c8e6c9; color: #1b5e20; }
 .badge-status-cancelled          { background: #fdecea; color: #c62828; }
+.badge-status-rejected           { background: #4a0000; color: #fff; }
 .badge-status-pending            { background: #fff3e0; color: #e65100; }
 .badge-status-opened             { background: #e8f5e9; color: #2e7d32; }
 .badge-status-discrepancy-found  { background: #fce4ec; color: #880e4f; }

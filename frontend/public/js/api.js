@@ -40,6 +40,7 @@ const api = {
   deleteProduct:    (id)        => apiFetch(`/products/${id}`, { method: 'DELETE' }),
 
   // Orders
+  getLineItems:     (params)    => apiFetch('/orders/line-items' + toQS(params)),
   getNextOrderNo:   ()          => apiFetch('/orders/next-number'),
   getOrders:        (params)    => apiFetch('/orders' + toQS(params)),
   getOrder:         (id)        => apiFetch(`/orders/${id}`),
@@ -68,6 +69,13 @@ const api = {
   // Currency
   getCurrencyRates: ()          => apiFetch('/currency/rates'),
   convertCurrency:  (body)      => apiFetch('/currency/convert', { method: 'POST', body: JSON.stringify(body) }),
+
+  // Samples
+  getSamples:       (params)    => apiFetch('/samples' + toQS(params)),
+  getSample:        (id)        => apiFetch(`/samples/${id}`),
+  createSample:     (body)      => apiFetch('/samples',       { method: 'POST',   body: JSON.stringify(body) }),
+  updateSample:     (id, body)  => apiFetch(`/samples/${id}`, { method: 'PUT',    body: JSON.stringify(body) }),
+  deleteSample:     (id)        => apiFetch(`/samples/${id}`, { method: 'DELETE' }),
 
   // Settings
   getSettings:      ()       => apiFetch('/settings'),

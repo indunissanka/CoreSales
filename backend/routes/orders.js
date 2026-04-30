@@ -12,11 +12,58 @@ router.get('/', async (req, res) => {
     const filter = { createdBy: req.userId };
     if (status) filter.status = status;
     if (contactId) filter.contact = contactId;
-    const orders = await Order.find(filter)
+    let orders = await Order.find(filter)
+      .populate('contact', 'company name')
+      .populate('items.product', 'name sku')
+      .sort({ createdAt: -1 });
+    await autoAdvanceStatus(orders);
+    // Re-fetch only if any statuses were updated
+    orders = await Order.find(filter)
       .populate('contact', 'company name')
       .populate('items.product', 'name sku')
       .sort({ createdAt: -1 });
     res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/line-items', async (req, res) => {
+  try {
+    const filter = { createdBy: req.userId };
+    if (req.query.status) filter.status = req.query.status;
+    if (req.query.contactId) filter.contact = req.query.contactId;
+    const orders = await Order.find(filter)
+      .populate('contact', 'company name')
+      .populate('items.product', 'name sku')
+      .sort({ createdAt: -1 });
+    const rows = [];
+    for (const o of orders) {
+      for (const item of o.items) {
+        rows.push({
+          orderId:         o._id,
+          orderNo:         o.orderNo,
+          orderStatus:     o.status,
+          orderDate:       o.createdAt,
+          currency:        o.currency,
+          company:         o.contact?.company || o.contact?.name || '—',
+          contactId:       o.contact?._id,
+          productId:       item.product?._id,
+          productName:     item.product?.name || '—',
+          sku:             item.product?.sku  || '',
+          quantity:        item.quantity,
+          unit:            item.unit,
+          unitPrice:       item.unitPrice,
+          drumsPrice:      item.drumsPrice,
+          bankCharge:      item.bankCharge,
+          shipping:        item.shipping,
+          commission:      item.commission,
+          unitTotal:       item.unitTotal,
+          lineTotal:       item.lineTotal,
+        });
+      }
+    }
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -42,6 +89,29 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Auto-advance order status based on shipping schedule dates.
+// Rules (only advance, never touch Cancelled/Rejected):
+//   ETD passed + status is PI Issued or LC Opened  → Shipped
+//   ETA or deliveryDate passed + status is Shipped → Delivered
+async function autoAdvanceStatus(orders) {
+  const now = new Date();
+  const ops = [];
+  for (const o of orders) {
+    if (['Cancelled', 'Rejected', 'Delivered'].includes(o.status)) continue;
+    const ss = o.shippingSchedule || {};
+    let next = null;
+    if (!next && ss.etd && new Date(ss.etd) <= now && ['PI Issued', 'LC Opened'].includes(o.status)) {
+      next = 'Shipped';
+    }
+    if (!next && o.status === 'Shipped') {
+      const arrived = (ss.eta && new Date(ss.eta) <= now) || (ss.deliveryDate && new Date(ss.deliveryDate) <= now);
+      if (arrived) next = 'Delivered';
+    }
+    if (next) ops.push(Order.updateOne({ _id: o._id }, { status: next }));
+  }
+  if (ops.length) await Promise.all(ops);
+}
 
 function calcItems(rawItems, body) {
   const items = (rawItems || []).map(item => {

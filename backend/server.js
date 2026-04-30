@@ -20,6 +20,7 @@ app.use('/api/forecasts', require('./routes/forecasts'));
 app.use('/api/currency',  require('./routes/currency'));
 app.use('/api/meetings',  require('./routes/meetings'));
 app.use('/api/settings',  require('./routes/settings'));
+app.use('/api/samples',   require('./routes/samples'));
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
