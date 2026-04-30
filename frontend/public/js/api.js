@@ -68,7 +68,53 @@ const api = {
   // Currency
   getCurrencyRates: ()          => apiFetch('/currency/rates'),
   convertCurrency:  (body)      => apiFetch('/currency/convert', { method: 'POST', body: JSON.stringify(body) }),
+
+  // Settings
+  getSettings:      ()       => apiFetch('/settings'),
+  saveSettings:     (body)   => apiFetch('/settings', { method: 'PUT', body: JSON.stringify(body) }),
+
+  // Meetings
+  getMeetings:      (params)    => apiFetch('/meetings' + toQS(params)),
+  getMeeting:       (id)        => apiFetch(`/meetings/${id}`),
+  createMeeting:    (body)      => apiFetch('/meetings',       { method: 'POST',   body: JSON.stringify(body) }),
+  updateMeeting:    (id,body)   => apiFetch(`/meetings/${id}`, { method: 'PUT',    body: JSON.stringify(body) }),
+  deleteMeeting:    (id)        => apiFetch(`/meetings/${id}`, { method: 'DELETE' }),
 };
+
+// Apply company branding to topbar on every page
+(function applyBranding() {
+  function render(s) {
+    const el = document.querySelector('.brand');
+    if (!el || !s) return;
+    const name = s.companyName || 'CoreSales CRM';
+    if (s.logoBase64) {
+      el.innerHTML = `<img src="${s.logoBase64}" alt="${name}" style="height:28px;max-width:140px;object-fit:contain;vertical-align:middle;margin-right:8px;">${name}`;
+    } else {
+      el.textContent = name;
+    }
+    document.title = document.title.replace(/^.*?—/, name + ' —').replace(/^CoreSales CRM$/, name);
+  }
+
+  // Apply cached value immediately (no flash)
+  try {
+    const cached = localStorage.getItem('companySettings');
+    if (cached) render(JSON.parse(cached));
+  } catch (_) {}
+
+  // Refresh from API after login token is available
+  document.addEventListener('DOMContentLoaded', async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    try {
+      const res = await fetch('/api/settings', { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return;
+      const s = await res.json();
+      const cache = { companyName: s.companyName, companySlogan: s.companySlogan, logoBase64: s.logoBase64, sellerAddress: s.sellerAddress, bankDetails: s.bankDetails };
+      localStorage.setItem('companySettings', JSON.stringify(cache));
+      render(cache);
+    } catch (_) {}
+  });
+})();
 
 function toQS(params) {
   if (!params || !Object.keys(params).length) return '';

@@ -22,6 +22,8 @@
   <a href="/orders.html" class="active">Orders</a>
   <a href="/lc-tracker.html">Trade Docs</a>
   <a href="/forecast.html">Forecast</a>
+  <a href="/meetings.html">Meetings</a>
+  <a href="/settings.html">Settings</a>
 </nav>
 
 <div class="page-wrap" style="max-width:1000px;">
@@ -95,22 +97,103 @@
   </div>
 
   <!-- Line items -->
-  <div class="report-paper" style="margin-bottom:24px;">
-    <h3 style="color:#1a3a5c;font-size:14px;margin-bottom:12px;">Line Items</h3>
-    <table class="data-table" id="items-table">
+  <div class="report-paper" style="margin-bottom:0;overflow-x:auto;">
+    <h3 style="color:#1a3a5c;font-size:14px;margin-bottom:4px;">Line Items</h3>
+    <p style="font-size:11px;color:#777;margin-bottom:10px;">Add products, drums, bank charge, shipping, and commission fees.</p>
+    <p style="font-size:11px;color:#999;margin-bottom:8px;">Each row contributes to the subtotal below.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:900px;">
       <thead>
-        <tr><th>Product</th><th>Qty</th><th>Unit</th><th style="text-align:right;">Unit Price</th><th style="text-align:right;">Line Total</th><th></th></tr>
+        <tr style="background:#d6e4f0;">
+          <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:left;color:#1a3a5c;min-width:160px;">Product</th>
+          <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:right;color:#1a3a5c;width:60px;">Qty</th>
+          <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:right;color:#1a3a5c;width:80px;">Unit price</th>
+          <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:right;color:#1a3a5c;width:80px;">Drums price</th>
+          <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:right;color:#1a3a5c;width:80px;">Bank charge</th>
+          <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:right;color:#1a3a5c;width:75px;">Shipping</th>
+          <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:right;color:#1a3a5c;width:80px;">Commission</th>
+          <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:right;color:#1a3a5c;width:80px;">Unit total</th>
+          <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:right;color:#1a3a5c;width:80px;">Line total</th>
+          <th style="padding:7px 4px;border:1px solid #b0bac4;width:30px;"></th>
+        </tr>
       </thead>
       <tbody id="items-tbody"></tbody>
-      <tfoot>
-        <tr>
-          <td colspan="4" style="text-align:right;padding:8px;font-weight:bold;color:#1a3a5c;">Total:</td>
-          <td style="text-align:right;padding:8px;font-weight:bold;font-size:14px;" id="total-display">0.00</td>
-          <td></td>
-        </tr>
-      </tfoot>
     </table>
-    <button class="btn-add-row" style="margin-top:10px;" onclick="addItem()">+ Add Line Item</button>
+    <button class="btn-add-row" style="margin-top:10px;" onclick="addItem()">+ Add another line</button>
+  </div>
+
+  <!-- Summary bar -->
+  <div style="display:flex;align-items:center;gap:0;background:#1a3a5c;color:#fff;padding:12px 20px;margin-bottom:0;flex-wrap:wrap;gap:24px;">
+    <span style="font-size:11px;font-weight:bold;opacity:.7;margin-right:4px;">SUBTOTAL</span>
+    <span style="font-size:16px;font-weight:bold;" id="summary-subtotal">$0</span>
+    <span style="font-size:11px;font-weight:bold;opacity:.7;margin-left:16px;margin-right:4px;">INSPECTION CHARGES</span>
+    <span style="font-size:16px;font-weight:bold;" id="summary-inspection">$0</span>
+    <span style="font-size:11px;font-weight:bold;opacity:.7;margin-left:16px;margin-right:4px;">TAX ESTIMATE</span>
+    <span style="font-size:16px;font-weight:bold;" id="summary-tax">$0</span>
+    <span style="font-size:11px;font-weight:bold;opacity:.7;margin-left:16px;margin-right:4px;">TOTAL</span>
+    <span style="font-size:18px;font-weight:bold;" id="summary-total">$0</span>
+  </div>
+
+  <!-- Extra charge fields -->
+  <div class="report-paper" style="margin-bottom:24px;border-top:none;border-radius:0 0 6px 6px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
+      <div class="form-group">
+        <label>💳 Inspection charges</label>
+        <input id="f-inspection" type="number" value="0" min="0" step="0.01" oninput="calcTotal()">
+      </div>
+      <div class="form-group">
+        <label>$ Tax rate (%)</label>
+        <input id="f-taxrate" type="number" value="0" min="0" step="0.01" oninput="calcTotal()">
+      </div>
+      <div class="form-group">
+        <label>💳 Bank charge method</label>
+        <select id="f-bank-method" class="select-input">
+          <option value="">-- Select option --</option>
+          <option>Wire Transfer (T/T)</option>
+          <option>Letter of Credit (L/C)</option>
+          <option>Cash in Advance</option>
+          <option>Open Account</option>
+          <option>Documentary Collection (D/P)</option>
+          <option>Documentary Collection (D/A)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>≡ Notes / Terms</label>
+      <textarea id="f-order-terms" rows="3" placeholder="Payment terms, delivery timelines, or special notes."></textarea>
+    </div>
+  </div>
+
+  <!-- Shipping Schedule -->
+  <div class="report-paper" style="margin-bottom:24px;">
+    <h3 style="color:#1a3a5c;font-size:14px;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #d6e4f0;">Shipping Schedule</h3>
+    <div class="form-grid-2">
+      <div class="form-group"><label>Production Date</label><input id="ss-production-date" type="date"></div>
+      <div class="form-group"><label>Booking Date</label><input id="ss-booking-date" type="date"></div>
+      <div class="form-group"><label>Cargo Closing Date</label><input id="ss-cargo-closing" type="date"></div>
+      <div class="form-group"><label>ETD (Departure)</label><input id="ss-etd" type="date"></div>
+      <div class="form-group"><label>ETA (Arrival)</label><input id="ss-eta" type="date"></div>
+      <div class="form-group"><label>Delivery Date</label><input id="ss-delivery-date" type="date"></div>
+      <div class="form-group"><label>Carrier</label><input id="ss-carrier" type="text" placeholder="e.g. DHL, Maersk"></div>
+      <div class="form-group"><label>Tracking / B/L Number</label><input id="ss-tracking" type="text" placeholder="Tracking or Bill of Lading number"></div>
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>Tags</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:4px;">
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:normal;cursor:pointer;"><input type="checkbox" class="ss-tag" value="DA"> DA</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:normal;cursor:pointer;"><input type="checkbox" class="ss-tag" value="DP"> DP</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:normal;cursor:pointer;"><input type="checkbox" class="ss-tag" value="EXW"> EXW</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:normal;cursor:pointer;"><input type="checkbox" class="ss-tag" value="Factory Exit"> Factory Exit</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:normal;cursor:pointer;"><input type="checkbox" class="ss-tag" value="L/C"> L/C</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:normal;cursor:pointer;"><input type="checkbox" class="ss-tag" value="FOB"> FOB</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:normal;cursor:pointer;"><input type="checkbox" class="ss-tag" value="CIF"> CIF</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:normal;cursor:pointer;"><input type="checkbox" class="ss-tag" value="CFR"> CFR</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:normal;cursor:pointer;"><input type="checkbox" class="ss-tag" value="Shipped"> Shipped</label>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:normal;cursor:pointer;"><input type="checkbox" class="ss-tag" value="Customs Cleared"> Customs Cleared</label>
+        </div>
+      </div>
+      <div class="form-group" style="grid-column:1/-1;"><label>Shipment Notes</label>
+        <textarea id="ss-notes" rows="3" placeholder="Vessel name, port info, customs details, etc."></textarea>
+      </div>
+    </div>
   </div>
 
   <div id="save-status" class="save-status" style="margin-bottom:8px;"></div>
@@ -176,47 +259,86 @@
     } catch (e) { document.getElementById('conv-result').value = 'Error'; }
   }
 
+  const fmt2 = n => Number(n||0).toLocaleString(undefined, { minimumFractionDigits: 2 });
+  const numInput = (val, idx, field) => `<input type="number" value="${val||0}" min="0" step="0.01" style="width:100%;padding:3px 4px;text-align:right;border:1px solid #ccc;border-radius:3px;font-size:12px;" oninput="items[${idx}].${field}=parseFloat(this.value)||0;calcTotal()">`;
+
   function calcTotal() {
-    const total = items.reduce((s, i) => s + (parseFloat(i.qty||0) * parseFloat(i.unitPrice||0)), 0);
-    document.getElementById('total-display').textContent = total.toLocaleString(undefined, { minimumFractionDigits: 2 });
-    return total;
+    const inspection = parseFloat(document.getElementById('f-inspection').value) || 0;
+    const taxRate    = parseFloat(document.getElementById('f-taxrate').value)    || 0;
+    let subtotal = 0;
+    items.forEach(item => {
+      const unitTotal = (parseFloat(item.unitPrice)||0) + (parseFloat(item.drumsPrice)||0) + (parseFloat(item.bankCharge)||0) + (parseFloat(item.shipping)||0) + (parseFloat(item.commission)||0);
+      item._unitTotal = unitTotal;
+      item._lineTotal = (parseFloat(item.qty)||0) * unitTotal;
+      subtotal += item._lineTotal;
+    });
+    const taxEstimate = subtotal * taxRate / 100;
+    const total = subtotal + inspection + taxEstimate;
+    const cur = document.getElementById('f-currency')?.value || '';
+    const pfx = cur ? cur + ' ' : '$';
+    document.getElementById('summary-subtotal').textContent   = pfx + fmt2(subtotal);
+    document.getElementById('summary-inspection').textContent = pfx + fmt2(inspection);
+    document.getElementById('summary-tax').textContent        = pfx + fmt2(taxEstimate);
+    document.getElementById('summary-total').textContent      = pfx + fmt2(total);
+    // refresh unit/line total cells without full re-render
+    items.forEach((item, idx) => {
+      const ut = document.getElementById(`ut-${idx}`);
+      const lt = document.getElementById(`lt-${idx}`);
+      if (ut) ut.textContent = fmt2(item._unitTotal);
+      if (lt) lt.textContent = fmt2(item._lineTotal);
+    });
+    return { subtotal, total };
   }
 
   function renderItems() {
     const tbody = document.getElementById('items-tbody');
-    if (!items.length) { tbody.innerHTML = `<tr><td colspan="6" class="empty-cell">No items yet. Click "+ Add Line Item".</td></tr>`; calcTotal(); return; }
+    if (!items.length) {
+      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:20px;color:#aaa;font-style:italic;">No items yet. Click "+ Add another line".</td></tr>`;
+      calcTotal(); return;
+    }
     tbody.innerHTML = items.map((item, idx) => `
-      <tr>
-        <td>
-          <select class="select-input" style="width:100%;" onchange="items[${idx}].productId=this.value;items[${idx}].productName=this.options[this.selectedIndex].text;">
-            <option value="">— select product —</option>
+      <tr style="${idx%2===1?'background:#f7f9fc':''}">
+        <td style="padding:4px 6px;border:1px solid #ddd;">
+          <select style="width:100%;padding:3px 4px;border:1px solid #ccc;border-radius:3px;font-size:12px;" onchange="items[${idx}].productId=this.value;">
+            <option value="">-- Select pro…</option>
             ${allProducts.map(p => `<option value="${esc(p._id)}" ${item.productId===p._id?'selected':''}>${esc(p.name)}</option>`).join('')}
           </select>
         </td>
-        <td><input type="number" value="${item.qty||''}" min="0" step="0.001" style="width:80px;padding:4px;" oninput="items[${idx}].qty=this.value;calcTotal()"></td>
-        <td>
-          <select class="select-input" style="width:70px;" onchange="items[${idx}].unit=this.value">
-            <option ${item.unit==='ton'?'selected':''}>ton</option>
-            <option ${item.unit==='kg'?'selected':''}>kg</option>
-          </select>
+        <td style="padding:4px 6px;border:1px solid #ddd;"><input type="number" value="${item.qty||1}" min="0" step="0.001" style="width:100%;padding:3px 4px;text-align:right;border:1px solid #ccc;border-radius:3px;font-size:12px;" oninput="items[${idx}].qty=parseFloat(this.value)||0;calcTotal()"></td>
+        <td style="padding:4px 6px;border:1px solid #ddd;">${numInput(item.unitPrice,  idx,'unitPrice')}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;">${numInput(item.drumsPrice, idx,'drumsPrice')}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;">${numInput(item.bankCharge, idx,'bankCharge')}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;">${numInput(item.shipping,   idx,'shipping')}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;">${numInput(item.commission, idx,'commission')}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd;text-align:right;font-size:12px;background:#f7f9fc;" id="ut-${idx}">${fmt2(item._unitTotal||0)}</td>
+        <td style="padding:4px 8px;border:1px solid #ddd;text-align:right;font-size:12px;background:#f7f9fc;" id="lt-${idx}">${fmt2(item._lineTotal||0)}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;text-align:center;">
+          <button class="btn-del-row" onclick="removeItem(${idx})" style="color:#c62828;">×</button>
         </td>
-        <td><input type="number" value="${item.unitPrice||''}" min="0" step="0.01" style="width:100px;padding:4px;text-align:right;" oninput="items[${idx}].unitPrice=this.value;calcTotal()"></td>
-        <td style="text-align:right;padding:0 8px;">${((item.qty||0)*(item.unitPrice||0)).toLocaleString(undefined,{minimumFractionDigits:2})}</td>
-        <td><button class="btn-del-row" onclick="removeItem(${idx})">×</button></td>
       </tr>
     `).join('');
     calcTotal();
   }
 
-  function addItem() { items.push({ productId:'', qty:'', unit:'ton', unitPrice:'' }); renderItems(); }
+  function addItem() { items.push({ productId:'', qty:1, unit:'ton', unitPrice:0, drumsPrice:0, bankCharge:0, shipping:0, commission:0 }); renderItems(); }
   function removeItem(idx) { items.splice(idx,1); renderItems(); }
 
   async function saveOrder() {
     const contact = document.getElementById('f-contact').value;
     if (!contact) { showStatus('Select a contact.', true); return; }
     const orderItems = items
-      .filter(i => i.productId && i.qty && i.unitPrice)
-      .map(i => ({ product: i.productId, quantity: parseFloat(i.qty), unit: i.unit, unitPrice: parseFloat(i.unitPrice) }));
+      .filter(i => i.productId)
+      .map(i => ({
+        product:    i.productId,
+        quantity:   parseFloat(i.qty)        || 0,
+        unit:       i.unit || 'ton',
+        unitPrice:  parseFloat(i.unitPrice)  || 0,
+        drumsPrice: parseFloat(i.drumsPrice) || 0,
+        bankCharge: parseFloat(i.bankCharge) || 0,
+        shipping:   parseFloat(i.shipping)   || 0,
+        commission: parseFloat(i.commission) || 0,
+      }));
+    const selectedTags = [...document.querySelectorAll('.ss-tag:checked')].map(cb => cb.value);
     const body = {
       contact, items: orderItems,
       orderNo:           document.getElementById('f-order-no').value.trim(),
@@ -226,6 +348,22 @@
       portOfLoading:     document.getElementById('f-pol').value.trim(),
       portOfDestination: document.getElementById('f-pod').value.trim(),
       notes:             document.getElementById('f-notes').value.trim(),
+      inspectionCharges: parseFloat(document.getElementById('f-inspection').value) || 0,
+      taxRate:           parseFloat(document.getElementById('f-taxrate').value)    || 0,
+      bankChargeMethod:  document.getElementById('f-bank-method').value,
+      orderTerms:        document.getElementById('f-order-terms').value.trim(),
+      shippingSchedule: {
+        productionDate:   document.getElementById('ss-production-date').value || null,
+        bookingDate:      document.getElementById('ss-booking-date').value    || null,
+        cargoClosingDate: document.getElementById('ss-cargo-closing').value   || null,
+        etd:              document.getElementById('ss-etd').value             || null,
+        eta:              document.getElementById('ss-eta').value             || null,
+        deliveryDate:     document.getElementById('ss-delivery-date').value   || null,
+        carrier:          document.getElementById('ss-carrier').value.trim(),
+        trackingNumber:   document.getElementById('ss-tracking').value.trim(),
+        tags:             selectedTags,
+        shipmentNotes:    document.getElementById('ss-notes').value.trim(),
+      },
     };
     try {
       const result = orderId ? await api.updateOrder(orderId, body) : await api.createOrder(body);
@@ -292,9 +430,35 @@
         document.getElementById('f-pod').value       = order.portOfDestination || '';
         document.getElementById('f-notes').value     = order.notes     || '';
         items = (order.items || []).map(i => ({
-          productId: i.product?._id || i.product,
-          qty: i.quantity, unit: i.unit, unitPrice: i.unitPrice,
+          productId:  i.product?._id || i.product,
+          qty:        i.quantity,
+          unit:       i.unit,
+          unitPrice:  i.unitPrice  || 0,
+          drumsPrice: i.drumsPrice || 0,
+          bankCharge: i.bankCharge || 0,
+          shipping:   i.shipping   || 0,
+          commission: i.commission || 0,
         }));
+        document.getElementById('f-inspection').value  = order.inspectionCharges || 0;
+        document.getElementById('f-taxrate').value      = order.taxRate           || 0;
+        document.getElementById('f-bank-method').value = order.bankChargeMethod  || '';
+        document.getElementById('f-order-terms').value = order.orderTerms        || '';
+        // Populate shipping schedule
+        const ss = order.shippingSchedule || {};
+        const toDateInput = d => d ? new Date(d).toISOString().split('T')[0] : '';
+        document.getElementById('ss-production-date').value = toDateInput(ss.productionDate);
+        document.getElementById('ss-booking-date').value    = toDateInput(ss.bookingDate);
+        document.getElementById('ss-cargo-closing').value   = toDateInput(ss.cargoClosingDate);
+        document.getElementById('ss-etd').value             = toDateInput(ss.etd);
+        document.getElementById('ss-eta').value             = toDateInput(ss.eta);
+        document.getElementById('ss-delivery-date').value   = toDateInput(ss.deliveryDate);
+        document.getElementById('ss-carrier').value         = ss.carrier       || '';
+        document.getElementById('ss-tracking').value        = ss.trackingNumber|| '';
+        document.getElementById('ss-notes').value           = ss.shipmentNotes || '';
+        (ss.tags || []).forEach(tag => {
+          const cb = document.querySelector(`.ss-tag[value="${CSS.escape(tag)}"]`);
+          if (cb) cb.checked = true;
+        });
         document.getElementById('btn-generate-pi').style.display = '';
         if (order.letterOfCredit) {
           document.getElementById('lc-widget').style.display = 'block';

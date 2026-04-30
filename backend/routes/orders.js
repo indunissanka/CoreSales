@@ -43,15 +43,22 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+function calcItems(rawItems, body) {
+  const items = (rawItems || []).map(item => {
+    const unitTotal = (item.unitPrice || 0) + (item.drumsPrice || 0) + (item.bankCharge || 0) + (item.shipping || 0) + (item.commission || 0);
+    return { ...item, unitTotal, lineTotal: (item.quantity || 0) * unitTotal };
+  });
+  const subtotal    = items.reduce((s, i) => s + i.lineTotal, 0);
+  const taxEstimate = subtotal * ((body.taxRate || 0) / 100);
+  const totalAmount = subtotal + (body.inspectionCharges || 0) + taxEstimate;
+  return { items, subtotalAmount: subtotal, totalAmount };
+}
+
 router.post('/', async (req, res) => {
   try {
     const orderNo = (req.body.orderNo && req.body.orderNo.trim()) || await generateOrderNo();
-    const items = (req.body.items || []).map(item => ({
-      ...item,
-      lineTotal: item.quantity * item.unitPrice,
-    }));
-    const totalAmount = items.reduce((sum, i) => sum + i.lineTotal, 0);
-    const order = new Order({ ...req.body, orderNo, items, totalAmount, createdBy: req.userId });
+    const { items, subtotalAmount, totalAmount } = calcItems(req.body.items, req.body);
+    const order = new Order({ ...req.body, orderNo, items, subtotalAmount, totalAmount, createdBy: req.userId });
     await order.save();
     res.status(201).json(order);
   } catch (err) {
@@ -62,11 +69,10 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     if (req.body.items) {
-      req.body.items = req.body.items.map(item => ({
-        ...item,
-        lineTotal: item.quantity * item.unitPrice,
-      }));
-      req.body.totalAmount = req.body.items.reduce((sum, i) => sum + i.lineTotal, 0);
+      const { items, subtotalAmount, totalAmount } = calcItems(req.body.items, req.body);
+      req.body.items          = items;
+      req.body.subtotalAmount = subtotalAmount;
+      req.body.totalAmount    = totalAmount;
     }
     const order = await Order.findOneAndUpdate(
       { _id: req.params.id, createdBy: req.userId },

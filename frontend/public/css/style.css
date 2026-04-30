@@ -624,9 +624,9 @@ a { text-decoration: none; color: inherit; }
   box-shadow: 0 16px 48px rgba(0,0,0,.3);
   display: flex;
   flex-direction: column;
-  width: 660px;
-  max-width: 95vw;
-  max-height: 82vh;
+  width: 900px;
+  max-width: 96vw;
+  max-height: 88vh;
   animation: preview-in .18s ease;
 }
 @keyframes preview-in {

@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meetings — CoreSales CRM</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css">
+  <style>
+    #calendar { background:#fff; border-radius:6px; padding:16px; border:1px solid #d0d8e4; }
+    .fc .fc-button-primary { background:#1a3a5c; border-color:#1a3a5c; }
+    .fc .fc-button-primary:hover { background:#14304f; border-color:#14304f; }
+    .fc .fc-button-primary:not(:disabled).fc-button-active { background:#0d2137; border-color:#0d2137; }
+    .fc .fc-daygrid-day.fc-day-today { background:#eaf1fb; }
+    .fc .fc-toolbar-title { font-size:16px; font-weight:700; color:#1a3a5c; }
+    .meeting-modal-overlay {
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; align-items:center; justify-content:center;
+    }
+    .meeting-modal-overlay.open { display:flex; }
+    .meeting-modal {
+      background:#fff; border-radius:8px; padding:28px 32px; width:520px; max-width:96vw; max-height:90vh;
+      overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,.22); animation:preview-in .15s ease;
+    }
+    .meeting-modal h3 { margin:0 0 18px; font-size:16px; color:#1a3a5c; text-transform:uppercase; letter-spacing:1px; }
+    .meeting-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; }
+    .meeting-form-grid .full { grid-column:1/-1; }
+    .meeting-form-grid label { font-size:12px; font-weight:600; color:#444; display:block; margin-bottom:3px; }
+    .meeting-form-grid input, .meeting-form-grid select, .meeting-form-grid textarea {
+      width:100%; box-sizing:border-box; padding:7px 10px; border:1px solid #c0c8d4; border-radius:4px; font-size:13px;
+    }
+    .meeting-form-grid textarea { resize:vertical; min-height:64px; }
+    .meeting-modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:20px; }
+    .btn-danger { background:#c62828; color:#fff; border:none; padding:7px 18px; border-radius:4px; cursor:pointer; font-size:13px; }
+    .btn-danger:hover { background:#b71c1c; }
+    .badge-scheduled  { background:#1a3a5c; color:#fff; }
+    .badge-completed  { background:#2e7d32; color:#fff; }
+    .badge-cancelled  { background:#c62828; color:#fff; }
+  </style>
+</head>
+<body>
+
+<div class="topbar no-print">
+  <span class="brand">CoreSales CRM</span>
+  <div class="user-info">
+    <span id="topbar-name"></span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+<nav class="subnav">
+  <a href="/dashboard.html">Reports</a>
+  <a href="/contacts.html">Contacts</a>
+  <a href="/products.html">Products</a>
+  <a href="/orders.html">Orders</a>
+  <a href="/lc-tracker.html">Trade Docs</a>
+  <a href="/forecast.html">Forecast</a>
+  <a href="/meetings.html" class="active">Meetings</a>
+</nav>
+
+<div class="page-wrap">
+  <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;">
+    <h2>Meetings</h2>
+    <button class="btn-save" onclick="openModal()">+ New Meeting</button>
+  </div>
+
+  <div id="calendar" style="margin-bottom:24px;"></div>
+
+  <table class="data-table" id="meetings-table">
+    <thead>
+      <tr>
+        <th>Title</th>
+        <th>Date &amp; Time</th>
+        <th>Type</th>
+        <th>Contact</th>
+        <th>Status</th>
+        <th>Location</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="meetings-tbody"></tbody>
+  </table>
+</div>
+
+<!-- Meeting Modal -->
+<div class="meeting-modal-overlay" id="meeting-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="meeting-modal">
+    <h3 id="modal-title">New Meeting</h3>
+    <form id="meeting-form">
+      <div class="meeting-form-grid">
+        <div class="full">
+          <label>Title *</label>
+          <input type="text" id="f-title" required>
+        </div>
+        <div>
+          <label>Date *</label>
+          <input type="date" id="f-date" required>
+        </div>
+        <div>
+          <label>Time *</label>
+          <input type="time" id="f-time" required>
+        </div>
+        <div>
+          <label>Duration (min)</label>
+          <input type="number" id="f-duration" value="60" min="5" step="5">
+        </div>
+        <div>
+          <label>Type</label>
+          <select id="f-type">
+            <option>Meeting</option>
+            <option>Call</option>
+            <option>Video Call</option>
+            <option>Site Visit</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div>
+          <label>Status</label>
+          <select id="f-status">
+            <option>Scheduled</option>
+            <option>Completed</option>
+            <option>Cancelled</option>
+          </select>
+        </div>
+        <div>
+          <label>Contact</label>
+          <select id="f-contact"><option value="">— None —</option></select>
+        </div>
+        <div>
+          <label>Location</label>
+          <input type="text" id="f-location" placeholder="Office / Zoom / etc.">
+        </div>
+        <div class="full">
+          <label>Notes</label>
+          <textarea id="f-notes"></textarea>
+        </div>
+      </div>
+      <div class="meeting-modal-actions">
+        <button type="button" class="btn-danger" id="btn-delete" style="display:none;" onclick="deleteMeeting()">Delete</button>
+        <button type="button" onclick="closeModal()" style="background:#ccc;color:#333;border:none;padding:7px 18px;border-radius:4px;cursor:pointer;font-size:13px;">Cancel</button>
+        <button type="submit" class="btn-save">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script src="/js/api.js"></script>
+<script>
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || !localStorage.getItem('token')) location.replace('/index.html');
+  document.getElementById('topbar-name').textContent = user.name || user.username;
+  function logout() { localStorage.clear(); location.replace('/index.html'); }
+
+  const STATUS_COLOR = { Scheduled: '#1a3a5c', Completed: '#2e7d32', Cancelled: '#c62828' };
+  let calendar;
+  let allMeetings = [];
+  let editingId = null;
+
+  function fmtDateTime(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  async function loadMeetings() {
+    allMeetings = await api.getMeetings();
+    renderTable();
+    calendar.removeAllEvents();
+    calendar.addEventSource(allMeetings.map(m => ({
+      id: m._id,
+      title: m.title,
+      start: m.date,
+      end: m.duration ? new Date(new Date(m.date).getTime() + m.duration * 60000).toISOString() : undefined,
+      backgroundColor: STATUS_COLOR[m.status] || '#1a3a5c',
+      borderColor: STATUS_COLOR[m.status] || '#1a3a5c',
+      extendedProps: m,
+    })));
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('meetings-tbody');
+    if (!allMeetings.length) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;padding:20px;">No meetings yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = allMeetings.map(m => {
+      const contact = m.contact ? (m.contact.company || m.contact.name || '') : '—';
+      return `<tr>
+        <td><a href="#" onclick="openModal('${m._id}');return false;">${esc(m.title)}</a></td>
+        <td>${fmtDateTime(m.date)}</td>
+        <td>${esc(m.type)}</td>
+        <td>${esc(contact)}</td>
+        <td><span class="badge badge-${(m.status||'scheduled').toLowerCase()}">${esc(m.status)}</span></td>
+        <td>${esc(m.location || '—')}</td>
+        <td><button class="btn-icon" onclick="openModal('${m._id}')">Edit</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  async function openModal(id, prefillDate) {
+    editingId = id || null;
+    document.getElementById('modal-title').textContent = id ? 'Edit Meeting' : 'New Meeting';
+    document.getElementById('btn-delete').style.display = id ? 'inline-block' : 'none';
+    clearForm();
+
+    if (id) {
+      const m = await api.getMeeting(id);
+      const d = new Date(m.date);
+      document.getElementById('f-title').value    = m.title || '';
+      document.getElementById('f-date').value     = d.toISOString().slice(0, 10);
+      document.getElementById('f-time').value     = d.toTimeString().slice(0, 5);
+      document.getElementById('f-duration').value = m.duration || 60;
+      document.getElementById('f-type').value     = m.type || 'Meeting';
+      document.getElementById('f-status').value   = m.status || 'Scheduled';
+      document.getElementById('f-location').value = m.location || '';
+      document.getElementById('f-notes').value    = m.notes || '';
+      if (m.contact) document.getElementById('f-contact').value = m.contact._id || m.contact;
+    } else if (prefillDate) {
+      document.getElementById('f-date').value = prefillDate.slice(0, 10);
+      if (prefillDate.length > 10) document.getElementById('f-time').value = prefillDate.slice(11, 16);
+    }
+
+    document.getElementById('meeting-overlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('meeting-overlay').classList.remove('open');
+    editingId = null;
+  }
+
+  function clearForm() {
+    ['f-title','f-date','f-time','f-location','f-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-duration').value = 60;
+    document.getElementById('f-type').value = 'Meeting';
+    document.getElementById('f-status').value = 'Scheduled';
+    document.getElementById('f-contact').value = '';
+  }
+
+  document.getElementById('meeting-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const dateStr = document.getElementById('f-date').value;
+    const timeStr = document.getElementById('f-time').value || '09:00';
+    const date = new Date(`${dateStr}T${timeStr}`);
+    const body = {
+      title:    document.getElementById('f-title').value.trim(),
+      date:     date.toISOString(),
+      duration: Number(document.getElementById('f-duration').value) || 60,
+      type:     document.getElementById('f-type').value,
+      status:   document.getElementById('f-status').value,
+      contact:  document.getElementById('f-contact').value || undefined,
+      location: document.getElementById('f-location').value.trim() || undefined,
+      notes:    document.getElementById('f-notes').value.trim() || undefined,
+    };
+    try {
+      if (editingId) await api.updateMeeting(editingId, body);
+      else await api.createMeeting(body);
+      closeModal();
+      await loadMeetings();
+    } catch (err) { alert(err.message); }
+  });
+
+  async function deleteMeeting() {
+    if (!editingId || !confirm('Delete this meeting?')) return;
+    try {
+      await api.deleteMeeting(editingId);
+      closeModal();
+      await loadMeetings();
+    } catch (err) { alert(err.message); }
+  }
+
+  async function init() {
+    // Populate contacts dropdown
+    try {
+      const contacts = await api.getContacts();
+      const sel = document.getElementById('f-contact');
+      contacts.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c._id;
+        opt.textContent = c.company || c.name;
+        sel.appendChild(opt);
+      });
+    } catch (_) {}
+
+    const calEl = document.getElementById('calendar');
+    calendar = new FullCalendar.Calendar(calEl, {
+      initialView: 'dayGridMonth',
+      headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek' },
+      height: 520,
+      events: [],
+      dateClick(info) { openModal(null, info.dateStr); },
+      eventClick(info) { openModal(info.event.id); },
+    });
+    calendar.render();
+    await loadMeetings();
+  }
+
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings — CoreSales CRM</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .settings-wrap { max-width: 720px; }
+    .settings-card { background: #fff; border: 1px solid #d0d8e4; border-radius: 8px; padding: 28px 32px; margin-bottom: 24px; }
+    .settings-card h3 { margin: 0 0 20px; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: #1a3a5c; border-bottom: 2px solid #e8f0fe; padding-bottom: 10px; }
+    .settings-row { margin-bottom: 16px; }
+    .settings-row label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .4px; }
+    .settings-row input[type=text], .settings-row textarea {
+      width: 100%; box-sizing: border-box; padding: 9px 12px;
+      border: 1px solid #c0c8d4; border-radius: 5px; font-size: 13px; font-family: inherit;
+      transition: border-color .15s;
+    }
+    .settings-row input[type=text]:focus, .settings-row textarea:focus { outline: none; border-color: #1a3a5c; }
+    .settings-row textarea { resize: vertical; min-height: 80px; }
+
+    /* Logo upload area */
+    .logo-upload-area {
+      border: 2px dashed #c0c8d4; border-radius: 8px; padding: 24px;
+      text-align: center; cursor: pointer; transition: border-color .2s, background .2s;
+      position: relative;
+    }
+    .logo-upload-area:hover { border-color: #1a3a5c; background: #f5f8fc; }
+    .logo-upload-area input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+    .logo-preview { max-height: 80px; max-width: 260px; object-fit: contain; display: block; margin: 0 auto 10px; }
+    .logo-placeholder { color: #aaa; font-size: 13px; }
+    .logo-placeholder span { display: block; font-size: 28px; margin-bottom: 6px; }
+
+    .btn-remove-logo { background: #ffebee; color: #c62828; border: none; padding: 5px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-top: 8px; }
+    .btn-remove-logo:hover { background: #ffcdd2; }
+
+    .save-bar { display: flex; align-items: center; gap: 14px; }
+    .save-toast { font-size: 13px; color: #2e7d32; opacity: 0; transition: opacity .4s; }
+    .save-toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">CoreSales CRM</span>
+  <div class="user-info">
+    <span id="topbar-name"></span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+<nav class="subnav">
+  <a href="/dashboard.html">Reports</a>
+  <a href="/contacts.html">Contacts</a>
+  <a href="/products.html">Products</a>
+  <a href="/orders.html">Orders</a>
+  <a href="/lc-tracker.html">Trade Docs</a>
+  <a href="/forecast.html">Forecast</a>
+  <a href="/meetings.html">Meetings</a>
+  <a href="/settings.html" class="active">Settings</a>
+</nav>
+
+<div class="page-wrap settings-wrap">
+  <div class="page-header">
+    <h2>Settings</h2>
+  </div>
+
+  <!-- Company Identity -->
+  <div class="settings-card">
+    <h3>Company Identity</h3>
+
+    <div class="settings-row">
+      <label>Company Logo</label>
+      <div class="logo-upload-area" id="logo-drop-area">
+        <input type="file" id="logo-input" accept="image/*" onchange="handleLogoFile(this.files[0])">
+        <img id="logo-preview-img" class="logo-preview" style="display:none;" src="" alt="Logo">
+        <div class="logo-placeholder" id="logo-placeholder">
+          <span>🖼</span>
+          Click or drag an image here<br>
+          <small style="color:#bbb;">PNG, JPG, SVG — recommended 300×100 px</small>
+        </div>
+      </div>
+      <div style="text-align:center;">
+        <button class="btn-remove-logo" id="btn-remove-logo" style="display:none;" onclick="removeLogo()">Remove Logo</button>
+      </div>
+    </div>
+
+    <div class="settings-row">
+      <label>Company Name</label>
+      <input type="text" id="f-company-name" placeholder="e.g. Acme Trading Co.">
+    </div>
+    <div class="settings-row">
+      <label>Tagline / Slogan</label>
+      <input type="text" id="f-company-slogan" placeholder="e.g. Quality Chemicals Worldwide">
+    </div>
+  </div>
+
+  <!-- Seller & Bank Info (pre-fills PI documents) -->
+  <div class="settings-card">
+    <h3>Seller Information <span style="font-weight:400;font-size:11px;color:#999;">(used in Proforma Invoices)</span></h3>
+    <div class="settings-row">
+      <label>Seller Address</label>
+      <textarea id="f-seller-address" placeholder="Full address, phone, email…"></textarea>
+    </div>
+    <div class="settings-row">
+      <label>Bank Details</label>
+      <textarea id="f-bank-details" placeholder="Bank name, account number, SWIFT/BIC…"></textarea>
+    </div>
+  </div>
+
+  <div class="save-bar">
+    <button class="btn-save" onclick="save()">Save Settings</button>
+    <span class="save-toast" id="save-toast">Saved successfully</span>
+  </div>
+</div>
+
+<script src="/js/api.js?v=2"></script>
+<script>
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || !localStorage.getItem('token')) location.replace('/index.html');
+  document.getElementById('topbar-name').textContent = user.name || user.username;
+  function logout() { localStorage.clear(); location.replace('/index.html'); }
+
+  // Inline fallback in case api.js is cached without these methods
+  function _settingsFetch(method, body) {
+    const token = localStorage.getItem('token');
+    return fetch('/api/settings', {
+      method,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    }).then(async r => { const d = await r.json().catch(() => ({})); if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`); return d; });
+  }
+  function getSettings()       { return (typeof api !== 'undefined' && api.getSettings)  ? api.getSettings()      : _settingsFetch('GET'); }
+  function saveSettings(body)  { return (typeof api !== 'undefined' && api.saveSettings) ? api.saveSettings(body) : _settingsFetch('PUT', body); }
+
+  let logoBase64 = '';
+
+  function setLogoPreview(dataUrl) {
+    logoBase64 = dataUrl || '';
+    const img = document.getElementById('logo-preview-img');
+    const placeholder = document.getElementById('logo-placeholder');
+    const removeBtn = document.getElementById('btn-remove-logo');
+    if (dataUrl) {
+      img.src = dataUrl;
+      img.style.display = 'block';
+      placeholder.style.display = 'none';
+      removeBtn.style.display = 'inline-block';
+    } else {
+      img.style.display = 'none';
+      placeholder.style.display = 'block';
+      removeBtn.style.display = 'none';
+    }
+  }
+
+  function handleLogoFile(file) {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert('Logo must be under 2 MB.'); return; }
+    const reader = new FileReader();
+    reader.onload = e => setLogoPreview(e.target.result);
+    reader.readAsDataURL(file);
+  }
+
+  function removeLogo() { setLogoPreview(''); }
+
+  // Drag-and-drop
+  const dropArea = document.getElementById('logo-drop-area');
+  dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.style.borderColor = '#1a3a5c'; });
+  dropArea.addEventListener('dragleave', () => { dropArea.style.borderColor = ''; });
+  dropArea.addEventListener('drop', e => {
+    e.preventDefault();
+    dropArea.style.borderColor = '';
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) handleLogoFile(file);
+  });
+
+  async function load() {
+    try {
+      const s = await getSettings();
+      document.getElementById('f-company-name').value    = s.companyName   || '';
+      document.getElementById('f-company-slogan').value  = s.companySlogan || '';
+      document.getElementById('f-seller-address').value  = s.sellerAddress || '';
+      document.getElementById('f-bank-details').value    = s.bankDetails   || '';
+      if (s.logoBase64) setLogoPreview(s.logoBase64);
+    } catch (err) { console.error(err); }
+  }
+
+  async function save() {
+    try {
+      await saveSettings({
+        companyName:   document.getElementById('f-company-name').value.trim(),
+        companySlogan: document.getElementById('f-company-slogan').value.trim(),
+        sellerAddress: document.getElementById('f-seller-address').value.trim(),
+        bankDetails:   document.getElementById('f-bank-details').value.trim(),
+        logoBase64,
+      });
+      // Cache in localStorage for quick access across pages
+      localStorage.setItem('companySettings', JSON.stringify({
+        companyName:   document.getElementById('f-company-name').value.trim(),
+        companySlogan: document.getElementById('f-company-slogan').value.trim(),
+        sellerAddress: document.getElementById('f-seller-address').value.trim(),
+        bankDetails:   document.getElementById('f-bank-details').value.trim(),
+        logoBase64,
+      }));
+      // Re-apply branding on this page immediately
+      if (typeof applyBranding === 'function') applyBranding();
+      else {
+        const el = document.querySelector('.brand');
+        const name = document.getElementById('f-company-name').value.trim() || 'CoreSales CRM';
+        if (el) el.innerHTML = logoBase64
+          ? `<img src="${logoBase64}" alt="${name}" style="height:28px;max-width:140px;object-fit:contain;vertical-align:middle;margin-right:8px;">${name}`
+          : name;
+      }
+      const toast = document.getElementById('save-toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    } catch (err) { alert(err.message); }
+  }
+
+  load();
+</script>
+</body>
+</html>
