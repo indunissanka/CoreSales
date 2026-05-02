@@ -15,6 +15,8 @@ const api = {
   // Auth
   login:         (body)    => apiFetch('/auth/login',    { method: 'POST', body: JSON.stringify(body) }),
   register:      (body)    => apiFetch('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
+  getMe:            ()        => apiFetch('/auth/me'),
+  changePassword:   (body)    => apiFetch('/auth/change-password', { method: 'PUT', body: JSON.stringify(body) }),
 
   // Reports (existing)
   getReports:    ()        => apiFetch('/reports'),
@@ -41,7 +43,8 @@ const api = {
 
   // Orders
   getLineItems:     (params)    => apiFetch('/orders/line-items' + toQS(params)),
-  getNextOrderNo:   ()          => apiFetch('/orders/next-number'),
+  getNextOrderNo:        ()          => apiFetch('/orders/next-number'),
+  getNextQuotationNo:    ()          => apiFetch('/orders/next-quotation-number'),
   getOrders:        (params)    => apiFetch('/orders' + toQS(params)),
   getOrder:         (id)        => apiFetch(`/orders/${id}`),
   createOrder:      (body)      => apiFetch('/orders',       { method: 'POST',   body: JSON.stringify(body) }),
@@ -80,6 +83,17 @@ const api = {
   // Settings
   getSettings:      ()       => apiFetch('/settings'),
   saveSettings:     (body)   => apiFetch('/settings', { method: 'PUT', body: JSON.stringify(body) }),
+
+  // Backup
+  restoreBackup:    (body)   => apiFetch('/backup/import', { method: 'POST', body: JSON.stringify(body) }),
+
+  // Admin
+  getAdminSystem:   ()          => apiFetch('/admin/system'),
+  setAdminSystem:   (body)      => apiFetch('/admin/system',       { method: 'PUT',    body: JSON.stringify(body) }),
+  getAdminUsers:    ()          => apiFetch('/admin/users'),
+  createAdminUser:  (body)      => apiFetch('/admin/users',        { method: 'POST',   body: JSON.stringify(body) }),
+  updateAdminUser:  (id, body)  => apiFetch(`/admin/users/${id}`,  { method: 'PUT',    body: JSON.stringify(body) }),
+  deleteAdminUser:  (id)        => apiFetch(`/admin/users/${id}`,  { method: 'DELETE' }),
 
   // Meetings
   getMeetings:      (params)    => apiFetch('/meetings' + toQS(params)),

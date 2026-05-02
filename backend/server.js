@@ -7,7 +7,7 @@ const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/coresales';
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 app.use('/api/auth',      require('./routes/auth'));
 app.use('/api/reports',   require('./routes/reports'));
@@ -21,14 +21,23 @@ app.use('/api/currency',  require('./routes/currency'));
 app.use('/api/meetings',  require('./routes/meetings'));
 app.use('/api/settings',  require('./routes/settings'));
 app.use('/api/samples',   require('./routes/samples'));
+app.use('/api/backup',    require('./routes/backup'));
+app.use('/api/admin',     require('./routes/admin'));
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 let retries = 5;
 const connect = () => {
   mongoose.connect(MONGODB_URI)
-    .then(() => {
+    .then(async () => {
       console.log('Connected to MongoDB');
+      // Promote earliest user to admin if no admins exist
+      const User = require('./models/User');
+      const hasAdmin = await User.exists({ role: 'admin' });
+      if (!hasAdmin) {
+        const first = await User.findOne().sort({ createdAt: 1 });
+        if (first) { first.role = 'admin'; await first.save(); console.log(`Promoted ${first.username} to admin`); }
+      }
       app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
     })
     .catch(err => {

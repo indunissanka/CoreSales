@@ -6,7 +6,9 @@ const settingsSchema = new mongoose.Schema({
   companySlogan: { type: String, default: '' },
   sellerAddress: { type: String, default: '' },
   bankDetails:   { type: String, default: '' },
-  logoBase64:    { type: String, default: '' },
+  logoBase64:        { type: String, default: '' },
+  orderNoPrefix:     { type: String, default: 'TC-M' },
+  quotationNoPrefix: { type: String, default: 'QT-M' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Settings', settingsSchema);

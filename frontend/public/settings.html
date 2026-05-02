@@ -49,14 +49,14 @@
   </div>
 </div>
 <nav class="subnav">
-  <a href="/dashboard.html">Reports</a>
   <a href="/contacts.html">Contacts</a>
-  <a href="/products.html">Products</a>
   <a href="/orders.html">Orders</a>
+  <a href="/products.html">Products</a>
   <a href="/pricing.html">Pricing</a>
   <a href="/samples.html">Samples</a>
   <a href="/lc-tracker.html">Trade Docs</a>
   <a href="/forecast.html">Forecast</a>
+  <a href="/dashboard.html">Reports</a>
   <a href="/meetings.html">Meetings</a>
   <a href="/settings.html" class="active">Settings</a>
 </nav>
@@ -109,9 +109,113 @@
     </div>
   </div>
 
+  <!-- Numbering Format -->
+  <div class="settings-card">
+    <h3>Numbering Format</h3>
+    <p style="font-size:12px;color:#888;margin:0 0 20px;">Set the prefix for auto-generated numbers. The suffix is always <code style="background:#f0f4f8;padding:1px 5px;border-radius:3px;">YYYYMMDD + Letter</code> (e.g. <span id="num-example-suffix">20260501A</span>).</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div class="settings-row" style="margin:0;">
+        <label>Order No Prefix</label>
+        <input type="text" id="f-order-prefix" placeholder="TC-M" oninput="updateNumberPreviews()">
+        <div style="font-size:11px;color:#2d6a9f;margin-top:5px;">Preview: <strong id="prev-order-no">TC-M20260501A</strong></div>
+      </div>
+      <div class="settings-row" style="margin:0;">
+        <label>Quotation No Prefix</label>
+        <input type="text" id="f-quotation-prefix" placeholder="QT-M" oninput="updateNumberPreviews()">
+        <div style="font-size:11px;color:#2d6a9f;margin-top:5px;">Preview: <strong id="prev-quotation-no">QT-M20260501A</strong></div>
+      </div>
+    </div>
+  </div>
+
   <div class="save-bar">
     <button class="btn-save" onclick="save()">Save Settings</button>
     <span class="save-toast" id="save-toast">Saved successfully</span>
+  </div>
+
+  <!-- Admin Panel (admin only) -->
+  <div class="settings-card" id="admin-card" style="display:none;margin-top:32px;">
+    <h3>User Management <span style="font-weight:400;font-size:11px;color:#e74c3c;">Admin Only</span></h3>
+
+    <!-- Registration toggle -->
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid #eef2f7;margin-bottom:20px;">
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:#333;">Allow new registrations</div>
+        <div style="font-size:12px;color:#888;margin-top:2px;">When off, the Register tab is hidden and no new accounts can be created via the login page.</div>
+      </div>
+      <label style="position:relative;display:inline-block;width:46px;height:24px;flex-shrink:0;">
+        <input type="checkbox" id="reg-toggle" onchange="toggleRegistration(this.checked)" style="opacity:0;width:0;height:0;">
+        <span id="reg-slider" style="position:absolute;cursor:pointer;inset:0;background:#ccc;border-radius:24px;transition:.3s;">
+          <span style="position:absolute;content:'';height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;display:block;" id="reg-knob"></span>
+        </span>
+      </label>
+    </div>
+
+    <!-- User list -->
+    <div style="font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;">All Users</div>
+    <div style="overflow-x:auto;margin-bottom:20px;">
+      <table class="data-table" id="admin-users-table" style="width:100%;font-size:13px;">
+        <thead><tr>
+          <th>Name</th><th>Username</th><th>Area</th><th>Role</th><th>Status</th><th>Created</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="admin-users-tbody"><tr><td colspan="7" class="empty-cell">Loading…</td></tr></tbody>
+      </table>
+    </div>
+
+    <!-- Create user form -->
+    <div style="font-size:12px;font-weight:600;color:#555;text-transform:uppercase;letter-spacing:.4px;margin-bottom:12px;">Create New User</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="settings-row" style="margin:0;"><label>Full Name *</label><input type="text" id="nu-name" placeholder="Full name"></div>
+      <div class="settings-row" style="margin:0;"><label>Username *</label><input type="text" id="nu-username" placeholder="username"></div>
+      <div class="settings-row" style="margin:0;"><label>Password *</label><input type="password" id="nu-password" placeholder="Password"></div>
+      <div class="settings-row" style="margin:0;"><label>Area / Region</label><input type="text" id="nu-area" placeholder="e.g. North Region"></div>
+      <div class="settings-row" style="margin:0;"><label>Role</label>
+        <select id="nu-role" class="select-input" style="width:100%;padding:9px 12px;border:1px solid #c0c8d4;border-radius:5px;font-size:13px;">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:14px;display:flex;align-items:center;gap:12px;">
+      <button class="btn-save" onclick="createUser()">Create User</button>
+      <span id="admin-status" style="font-size:13px;"></span>
+    </div>
+  </div>
+
+  <!-- Change Password -->
+  <div class="settings-card" style="margin-top:32px;">
+    <h3>Change Password</h3>
+    <div style="max-width:360px;">
+      <div class="settings-row">
+        <label>Current Password</label>
+        <input type="password" id="pw-current" placeholder="Enter current password" autocomplete="current-password">
+      </div>
+      <div class="settings-row">
+        <label>New Password</label>
+        <input type="password" id="pw-new" placeholder="Min 6 characters" autocomplete="new-password">
+      </div>
+      <div class="settings-row">
+        <label>Confirm New Password</label>
+        <input type="password" id="pw-confirm" placeholder="Repeat new password" autocomplete="new-password">
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <button class="btn-save" onclick="changePassword()">Update Password</button>
+        <span id="pw-status" style="font-size:13px;"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Backup -->
+  <div class="settings-card" style="margin-top:32px;">
+    <h3>Data Backup</h3>
+    <p style="font-size:13px;color:#555;margin:0 0 20px;">Download a full JSON backup of all your CRM data (contacts, orders, products, invoices, and more), or restore from a previous backup file.</p>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <button class="btn-save" onclick="downloadBackup()">↓ Download Backup</button>
+      <label class="btn-back" style="cursor:pointer;margin:0;">
+        ↑ Restore from Backup
+        <input type="file" id="backup-upload" accept=".json" style="display:none;" onchange="restoreBackup(event)">
+      </label>
+    </div>
+    <div id="backup-status" style="display:none;margin-top:14px;padding:10px 14px;border-radius:5px;font-size:13px;"></div>
   </div>
 </div>
 
@@ -174,25 +278,219 @@
     if (file && file.type.startsWith('image/')) handleLogoFile(file);
   });
 
+  /* ── Admin ── */
+  function setToggleUI(on) {
+    const slider = document.getElementById('reg-slider');
+    const knob   = document.getElementById('reg-knob');
+    document.getElementById('reg-toggle').checked = on;
+    slider.style.background = on ? '#2e7d32' : '#ccc';
+    knob.style.transform = on ? 'translateX(22px)' : 'translateX(0)';
+  }
+
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—'; }
+
+  function renderAdminUsers(users) {
+    const tbody = document.getElementById('admin-users-tbody');
+    const me = user.id;
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td>${esc(u.name)}</td>
+        <td style="color:#888;">${esc(u.username)}</td>
+        <td>${esc(u.area||'—')}</td>
+        <td><span class="badge" style="background:${u.role==='admin'?'#fff8e1':'#e8f0fe'};color:${u.role==='admin'?'#e65100':'#1a3a5c'};">${u.role}</span></td>
+        <td>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;">
+            <input type="checkbox" ${u.isActive?'checked':''} onchange="toggleUserActive('${u._id}',this.checked)" ${u._id===me?'disabled':''}>
+            ${u.isActive?'Active':'Disabled'}
+          </label>
+        </td>
+        <td style="font-size:12px;color:#aaa;">${fmtDate(u.createdAt)}</td>
+        <td style="white-space:nowrap;display:flex;gap:6px;">
+          <button class="btn-sm" style="background:#e8f0fe;color:#1a3a5c;" onclick="adminResetPassword('${u._id}','${esc(u.name)}')">Reset PW</button>
+          ${u._id===me ? '' : `<button class="btn-sm" style="background:#ffebee;color:#c62828;" onclick="deleteUser('${u._id}','${esc(u.name)}')">Delete</button>`}
+        </td>
+      </tr>`).join('');
+  }
+
+  async function loadAdminPanel() {
+    if (user.role !== 'admin') return;
+    document.getElementById('admin-card').style.display = '';
+    try {
+      const [sys, users] = await Promise.all([api.getAdminSystem(), api.getAdminUsers()]);
+      setToggleUI(sys.registrationOpen);
+      renderAdminUsers(users);
+    } catch (err) { console.error(err); }
+  }
+
+  async function toggleRegistration(on) {
+    try {
+      const sys = await api.setAdminSystem({ registrationOpen: on });
+      setToggleUI(sys.registrationOpen);
+    } catch (err) { alert(err.message); setToggleUI(!on); }
+  }
+
+  async function toggleUserActive(id, active) {
+    try {
+      await api.updateAdminUser(id, { isActive: active });
+      const users = await api.getAdminUsers();
+      renderAdminUsers(users);
+    } catch (err) { alert(err.message); }
+  }
+
+  async function deleteUser(id, name) {
+    if (!confirm(`Delete user "${name}"? This cannot be undone.`)) return;
+    try {
+      await api.deleteAdminUser(id);
+      const users = await api.getAdminUsers();
+      renderAdminUsers(users);
+    } catch (err) { alert(err.message); }
+  }
+
+  async function adminResetPassword(id, name) {
+    const newPw = prompt(`Set new password for "${name}":\n(min 6 characters)`);
+    if (newPw === null) return;
+    if (newPw.length < 6) { alert('Password must be at least 6 characters.'); return; }
+    try {
+      await api.updateAdminUser(id, { password: newPw });
+      const statusEl = document.getElementById('admin-status');
+      statusEl.style.color = '#2e7d32';
+      statusEl.textContent = `Password reset for "${name}".`;
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    } catch (err) { alert(err.message); }
+  }
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  async function createUser() {
+    const name     = document.getElementById('nu-name').value.trim();
+    const username = document.getElementById('nu-username').value.trim();
+    const password = document.getElementById('nu-password').value;
+    const area     = document.getElementById('nu-area').value.trim();
+    const role     = document.getElementById('nu-role').value;
+    const statusEl = document.getElementById('admin-status');
+    if (!name || !username || !password) { statusEl.style.color='#c62828'; statusEl.textContent='Name, username and password are required.'; return; }
+    statusEl.style.color='#888'; statusEl.textContent='Creating…';
+    try {
+      await api.createAdminUser({ name, username, password, area, role });
+      document.getElementById('nu-name').value = '';
+      document.getElementById('nu-username').value = '';
+      document.getElementById('nu-password').value = '';
+      document.getElementById('nu-area').value = '';
+      statusEl.style.color='#2e7d32'; statusEl.textContent=`User "${username}" created.`;
+      const users = await api.getAdminUsers();
+      renderAdminUsers(users);
+    } catch (err) { statusEl.style.color='#c62828'; statusEl.textContent=err.message; }
+  }
+
+  function updateNumberPreviews() {
+    const now  = new Date();
+    const yyyy = now.getFullYear();
+    const mm   = String(now.getMonth() + 1).padStart(2, '0');
+    const dd   = String(now.getDate()).padStart(2, '0');
+    const suffix = `${yyyy}${mm}${dd}A`;
+    document.getElementById('num-example-suffix').textContent = suffix;
+    const oPfx = document.getElementById('f-order-prefix').value     || 'TC-M';
+    const qPfx = document.getElementById('f-quotation-prefix').value || 'QT-M';
+    document.getElementById('prev-order-no').textContent     = oPfx + suffix;
+    document.getElementById('prev-quotation-no').textContent = qPfx + suffix;
+  }
+
+  async function changePassword() {
+    const current = document.getElementById('pw-current').value;
+    const newPw   = document.getElementById('pw-new').value;
+    const confirm = document.getElementById('pw-confirm').value;
+    const statusEl = document.getElementById('pw-status');
+    statusEl.style.color = '#c62828';
+    if (!current || !newPw || !confirm) { statusEl.textContent = 'All fields are required.'; return; }
+    if (newPw.length < 6) { statusEl.textContent = 'New password must be at least 6 characters.'; return; }
+    if (newPw !== confirm) { statusEl.textContent = 'Passwords do not match.'; return; }
+    statusEl.style.color = '#888'; statusEl.textContent = 'Updating…';
+    try {
+      await api.changePassword({ currentPassword: current, newPassword: newPw });
+      document.getElementById('pw-current').value = '';
+      document.getElementById('pw-new').value = '';
+      document.getElementById('pw-confirm').value = '';
+      statusEl.style.color = '#2e7d32'; statusEl.textContent = 'Password updated successfully.';
+      setTimeout(() => { statusEl.textContent = ''; }, 3000);
+    } catch (err) { statusEl.style.color = '#c62828'; statusEl.textContent = err.message; }
+  }
+
+  function showBackupStatus(msg, isError) {
+    const el = document.getElementById('backup-status');
+    el.textContent = msg;
+    el.style.display = msg ? 'block' : 'none';
+    el.style.background = isError ? '#fdecea' : '#e8f5e9';
+    el.style.color = isError ? '#c62828' : '#2e7d32';
+  }
+
+  async function downloadBackup() {
+    showBackupStatus('Preparing backup…', false);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/backup/export', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || `HTTP ${res.status}`); }
+      const blob = await res.blob();
+      const date = new Date().toISOString().slice(0, 10);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `coresales-backup-${date}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      showBackupStatus('Backup downloaded successfully.', false);
+    } catch (err) {
+      showBackupStatus(`Download failed: ${err.message}`, true);
+    }
+  }
+
+  async function restoreBackup(event) {
+    const file = event.target.files[0]; event.target.value = '';
+    if (!file) return;
+    let data;
+    try { data = JSON.parse(await file.text()); } catch (_) { showBackupStatus('Invalid JSON file.', true); return; }
+    if (!confirm('Restore from this backup? Existing records with matching IDs will be overwritten.')) return;
+    showBackupStatus('Restoring…', false);
+    try {
+      const result = await api.restoreBackup(data);
+      const summary = Object.entries(result).map(([k, v]) => `${v} ${k}`).join(', ');
+      showBackupStatus(`Restore complete: ${summary}.`, false);
+    } catch (err) {
+      showBackupStatus(`Restore failed: ${err.message}`, true);
+    }
+  }
+
   async function load() {
+    // Refresh user from server to pick up role changes
+    try {
+      const fresh = await api.getMe();
+      Object.assign(user, fresh);
+      localStorage.setItem('user', JSON.stringify(user));
+    } catch (_) {}
+    loadAdminPanel();
     try {
       const s = await getSettings();
       document.getElementById('f-company-name').value    = s.companyName   || '';
       document.getElementById('f-company-slogan').value  = s.companySlogan || '';
       document.getElementById('f-seller-address').value  = s.sellerAddress || '';
       document.getElementById('f-bank-details').value    = s.bankDetails   || '';
+      document.getElementById('f-order-prefix').value     = s.orderNoPrefix     || 'TC-M';
+      document.getElementById('f-quotation-prefix').value = s.quotationNoPrefix || 'QT-M';
       if (s.logoBase64) setLogoPreview(s.logoBase64);
+      updateNumberPreviews();
     } catch (err) { console.error(err); }
   }
 
   async function save() {
     try {
       await saveSettings({
-        companyName:   document.getElementById('f-company-name').value.trim(),
-        companySlogan: document.getElementById('f-company-slogan').value.trim(),
-        sellerAddress: document.getElementById('f-seller-address').value.trim(),
-        bankDetails:   document.getElementById('f-bank-details').value.trim(),
+        companyName:       document.getElementById('f-company-name').value.trim(),
+        companySlogan:     document.getElementById('f-company-slogan').value.trim(),
+        sellerAddress:     document.getElementById('f-seller-address').value.trim(),
+        bankDetails:       document.getElementById('f-bank-details').value.trim(),
         logoBase64,
+        orderNoPrefix:     document.getElementById('f-order-prefix').value.trim()     || 'TC-M',
+        quotationNoPrefix: document.getElementById('f-quotation-prefix').value.trim() || 'QT-M',
       });
       // Cache in localStorage for quick access across pages
       localStorage.setItem('companySettings', JSON.stringify({

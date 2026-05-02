@@ -28,6 +28,8 @@ const shippingScheduleSchema = new mongoose.Schema({
 
 const orderSchema = new mongoose.Schema({
   orderNo:           { type: String, unique: true },
+  quotationNo:       { type: String },
+  exchangeRate:      { type: Number },
   createdBy:         { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   contact:           { type: mongoose.Schema.Types.ObjectId, ref: 'Contact', required: true },
   status:            {

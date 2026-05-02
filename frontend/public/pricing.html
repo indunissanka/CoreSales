@@ -46,13 +46,14 @@
   </div>
 </div>
 <nav class="subnav">
-  <a href="/dashboard.html">Reports</a>
   <a href="/contacts.html">Contacts</a>
-  <a href="/products.html">Products</a>
   <a href="/orders.html">Orders</a>
+  <a href="/products.html">Products</a>
   <a href="/pricing.html" class="active">Pricing</a>
+  <a href="/samples.html">Samples</a>
   <a href="/lc-tracker.html">Trade Docs</a>
   <a href="/forecast.html">Forecast</a>
+  <a href="/dashboard.html">Reports</a>
   <a href="/meetings.html">Meetings</a>
   <a href="/settings.html">Settings</a>
 </nav>
@@ -110,6 +111,7 @@
         <tr>
           <th class="sortable" data-col="company"      onclick="sortBy('company')">Company</th>
           <th class="sortable" data-col="orderNo"      onclick="sortBy('orderNo')">Order No</th>
+          <th class="sortable" data-col="quotationNo"  onclick="sortBy('quotationNo')">Quotation No</th>
           <th class="sortable" data-col="productName"  onclick="sortBy('productName')">Product</th>
           <th>SKU</th>
           <th class="sortable" data-col="quantity"     onclick="sortBy('quantity')" style="text-align:right;">Qty</th>
@@ -127,7 +129,7 @@
         </tr>
       </thead>
       <tbody id="pricing-tbody">
-        <tr><td colspan="16" class="no-items">Loading…</td></tr>
+        <tr><td colspan="17" class="no-items">Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -177,8 +179,9 @@
       if (tsTo   && new Date(r.orderDate).getTime() > tsTo)   return false;
       if (search && !( (r.productName||'').toLowerCase().includes(search) ||
                        (r.company   ||'').toLowerCase().includes(search)  ||
-                       (r.orderNo   ||'').toLowerCase().includes(search)  ||
-                       (r.sku       ||'').toLowerCase().includes(search)  )) return false;
+                       (r.orderNo    ||'').toLowerCase().includes(search)  ||
+                       (r.quotationNo||'').toLowerCase().includes(search)  ||
+                       (r.sku        ||'').toLowerCase().includes(search)  )) return false;
       return true;
     });
 
@@ -222,6 +225,7 @@
     return `<tr>
       <td>${esc(r.company)}</td>
       <td><a href="/order-edit.html?id=${r.orderId}" style="color:#2d6a9f;font-weight:600;">${esc(r.orderNo)}</a></td>
+      <td style="color:#2d6a9f;font-size:12px;">${esc(r.quotationNo||'—')}</td>
       <td>${esc(r.productName)}</td>
       <td style="color:#888;font-size:11px;">${esc(r.sku)}</td>
       <td style="text-align:right;">${Number(r.quantity).toLocaleString()}</td>
@@ -242,7 +246,7 @@
   function renderTable(rows, group) {
     const tbody = document.getElementById('pricing-tbody');
     if (!rows.length) {
-      tbody.innerHTML = `<tr><td colspan="16" class="no-items">No line items found.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="17" class="no-items">No line items found.</td></tr>`;
       return;
     }
     if (!group) {
@@ -260,7 +264,7 @@
       const grpRows = grouped[key];
       const grpTotal = grpRows.reduce((s, r) => s + (r.lineTotal || 0), 0);
       const grpQty   = grpRows.reduce((s, r) => s + (r.quantity  || 0), 0);
-      html += `<tr class="group-header"><td colspan="16">${esc(key)} — ${grpRows.length} item${grpRows.length!==1?'s':''} &nbsp;|&nbsp; Qty: ${grpQty.toLocaleString()} &nbsp;|&nbsp; Total: ${fmt2(grpTotal)}</td></tr>`;
+      html += `<tr class="group-header"><td colspan="17">${esc(key)} — ${grpRows.length} item${grpRows.length!==1?'s':''} &nbsp;|&nbsp; Qty: ${grpQty.toLocaleString()} &nbsp;|&nbsp; Total: ${fmt2(grpTotal)}</td></tr>`;
       html += grpRows.map(rowHtml).join('');
     });
     tbody.innerHTML = html;
@@ -285,13 +289,13 @@
       return true;
     });
 
-    const headers = ['Company','Order No','Order Status','Date','Product','SKU','Qty','Unit',
+    const headers = ['Company','Order No','Quotation No','Order Status','Date','Product','SKU','Qty','Unit',
                      'Unit Price','Drums Price','Bank Charge','Shipping','Commission',
                      'Unit Total','Line Total','Currency'];
     const lines = [headers.join(',')];
     rows.forEach(r => {
       lines.push([
-        r.company, r.orderNo, r.orderStatus,
+        r.company, r.orderNo, r.quotationNo||'', r.orderStatus,
         r.orderDate ? new Date(r.orderDate).toISOString().slice(0,10) : '',
         r.productName, r.sku, r.quantity, r.unit||'ton',
         r.unitPrice||0, r.drumsPrice||0, r.bankCharge||0,
@@ -312,7 +316,7 @@
       allRows = await api.getLineItems();
       sortBy('orderDate', -1);
     } catch (err) {
-      document.getElementById('pricing-tbody').innerHTML = `<tr><td colspan="16" class="no-items">${err.message}</td></tr>`;
+      document.getElementById('pricing-tbody').innerHTML = `<tr><td colspan="17" class="no-items">${err.message}</td></tr>`;
     }
   }
 

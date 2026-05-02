@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const Order = require('../models/Order');
-const { generateOrderNo } = require('../utils/autoNumber');
+const { generateOrderNo, generateQuotationNo } = require('../utils/autoNumber');
 
 router.use(auth);
 
@@ -43,6 +43,7 @@ router.get('/line-items', async (req, res) => {
         rows.push({
           orderId:         o._id,
           orderNo:         o.orderNo,
+          quotationNo:     o.quotationNo || '',
           orderStatus:     o.status,
           orderDate:       o.createdAt,
           currency:        o.currency,
@@ -71,8 +72,17 @@ router.get('/line-items', async (req, res) => {
 
 router.get('/next-number', async (req, res) => {
   try {
-    const orderNo = await generateOrderNo();
+    const orderNo = await generateOrderNo(req.userId);
     res.json({ orderNo });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.get('/next-quotation-number', async (req, res) => {
+  try {
+    const quotationNo = await generateQuotationNo(req.userId);
+    res.json({ quotationNo });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -126,7 +136,7 @@ function calcItems(rawItems, body) {
 
 router.post('/', async (req, res) => {
   try {
-    const orderNo = (req.body.orderNo && req.body.orderNo.trim()) || await generateOrderNo();
+    const orderNo = (req.body.orderNo && req.body.orderNo.trim()) || await generateOrderNo(req.userId);
     const { items, subtotalAmount, totalAmount } = calcItems(req.body.items, req.body);
     const order = new Order({ ...req.body, orderNo, items, subtotalAmount, totalAmount, createdBy: req.userId });
     await order.save();

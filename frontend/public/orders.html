@@ -16,14 +16,14 @@
   </div>
 </div>
 <nav class="subnav">
-  <a href="/dashboard.html">Reports</a>
   <a href="/contacts.html">Contacts</a>
-  <a href="/products.html">Products</a>
   <a href="/orders.html" class="active">Orders</a>
+  <a href="/products.html">Products</a>
   <a href="/pricing.html">Pricing</a>
   <a href="/samples.html">Samples</a>
   <a href="/lc-tracker.html">Trade Docs</a>
   <a href="/forecast.html">Forecast</a>
+  <a href="/dashboard.html">Reports</a>
   <a href="/meetings.html">Meetings</a>
   <a href="/settings.html">Settings</a>
 </nav>
@@ -31,8 +31,16 @@
 <div class="page-wrap">
   <div class="page-header">
     <h2>Orders</h2>
-    <button class="btn-new" onclick="location.href='/order-edit.html'">+ New Order</button>
+    <div style="display:flex;gap:8px;">
+      <label class="btn-back" style="cursor:pointer;" title="Import orders from CSV">
+        ↑ Upload CSV
+        <input type="file" id="csv-upload" accept=".csv" style="display:none;" onchange="importCSV(event)">
+      </label>
+      <button class="btn-back" onclick="downloadCSV()" title="Export orders to CSV">↓ Download CSV</button>
+      <button class="btn-new" onclick="location.href='/order-edit.html'">+ New Order</button>
+    </div>
   </div>
+  <div id="import-status" style="display:none;padding:8px 14px;border-radius:4px;font-size:13px;margin-bottom:12px;"></div>
 
   <div class="status-tabs" id="status-tabs">
     <button class="status-tab active" onclick="setStatus('')">All</button>
@@ -83,6 +91,7 @@
   function logout() { localStorage.clear(); location.replace('/index.html'); }
 
   let currentStatus = '';
+  let _allOrders = [];
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
 
@@ -266,11 +275,125 @@
     }
   }
 
+  const CSV_HEADERS = ['orderNo','quotationNo','company','status','currency','exchangeRate',
+                       'incoterm','portOfLoading','portOfDestination','totalAmount',
+                       'subtotalAmount','inspectionCharges','taxRate','bankChargeMethod','notes','createdAt','products'];
+
+  /* ── CSV Download ── */
+  function csvCell(v) {
+    const s = String(v == null ? '' : v);
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  function downloadCSV() {
+    const rows = [CSV_HEADERS];
+    const activeOrders = currentStatus
+      ? _allOrders.filter(o => o.status === currentStatus)
+      : _allOrders;
+    if (!activeOrders.length) { alert('No orders to export.'); return; }
+    activeOrders.forEach(o => {
+      const products = (o.items || []).map(i => i.product?.name || '').filter(Boolean).join(' | ');
+      rows.push([
+        o.orderNo, o.quotationNo || '', o.contact?.company || '',
+        o.status, o.currency, o.exchangeRate != null ? o.exchangeRate : '',
+        o.incoterm, o.portOfLoading || '', o.portOfDestination || '',
+        o.totalAmount || 0, o.subtotalAmount || 0,
+        o.inspectionCharges || 0, o.taxRate || 0,
+        o.bankChargeMethod || '', o.notes || '',
+        o.createdAt ? new Date(o.createdAt).toISOString().slice(0, 10) : '',
+        products,
+      ].map(csvCell).join(','));
+    });
+    const csv = rows.map(r => r.join ? r.join(',') : r).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }));
+    a.download = `orders_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  /* ── CSV Upload ── */
+  function parseCSV(text) {
+    return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').map(line => {
+      const cells = []; let cur = ''; let inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') { if (inQ && line[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+        else if (ch === ',' && !inQ) { cells.push(cur.trim()); cur = ''; }
+        else cur += ch;
+      }
+      cells.push(cur.trim()); return cells;
+    }).filter(r => r.some(c => c));
+  }
+
+  function showImportStatus(msg, isError) {
+    const el = document.getElementById('import-status');
+    el.textContent = msg; el.style.display = msg ? 'block' : 'none';
+    el.style.background = isError ? '#fdecea' : '#e8f5e9';
+    el.style.color = isError ? '#c62828' : '#2e7d32';
+  }
+
+  async function importCSV(event) {
+    const file = event.target.files[0]; event.target.value = '';
+    if (!file) return;
+    const rows = parseCSV(await file.text());
+    if (!rows.length) { alert('CSV file is empty.'); return; }
+    const hi = rows.findIndex(r => r.some(c => c.toLowerCase() === 'company'));
+    if (hi === -1) { alert('Could not find header row. Download a template first.'); return; }
+    const headers = rows[hi].map(h => h.toLowerCase().trim());
+    const dataRows = rows.slice(hi + 1).filter(r => r.some(c => c));
+    if (!dataRows.length) { alert('No data rows found.'); return; }
+    if (!confirm(`Import ${dataRows.length} order(s)? Line items must be added manually after import.`)) return;
+
+    // Build a company → contactId lookup
+    let contacts = [];
+    try { contacts = await api.getContacts(); } catch (_) {}
+    const contactMap = {};
+    contacts.forEach(c => { if (c.company) contactMap[c.company.toLowerCase().trim()] = c._id; });
+
+    showImportStatus(`Importing 0 / ${dataRows.length}…`, false);
+    let imported = 0, failed = 0, skipped = 0;
+    for (const row of dataRows) {
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = row[i] || ''; });
+      const company = (obj.company || '').toLowerCase().trim();
+      const contactId = contactMap[company];
+      if (!contactId) { skipped++; continue; }
+
+      const body = {
+        contact:           contactId,
+        orderNo:           obj.orderno        || undefined,
+        quotationNo:       obj.quotationno    || undefined,
+        status:            obj.status         || 'Enquiry',
+        currency:          obj.currency       || 'USD',
+        exchangeRate:      obj.exchangerate    ? parseFloat(obj.exchangerate)    : undefined,
+        incoterm:          obj.incoterm       || 'FOB',
+        portOfLoading:     obj.portofloading  || '',
+        portOfDestination: obj.portofdestination || '',
+        inspectionCharges: obj.inspectioncharges ? parseFloat(obj.inspectioncharges) : 0,
+        taxRate:           obj.taxrate         ? parseFloat(obj.taxrate)         : 0,
+        bankChargeMethod:  obj.bankchargemethod || '',
+        notes:             obj.notes           || '',
+        items:             [],
+      };
+      try {
+        await api.createOrder(body);
+        imported++;
+        showImportStatus(`Importing ${imported} / ${dataRows.length}…`, false);
+      } catch (_) { failed++; }
+    }
+    const skipMsg = skipped ? `, ${skipped} skipped (company not found)` : '';
+    const failMsg = failed  ? `, ${failed} failed` : '';
+    showImportStatus(`Import complete: ${imported} added${skipMsg}${failMsg}`, (imported === 0));
+    await load();
+  }
+
   async function load() {
     const tbody = document.getElementById('orders-tbody');
     tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">Loading…</td></tr>`;
     try {
       const orders = await api.getOrders(currentStatus ? { status: currentStatus } : {});
+      _allOrders = orders;
       if (!orders.length) { tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">No orders found.</td></tr>`; return; }
       tbody.innerHTML = orders.map(o => {
         const products = (o.items||[]).map(i=>i.product?.name||'').filter(Boolean).join(', ')||'—';
