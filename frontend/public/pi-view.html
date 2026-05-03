@@ -5,6 +5,180 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proforma Invoice — CoreSales CRM</title>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* ── PI redesign ── */
+    .pi-wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      background: #fff;
+      box-shadow: 0 2px 16px rgba(0,0,0,.10);
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      color: #222;
+    }
+
+    /* Header band */
+    .pi-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      background: #1a3a5c;
+      color: #fff;
+      padding: 20px 24px 16px;
+    }
+    .pi-header-left { display: flex; flex-direction: column; gap: 4px; }
+    .pi-header-logo { max-height: 48px; max-width: 160px; object-fit: contain; margin-bottom: 6px; }
+    .pi-header-company { font-size: 18px; font-weight: bold; letter-spacing: .5px; }
+    .pi-header-slogan  { font-size: 11px; opacity: .75; font-style: italic; }
+    .pi-header-right   { text-align: right; }
+    .pi-header-title   { font-size: 22px; font-weight: bold; letter-spacing: 3px; margin-bottom: 6px; }
+    .pi-header-number  { font-size: 13px; opacity: .9; }
+    .pi-header-date    { font-size: 11px; opacity: .7; margin-top: 2px; }
+
+    /* Info grid */
+    .pi-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid #ccc;
+      border-top: none;
+    }
+    .pi-info-cell {
+      padding: 12px 16px;
+      font-size: 12px;
+    }
+    .pi-info-cell + .pi-info-cell { border-left: 1px solid #ccc; }
+    .pi-info-cell-title {
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: #1a3a5c;
+      border-bottom: 2px solid #1a3a5c;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+    }
+    .pi-info-cell pre { font-family: inherit; margin: 0; white-space: pre-wrap; line-height: 1.6; }
+    .pi-meta-table { width: 100%; border-collapse: collapse; }
+    .pi-meta-table td { padding: 3px 0; vertical-align: top; }
+    .pi-meta-table td:first-child { color: #666; white-space: nowrap; padding-right: 10px; font-size: 11px; width: 50%; }
+    .pi-meta-table td:last-child  { font-weight: 600; font-size: 11px; }
+
+    /* Divider bar */
+    .pi-section-bar {
+      background: #1a3a5c;
+      color: #fff;
+      font-size: 10.5px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 5px 16px;
+    }
+
+    /* Items table */
+    .pi-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      border: 1px solid #ccc;
+      border-top: none;
+    }
+    .pi-table th {
+      background: #d6e4f0;
+      color: #1a3a5c;
+      padding: 7px 10px;
+      text-align: left;
+      font-size: 11px;
+      border: 1px solid #b0c4d8;
+    }
+    .pi-table td {
+      padding: 6px 10px;
+      border: 1px solid #ddd;
+    }
+    .pi-table tbody tr:nth-child(even) { background: #f4f8fc; }
+    .pi-table tfoot td {
+      background: #d6e4f0;
+      font-weight: bold;
+      border: 1px solid #b0c4d8;
+    }
+    .pi-table .num { text-align: right; }
+
+    /* Totals */
+    .pi-totals-wrap {
+      display: flex;
+      justify-content: flex-end;
+      border: 1px solid #ccc;
+      border-top: none;
+      padding: 12px 16px;
+    }
+    .pi-totals-table { width: 240px; border-collapse: collapse; font-size: 12px; }
+    .pi-totals-table td { padding: 4px 8px; }
+    .pi-totals-table td:last-child { text-align: right; font-weight: 600; }
+    .pi-totals-grand {
+      background: #1a3a5c;
+      color: #fff;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .pi-totals-grand td { padding: 6px 8px; }
+
+    /* Terms & Remarks */
+    .pi-terms-wrap {
+      border: 1px solid #ccc;
+      border-top: none;
+      padding: 12px 16px;
+      font-size: 11.5px;
+      line-height: 1.7;
+    }
+    .pi-terms-title {
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: #1a3a5c;
+      margin-bottom: 6px;
+    }
+    .pi-remarks-list { margin: 0; padding-left: 18px; }
+    .pi-remarks-list li { margin-bottom: 2px; }
+
+    /* Signature */
+    .pi-signature-wrap {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border: 1px solid #ccc;
+      border-top: none;
+      padding: 16px 24px 20px;
+      font-size: 11px;
+      color: #555;
+    }
+    .pi-sig-line { border-top: 1px solid #555; width: 200px; margin-top: 40px; padding-top: 4px; text-align: center; }
+
+    /* Footer */
+    .pi-footer-bar {
+      background: #1a3a5c;
+      color: #fff;
+      text-align: center;
+      padding: 10px;
+      font-weight: bold;
+      letter-spacing: 3px;
+      font-size: 12px;
+      margin-top: 0;
+    }
+
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff; }
+      .pi-wrap { box-shadow: none; max-width: 100%; }
+      .pi-header        { background: #1a3a5c !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .pi-section-bar   { background: #1a3a5c !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .pi-table th      { background: #d6e4f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .pi-table tbody tr:nth-child(even) { background: #f4f8fc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .pi-table tfoot td { background: #d6e4f0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .pi-totals-grand  { background: #1a3a5c !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .pi-footer-bar    { background: #1a3a5c !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      @page { size: A4 portrait; margin: 10mm; }
+    }
+  </style>
 </head>
 <body>
 
@@ -28,99 +202,134 @@
   <a href="/settings.html">Settings</a>
 </nav>
 
-<div class="page-wrap no-print" style="max-width:900px;padding-bottom:8px;">
+<div class="page-wrap no-print" style="max-width:900px;padding-bottom:12px;">
   <div style="display:flex;gap:10px;align-items:center;">
     <button class="btn-back" id="btn-back">← Back to Order</button>
     <button class="btn-save" onclick="window.print()">Print / Save PDF</button>
-    <span id="pi-status-badge" style="margin-left:4px;"></span>
+    <span id="pi-status-badge" style="margin-left:6px;"></span>
   </div>
 </div>
 
 <!-- PI Document -->
-<div class="page-wrap pi-doc" id="pi-doc" style="max-width:900px;padding:0;">
+<div class="page-wrap" style="max-width:900px;padding-top:0;">
+<div class="pi-wrap" id="pi-doc">
 
-  <!-- 1. Top: Company name + Invoice title -->
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;padding:14px 16px;border:1px solid #ccc;">
-    <div>
-      <div id="pi-company-name" style="font-size:20px;font-weight:bold;color:#111;"></div>
-      <div id="pi-company-slogan" style="font-size:11px;font-style:italic;color:#777;margin-top:2px;"></div>
+  <!-- Header -->
+  <div class="pi-header">
+    <div class="pi-header-left">
+      <img id="pi-logo" class="pi-header-logo" src="" alt="" style="display:none;">
+      <div class="pi-header-company" id="pi-company-name"></div>
+      <div class="pi-header-slogan"  id="pi-company-slogan"></div>
     </div>
-    <div style="font-size:22px;font-weight:bold;letter-spacing:3px;color:#111;">PROFORMA INVOICE</div>
+    <div class="pi-header-right">
+      <div class="pi-header-title">PROFORMA INVOICE</div>
+      <div class="pi-header-number" id="pi-number-display"></div>
+      <div class="pi-header-date"   id="pi-date-display"></div>
+    </div>
   </div>
 
-  <!-- 2. Seller Information header bar -->
-  <div class="pi-bar">Seller Information</div>
-
-  <!-- 3. Seller address | Invoice meta -->
-  <div class="pi-row">
-    <div class="pi-cell" style="white-space:pre-line;" id="pi-seller-address"></div>
-    <div class="pi-cell">
-      <table class="pi-meta">
-        <tr><td>INVOICE DATE:</td><td id="pi-date">—</td></tr>
-        <tr><td>Proforma Invoice Number</td><td id="pi-number">—</td></tr>
-        <tr><td>Payment Terms:</td><td id="pi-payment-terms">—</td></tr>
-        <tr><td>Valid Until:</td><td id="pi-valid-until">—</td></tr>
-        <tr><td>Incoterm:</td><td id="pi-incoterm">—</td></tr>
-        <tr><td>Port of Loading:</td><td id="pi-pol">—</td></tr>
-        <tr><td>Port of Destination:</td><td id="pi-pod">—</td></tr>
+  <!-- Seller / Invoice details -->
+  <div class="pi-info-grid">
+    <div class="pi-info-cell">
+      <div class="pi-info-cell-title">Seller Information</div>
+      <pre id="pi-seller-address"></pre>
+    </div>
+    <div class="pi-info-cell">
+      <div class="pi-info-cell-title">Invoice Details</div>
+      <table class="pi-meta-table" id="pi-meta-table">
+        <tr><td>Invoice No.</td><td id="pi-number">—</td></tr>
+        <tr><td>Issue Date</td><td id="pi-date">—</td></tr>
+        <tr><td>Valid Until</td><td id="pi-valid-until">—</td></tr>
+        <tr><td>Incoterm</td><td id="pi-incoterm">—</td></tr>
+        <tr><td>Port of Loading</td><td id="pi-pol">—</td></tr>
+        <tr><td>Port of Destination</td><td id="pi-pod">—</td></tr>
+        <tr><td>Currency</td><td id="pi-currency">USD</td></tr>
       </table>
     </div>
   </div>
 
-  <!-- 4. Buyer | Bank -->
-  <div class="pi-row">
-    <div class="pi-cell" style="padding:0;">
-      <div class="pi-bar">Buyer Information</div>
-      <div style="padding:8px 12px;white-space:pre-line;" id="pi-buyer">—</div>
+  <!-- Buyer / Bank -->
+  <div class="pi-info-grid" style="border-top:1px solid #ccc;">
+    <div class="pi-info-cell">
+      <div class="pi-info-cell-title">Buyer Information</div>
+      <pre id="pi-buyer"></pre>
     </div>
-    <div class="pi-cell" style="padding:0;">
-      <div class="pi-bar-underline">Bank Information</div>
-      <div style="padding:8px 12px;white-space:pre-line;" id="pi-bank">—</div>
+    <div class="pi-info-cell">
+      <div class="pi-info-cell-title">Bank Details</div>
+      <pre id="pi-bank"></pre>
     </div>
   </div>
 
-  <!-- 5. Line Items -->
-  <table class="pi-items-table">
+  <!-- Items -->
+  <div class="pi-section-bar" style="margin-top:12px;">Items</div>
+  <table class="pi-table">
     <thead>
       <tr>
-        <th style="width:35%;">Description</th>
+        <th style="width:36%;">Description</th>
         <th>SKU</th>
-        <th style="text-align:right;">Qty</th>
+        <th class="num">Qty</th>
         <th>Unit</th>
-        <th style="text-align:right;">Unit Price</th>
-        <th style="text-align:right;">AMOUNT</th>
+        <th class="num">Unit Price</th>
+        <th class="num">Amount</th>
       </tr>
     </thead>
     <tbody id="pi-items-tbody"></tbody>
     <tfoot>
       <tr>
-        <td colspan="5" style="text-align:right;font-weight:bold;">SUBTOTAL</td>
-        <td style="text-align:right;font-weight:bold;" id="pi-subtotal">0.00</td>
+        <td colspan="5" class="num">SUBTOTAL</td>
+        <td class="num" id="pi-subtotal">0.00</td>
       </tr>
     </tfoot>
   </table>
 
-  <!-- 6. Notes + Totals -->
-  <div class="pi-footer">
-    <div class="pi-footer-notes">
-      <strong>Additional Terms and Notes:</strong>
-      <div id="pi-special-terms" style="margin-top:6px;white-space:pre-line;color:#444;min-height:56px;line-height:1.6;"></div>
-      <div style="margin-top:20px;color:#444;">
-        Authorized Signature: ___________________________<br>
-        <span id="pi-sig-block" style="display:inline-block;margin-top:6px;"></span>
-      </div>
+  <!-- Totals -->
+  <div class="pi-totals-wrap">
+    <table class="pi-totals-table">
+      <tbody>
+        <tr><td>Subtotal</td><td id="tot-subtotal">0.00</td></tr>
+      </tbody>
+      <tfoot>
+        <tr class="pi-totals-grand">
+          <td>TOTAL (<span id="tot-currency">USD</span>)</td>
+          <td id="tot-total">0.00</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- Terms & Remarks -->
+  <div id="pi-terms-section" class="pi-terms-wrap" style="display:none;">
+    <div id="pi-special-terms-block" style="display:none;margin-bottom:12px;">
+      <div class="pi-terms-title">Additional Terms &amp; Notes</div>
+      <div id="pi-special-terms" style="white-space:pre-wrap;color:#444;"></div>
     </div>
-    <div class="pi-footer-totals">
-      <div class="pi-totals-line">
-        <span class="pi-totals-label">TOTAL (<span id="pi-currency">USD</span>)</span>
-        <span id="pi-total" style="font-weight:bold;">0.00</span>
+    <div id="pi-remarks-block" style="display:none;">
+      <div class="pi-terms-title">Remarks / Payment Terms</div>
+      <ol class="pi-remarks-list" id="pi-remarks-list"></ol>
+    </div>
+  </div>
+
+  <!-- Signature -->
+  <div style="border:1px solid #ccc;border-top:none;padding:16px 24px 20px;font-size:11px;">
+    <div style="color:#777;margin-bottom:16px;">This is a proforma invoice only and does not constitute a tax invoice.</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;">
+      <div>
+        <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.8px;color:#1a3a5c;margin-bottom:4px;">Seller</div>
+        <div style="font-weight:600;margin-bottom:40px;" id="pi-sig-seller-name"></div>
+        <div style="border-top:1px solid #555;padding-top:5px;text-align:center;color:#555;">Authorized Signature &amp; Stamp</div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:bold;text-transform:uppercase;letter-spacing:.8px;color:#1a3a5c;margin-bottom:4px;">Buyer</div>
+        <div style="font-weight:600;margin-bottom:40px;" id="pi-sig-buyer-name"></div>
+        <div style="border-top:1px solid #555;padding-top:5px;text-align:center;color:#555;">Authorized Signature &amp; Stamp</div>
       </div>
     </div>
   </div>
 
-  <!-- 7. Thank you bar -->
-  <div class="pi-thank-you">THANK YOU FOR YOUR BUSINESS!</div>
+  <!-- Footer -->
+  <div class="pi-footer-bar">THANK YOU FOR YOUR BUSINESS!</div>
 
+</div><!-- /.pi-wrap -->
 </div>
 
 <script src="/js/api.js"></script>
@@ -131,6 +340,7 @@
   function logout() { localStorage.clear(); location.replace('/index.html'); }
 
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmt2(n) { return (n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) : '—'; }
 
   const params = new URLSearchParams(location.search);
@@ -144,43 +354,84 @@
       document.getElementById('btn-back').onclick =
         () => location.href = pi.order ? `/order-edit.html?id=${pi.order._id||pi.order}` : '/orders.html';
 
-      // Extract company name from first line of sellerInfo
+      // Company branding from localStorage
+      let cs = {};
+      try { cs = JSON.parse(localStorage.getItem('companySettings') || '{}'); } catch (_) {}
+
+      // Logo
+      const logoSrc = cs.logoBase64 || '';
+      const logoEl  = document.getElementById('pi-logo');
+      if (logoSrc) { logoEl.src = logoSrc; logoEl.style.display = 'block'; }
+
+      // Seller: first line = company name, rest = address
       const sellerLines = (pi.sellerInfo || '').split('\n');
-      document.getElementById('pi-company-name').textContent  = sellerLines[0] || '—';
-      document.getElementById('pi-seller-address').textContent = sellerLines.slice(1).join('\n');
+      document.getElementById('pi-company-name').textContent    = sellerLines[0] || cs.companyName || '—';
+      document.getElementById('pi-company-slogan').textContent  = cs.companySlogan || '';
+      document.getElementById('pi-seller-address').textContent  = (pi.sellerInfo || '').trim();
 
-      document.getElementById('pi-number').textContent       = pi.piNumber        || '—';
-      document.getElementById('pi-date').textContent         = fmtDate(pi.issuedDate);
-      document.getElementById('pi-valid-until').textContent  = fmtDate(pi.validUntil);
-      document.getElementById('pi-incoterm').textContent     = pi.incoterm        || '—';
-      document.getElementById('pi-pol').textContent          = pi.portOfLoading   || '—';
-      document.getElementById('pi-pod').textContent          = pi.portOfDestination || '—';
-      document.getElementById('pi-currency').textContent     = pi.currency        || 'USD';
-      document.getElementById('pi-buyer').textContent        = pi.buyerInfo       || '—';
-      document.getElementById('pi-bank').textContent         = pi.bankDetails     || '—';
-      document.getElementById('pi-special-terms').textContent = pi.specialTerms   || '';
-      document.getElementById('pi-payment-terms').textContent = (pi.specialTerms || '').split('\n')[0] || '—';
+      // Header right
+      document.getElementById('pi-number-display').textContent = pi.orderNo || pi.piNumber || '—';
+      document.getElementById('pi-date-display').textContent   = 'Issued: ' + fmtDate(pi.issuedDate);
 
-      const total = (pi.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 });
-      document.getElementById('pi-subtotal').textContent = total;
-      document.getElementById('pi-total').textContent    = total;
+      // Meta table
+      document.getElementById('pi-number').textContent      = pi.orderNo         || pi.piNumber || '—';
+      document.getElementById('pi-date').textContent        = fmtDate(pi.issuedDate);
+      document.getElementById('pi-valid-until').textContent = fmtDate(pi.validUntil);
+      document.getElementById('pi-incoterm').textContent    = pi.incoterm         || '—';
+      document.getElementById('pi-pol').textContent         = pi.portOfLoading    || '—';
+      document.getElementById('pi-pod').textContent         = pi.portOfDestination|| '—';
+      document.getElementById('pi-currency').textContent    = pi.currency         || 'USD';
+      document.getElementById('tot-currency').textContent   = pi.currency         || 'USD';
 
+
+      // Buyer / Bank
+      document.getElementById('pi-buyer').textContent = pi.buyerInfo    || '—';
+      document.getElementById('pi-bank').textContent  = pi.bankDetails  || '—';
+
+      // Items
+      const tbody = document.getElementById('pi-items-tbody');
+      tbody.innerHTML = (pi.items || []).map(item => `
+        <tr>
+          <td>${esc(item.productName)}</td>
+          <td style="color:#666;">${esc(item.sku||'')}</td>
+          <td class="num">${Number(item.quantity).toLocaleString()}</td>
+          <td>${esc(item.unit||'')}</td>
+          <td class="num">${fmt2(item.unitPrice)}</td>
+          <td class="num"><strong>${fmt2(item.lineTotal)}</strong></td>
+        </tr>`).join('');
+
+      // Totals
+      const total = fmt2(pi.totalAmount);
+      document.getElementById('pi-subtotal').textContent  = total;
+      document.getElementById('tot-subtotal').textContent = total;
+      document.getElementById('tot-total').textContent    = total;
+
+      // Status badge
       document.getElementById('pi-status-badge').innerHTML =
         `<span class="badge badge-status-${(pi.status||'draft').toLowerCase()}">${esc(pi.status||'Draft')}</span>`;
 
-      document.getElementById('pi-sig-block').textContent = sellerLines[0] || '';
+      // Signature blocks
+      document.getElementById('pi-sig-seller-name').textContent = sellerLines[0] || cs.companyName || '';
+      const buyerLines = (pi.buyerInfo || '').split('\n');
+      document.getElementById('pi-sig-buyer-name').textContent  = buyerLines[0] || '';
 
-      const tbody = document.getElementById('pi-items-tbody');
-      tbody.innerHTML = (pi.items || []).map((item, i) => `
-        <tr>
-          <td>${esc(item.productName)}</td>
-          <td>${esc(item.sku || '')}</td>
-          <td style="text-align:right;">${Number(item.quantity).toLocaleString()}</td>
-          <td>${esc(item.unit)}</td>
-          <td style="text-align:right;">${(item.unitPrice || 0).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-          <td style="text-align:right;">${(item.lineTotal || 0).toLocaleString(undefined, {minimumFractionDigits:2})}</td>
-        </tr>
-      `).join('');
+      // Terms & Remarks
+      const hasSpecial  = (pi.specialTerms  || '').trim().length > 0;
+      const hasRemarks  = (pi.paymentTerms  || []).filter(t => t.trim()).length > 0;
+
+      if (hasSpecial || hasRemarks) {
+        document.getElementById('pi-terms-section').style.display = '';
+        if (hasSpecial) {
+          document.getElementById('pi-special-terms-block').style.display = '';
+          document.getElementById('pi-special-terms').textContent = pi.specialTerms;
+        }
+        if (hasRemarks) {
+          document.getElementById('pi-remarks-block').style.display = '';
+          document.getElementById('pi-remarks-list').innerHTML =
+            (pi.paymentTerms || []).filter(t => t.trim()).map(t => `<li>${esc(t)}</li>`).join('');
+        }
+      }
+
     } catch (err) { alert(err.message); }
   }
 

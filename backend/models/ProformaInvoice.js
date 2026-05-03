@@ -24,6 +24,9 @@ const proformaInvoiceSchema = new mongoose.Schema({
   sellerInfo:        String,
   buyerInfo:         String,
   specialTerms:      String,
+  paymentTerms:      [String],
+  orderNo:           String,
+  quotationNo:       String,
   totalAmount:       Number,
   status:            { type: String, enum: ['Draft', 'Issued', 'Superseded'], default: 'Draft' },
 }, { timestamps: true });

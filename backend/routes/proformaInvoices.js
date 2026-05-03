@@ -72,6 +72,9 @@ router.post('/', async (req, res) => {
       sellerInfo,
       buyerInfo,
       specialTerms,
+      paymentTerms:      order.paymentTerms || [],
+      orderNo:           order.orderNo      || '',
+      quotationNo:       order.quotationNo  || '',
       totalAmount:       order.totalAmount,
       status:            'Draft',
     });
