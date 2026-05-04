@@ -1,15 +1,164 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard — CoreSales CRM</title>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* ── Layout ── */
+    .dash-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .dash-wide  { grid-column: span 2; }
+    .dash-full  { grid-column: 1 / -1; }
+
+    /* ── Stat cards (top row) ── */
+    .stat-card {
+      background: #fff;
+      border: 1px solid #d0d8e4;
+      border-radius: 8px;
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      text-decoration: none;
+      color: inherit;
+      transition: box-shadow .15s, transform .1s;
+    }
+    .stat-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.1); transform: translateY(-1px); }
+    .stat-icon {
+      font-size: 28px;
+      width: 48px; height: 48px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .stat-body { flex: 1; min-width: 0; }
+    .stat-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #888; margin-bottom: 2px; }
+    .stat-value { font-size: 26px; font-weight: 800; color: #1a3a5c; line-height: 1; }
+    .stat-sub   { font-size: 11px; color: #aaa; margin-top: 3px; }
+    .stat-arrow { font-size: 11px; color: #2e7d32; font-weight: 600; }
+
+    /* ── Section cards ── */
+    .dash-card {
+      background: #fff;
+      border: 1px solid #d0d8e4;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .dash-card-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 13px 18px;
+      border-bottom: 1px solid #eef0f4;
+      background: #f7f9fc;
+    }
+    .dash-card-header h3 {
+      font-size: 13px; font-weight: 700; color: #1a3a5c;
+      text-transform: uppercase; letter-spacing: .6px; margin: 0;
+      display: flex; align-items: center; gap: 7px;
+    }
+    .dash-card-link {
+      font-size: 11px; color: #2d6a9f; font-weight: 600; text-decoration: none;
+    }
+    .dash-card-link:hover { text-decoration: underline; }
+    .dash-card-body { padding: 14px 18px; }
+
+    /* ── Status pill bar ── */
+    .pill-bar { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600;
+    }
+    .pill-dot { width: 7px; height: 7px; border-radius: 50%; }
+
+    /* ── Mini table ── */
+    .mini-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .mini-table th { padding: 5px 8px; text-align: left; color: #888; font-weight: 600; font-size: 11px; border-bottom: 1px solid #eee; }
+    .mini-table td { padding: 7px 8px; border-bottom: 1px solid #f5f5f5; color: #333; }
+    .mini-table tr:last-child td { border-bottom: none; }
+    .mini-table tr:hover td { background: #f7f9fc; }
+
+    /* ── Progress bar ── */
+    .prog-wrap { background: #e0e0e0; border-radius: 4px; height: 8px; overflow: hidden; margin-top: 4px; }
+    .prog-bar  { height: 100%; border-radius: 4px; transition: width .4s; }
+
+    /* ── Upcoming meetings ── */
+    .meeting-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0; border-bottom: 1px solid #f5f5f5;
+    }
+    .meeting-row:last-child { border-bottom: none; }
+    .meeting-date-box {
+      background: #1a3a5c; color: #fff; border-radius: 6px;
+      padding: 4px 8px; text-align: center; min-width: 42px; flex-shrink: 0;
+    }
+    .meeting-date-box .mday  { font-size: 16px; font-weight: 800; line-height: 1; }
+    .meeting-date-box .mmon  { font-size: 9px; text-transform: uppercase; letter-spacing: .5px; opacity: .8; }
+    .meeting-info { flex: 1; min-width: 0; }
+    .meeting-title { font-size: 13px; font-weight: 600; color: #1a3a5c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meeting-meta  { font-size: 11px; color: #aaa; }
+
+    /* ── Status colors ── */
+    .c-enquiry       { background:#fff8e1;  color:#e65100; }
+    .c-quotation     { background:#e3f2fd;  color:#1565c0; }
+    .c-pi            { background:#e8f5e9;  color:#2e7d32; }
+    .c-lc            { background:#f3e5f5;  color:#6a1b9a; }
+    .c-shipped       { background:#e0f2f1;  color:#00695c; }
+    .c-delivered     { background:#c8e6c9;  color:#1b5e20; }
+    .c-cancelled     { background:#ffebee;  color:#b71c1c; }
+    .c-rejected      { background:#4a0000;  color:#fff;    }
+    .c-pending       { background:#fff8e1;  color:#e65100; }
+    .c-dispatched    { background:#e3f2fd;  color:#1565c0; }
+    .c-returned      { background:#ffebee;  color:#b71c1c; }
+    .c-scheduled     { background:#e8f0fe;  color:#1a3a5c; }
+    .c-completed     { background:#e8f5e9;  color:#2e7d32; }
+    .c-open          { background:#e8f5e9;  color:#2e7d32; }
+    .c-partial       { background:#fff8e1;  color:#e65100; }
+    .c-closed        { background:#f5f5f5;  color:#666; }
+    .c-expired       { background:#ffebee;  color:#b71c1c; }
+
+    /* ── Icon bg colors ── */
+    .ic-blue   { background:#e8f0fe; }
+    .ic-green  { background:#e8f5e9; }
+    .ic-orange { background:#fff3e0; }
+    .ic-purple { background:#f3e5f5; }
+    .ic-teal   { background:#e0f2f1; }
+    .ic-red    { background:#ffebee; }
+    .ic-indigo { background:#ede7f6; }
+    .ic-yellow { background:#fffde7; }
+
+    /* ── Today banner ── */
+    .today-bar {
+      background: linear-gradient(135deg, #1a3a5c 0%, #2d6a9f 100%);
+      color: #fff; border-radius: 8px; padding: 14px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .today-bar .today-date { font-size: 13px; opacity: .8; }
+    .today-bar .today-title { font-size: 18px; font-weight: 700; margin-top: 2px; }
+    .today-bar .today-stats { display: flex; gap: 24px; }
+    .today-bar .ts-item { text-align: center; }
+    .today-bar .ts-val  { font-size: 20px; font-weight: 800; }
+    .today-bar .ts-lbl  { font-size: 10px; opacity: .75; text-transform: uppercase; letter-spacing: .5px; }
+
+    @media (max-width: 900px) {
+      .dash-grid { grid-template-columns: repeat(2,1fr); }
+      .dash-wide { grid-column: span 2; }
+    }
+    @media (max-width: 540px) {
+      .dash-grid { grid-template-columns: 1fr; }
+      .dash-wide, .dash-full { grid-column: span 1; }
+    }
+  </style>
 </head>
 <body>
 
 <div class="topbar">
-  <span class="brand">CoreSales CRM</span>
+  <a href="/dashboard.html" class="brand">CoreSales CRM</a>
   <div class="user-info">
     <span id="topbar-name"></span>
     <button class="btn-logout" onclick="logout()">Logout</button>
@@ -17,42 +166,205 @@
 </div>
 <nav class="subnav">
   <a href="/contacts.html">Contacts</a>
-  <a href="/orders.html">Orders</a>
   <a href="/products.html">Products</a>
+  <a href="/orders.html">Orders</a>
   <a href="/pricing.html">Pricing</a>
   <a href="/samples.html">Samples</a>
   <a href="/lc-tracker.html">Trade Docs</a>
   <a href="/forecast.html">Forecast</a>
-  <a href="/dashboard.html" class="active">Reports</a>
+  <a href="/reports.html">Reports</a>
   <a href="/meetings.html">Meetings</a>
   <a href="/settings.html">Settings</a>
 </nav>
 
 <div class="page-wrap">
-  <div class="page-header">
-    <h2>My Weekly Reports</h2>
-    <button class="btn-new" onclick="newReport()">+ New Report</button>
-  </div>
 
-  <div class="report-paper" style="padding:20px;">
-    <div class="reports-grid" id="reports-grid">
-      <div class="empty-state"><p>Loading reports…</p></div>
+  <!-- Today banner -->
+  <div class="today-bar" id="today-bar">
+    <div>
+      <div class="today-date" id="today-date"></div>
+      <div class="today-title">Welcome back, <span id="welcome-name"></span></div>
+    </div>
+    <div class="today-stats" id="today-stats">
+      <div class="ts-item"><div class="ts-val" id="ts-active-orders">—</div><div class="ts-lbl">Active Orders</div></div>
+      <div class="ts-item"><div class="ts-val" id="ts-upcoming">—</div><div class="ts-lbl">Meetings This Week</div></div>
+      <div class="ts-item"><div class="ts-val" id="ts-samples">—</div><div class="ts-lbl">Pending Samples</div></div>
+      <div class="ts-item"><div class="ts-val" id="ts-lc-expiring">—</div><div class="ts-lbl">L/C Expiring Soon</div></div>
     </div>
   </div>
-</div>
 
-<!-- Preview modal -->
-<div class="preview-overlay" id="preview-overlay" onclick="closePreview()">
-  <div class="preview-panel" id="preview-panel" onclick="event.stopPropagation()">
-    <div class="preview-header">
-      <span id="preview-title"></span>
-      <div style="display:flex;gap:8px;">
-        <button class="btn-sm btn-edit" id="preview-edit-btn">Edit</button>
-        <button class="btn-sm" style="background:#e0e0e0;color:#444;" onclick="closePreview()">✕</button>
+  <!-- Top stat cards -->
+  <div class="dash-grid" id="stat-row">
+    <a class="stat-card" href="/contacts.html">
+      <div class="stat-icon ic-blue">👥</div>
+      <div class="stat-body">
+        <div class="stat-label">Contacts</div>
+        <div class="stat-value" id="s-contacts">—</div>
+        <div class="stat-sub">Total companies</div>
+      </div>
+    </a>
+    <a class="stat-card" href="/products.html">
+      <div class="stat-icon ic-green">🧪</div>
+      <div class="stat-body">
+        <div class="stat-label">Products</div>
+        <div class="stat-value" id="s-products">—</div>
+        <div class="stat-sub">In catalogue</div>
+      </div>
+    </a>
+    <a class="stat-card" href="/orders.html">
+      <div class="stat-icon ic-orange">📦</div>
+      <div class="stat-body">
+        <div class="stat-label">Orders</div>
+        <div class="stat-value" id="s-orders">—</div>
+        <div class="stat-sub" id="s-orders-sub">— active</div>
+      </div>
+    </a>
+    <a class="stat-card" href="/samples.html">
+      <div class="stat-icon ic-teal">🧫</div>
+      <div class="stat-body">
+        <div class="stat-label">Samples</div>
+        <div class="stat-value" id="s-samples">—</div>
+        <div class="stat-sub" id="s-samples-sub">loading…</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Row 2: Orders breakdown + Recent Orders -->
+  <div class="dash-grid">
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h3>📦 Order Pipeline</h3>
+        <a class="dash-card-link" href="/orders.html">View all →</a>
+      </div>
+      <div class="dash-card-body">
+        <div class="pill-bar" id="order-pills" style="margin-bottom:14px;"></div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:4px;">
+            <span>Total Revenue (active orders)</span>
+            <span id="rev-total" style="font-weight:700;color:#1a3a5c;">—</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:4px;">
+            <span>This month</span>
+            <span id="rev-month" style="font-weight:700;color:#2e7d32;">—</span>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="preview-body" id="preview-body"></div>
+
+    <div class="dash-card dash-wide">
+      <div class="dash-card-header">
+        <h3>🕐 Recent Orders</h3>
+        <a class="dash-card-link" href="/orders.html">View all →</a>
+      </div>
+      <div class="dash-card-body" style="padding:0;">
+        <table class="mini-table">
+          <thead><tr><th>Order No</th><th>Company</th><th>Status</th><th style="text-align:right;">Total</th><th>Date</th></tr></thead>
+          <tbody id="recent-orders"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h3>📋 Trade Docs (L/C)</h3>
+        <a class="dash-card-link" href="/lc-tracker.html">View all →</a>
+      </div>
+      <div class="dash-card-body">
+        <div class="pill-bar" id="lc-pills" style="margin-bottom:12px;"></div>
+        <div id="lc-expiring-warn" style="display:none;padding:8px 12px;background:#fff8e1;border-radius:6px;font-size:12px;color:#e65100;font-weight:600;border:1px solid #ffe082;"></div>
+        <div id="lc-empty" style="color:#aaa;font-size:12px;display:none;">No letters of credit yet.</div>
+      </div>
+    </div>
   </div>
+
+  <!-- Row 3: Forecast + Samples + Meetings -->
+  <div class="dash-grid">
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h3>📈 Forecast <span id="forecast-year" style="font-weight:400;color:#aaa;font-size:11px;text-transform:none;letter-spacing:0;"></span></h3>
+        <a class="dash-card-link" href="/forecast.html">View all →</a>
+      </div>
+      <div class="dash-card-body">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px;">
+          <span style="color:#666;">Forecast</span>
+          <strong id="fc-forecast">—</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px;">
+          <span style="color:#666;">Actual (from orders)</span>
+          <strong id="fc-actual">—</strong>
+        </div>
+        <div class="prog-wrap">
+          <div class="prog-bar" id="fc-bar" style="background:#2e7d32;width:0%;"></div>
+        </div>
+        <div style="font-size:11px;color:#aaa;margin-top:4px;" id="fc-pct"></div>
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h3>🧫 Sample Shipments</h3>
+        <a class="dash-card-link" href="/samples.html">View all →</a>
+      </div>
+      <div class="dash-card-body">
+        <div class="pill-bar" id="sample-pills"></div>
+        <div id="sample-empty" style="color:#aaa;font-size:12px;display:none;">No sample shipments yet.</div>
+      </div>
+    </div>
+
+    <div class="dash-card dash-wide">
+      <div class="dash-card-header">
+        <h3>📅 Upcoming Meetings <span style="font-size:10px;color:#aaa;font-weight:400;text-transform:none;letter-spacing:0;">(next 7 days)</span></h3>
+        <a class="dash-card-link" href="/meetings.html">View all →</a>
+      </div>
+      <div class="dash-card-body" id="upcoming-meetings">
+        <p style="color:#aaa;font-size:12px;">Loading…</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 4: Pricing summary + Reports -->
+  <div class="dash-grid">
+    <div class="dash-card dash-wide">
+      <div class="dash-card-header">
+        <h3>💰 Pricing Overview</h3>
+        <a class="dash-card-link" href="/pricing.html">View detail →</a>
+      </div>
+      <div class="dash-card-body" style="padding:0;">
+        <table class="mini-table" id="pricing-table">
+          <thead><tr><th>Order No</th><th>Company</th><th>Products</th><th>Incoterm</th><th style="text-align:right;">Total</th><th>Status</th></tr></thead>
+          <tbody id="pricing-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h3>📝 Weekly Reports</h3>
+        <a class="dash-card-link" href="/report.html">+ New Report</a>
+      </div>
+      <div class="dash-card-body" id="reports-summary">
+        <p style="color:#aaa;font-size:12px;">Loading…</p>
+      </div>
+    </div>
+
+    <div class="dash-card">
+      <div class="dash-card-header">
+        <h3>ℹ️ System</h3>
+      </div>
+      <div class="dash-card-body" id="system-info">
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:#555;">
+          <div style="display:flex;justify-content:space-between;"><span>Today</span><strong id="sys-date">—</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span>Total Orders</span><strong id="sys-orders">—</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span>Total Contacts</span><strong id="sys-contacts">—</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span>Total Products</span><strong id="sys-products">—</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span>Forecast Entries</span><strong id="sys-forecasts">—</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span>Meetings</span><strong id="sys-meetings">—</strong></div>
+          <div style="display:flex;justify-content:space-between;"><span>Reports</span><strong id="sys-reports">—</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script src="/js/api.js"></script>
@@ -60,106 +372,179 @@
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   if (!user || !localStorage.getItem('token')) location.replace('/index.html');
   document.getElementById('topbar-name').textContent = user.name || user.username;
-
+  document.getElementById('welcome-name').textContent = user.name || user.username;
   function logout() { localStorage.clear(); location.replace('/index.html'); }
-  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmt(n) { return Number(n||0).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:0}); }
+  function fmtMoney(n) { return Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
 
-  function newReport() { location.href = '/report.html'; }
-  function editReport(id, e) { e.stopPropagation(); location.href = `/report.html?id=${id}`; }
+  // Today banner date
+  const now = new Date();
+  document.getElementById('today-date').textContent = now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('sys-date').textContent = now.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  document.getElementById('forecast-year').textContent = now.getFullYear();
 
-  async function deleteReport(id, e) {
-    e.stopPropagation();
-    if (!confirm('Delete this report? This cannot be undone.')) return;
-    try { await api.deleteReport(id); loadReports(); }
-    catch (err) { alert('Error: ' + err.message); }
+  const STATUS_CLASSES = {
+    'Enquiry':'c-enquiry', 'Quotation Sent':'c-quotation', 'PI Issued':'c-pi',
+    'LC Opened':'c-lc', 'Shipped':'c-shipped', 'Delivered':'c-delivered',
+    'Cancelled':'c-cancelled', 'Rejected':'c-rejected',
+    'Pending':'c-pending', 'Dispatched':'c-dispatched', 'Returned':'c-returned',
+    'Scheduled':'c-scheduled', 'Completed':'c-completed',
+    'Open':'c-open', 'Partial':'c-partial', 'Closed':'c-closed', 'Expired':'c-expired',
+  };
+
+  function pill(label, count, cls) {
+    return `<span class="pill ${cls||''}">${label} <strong>${count}</strong></span>`;
   }
 
-  function closePreview() {
-    document.getElementById('preview-overlay').classList.remove('open');
+  function renderPills(containerId, counts, clsMap) {
+    const el = document.getElementById(containerId);
+    if (!Object.keys(counts).length) { el.innerHTML = '<span style="color:#aaa;font-size:12px;">None</span>'; return; }
+    el.innerHTML = Object.entries(counts)
+      .sort((a,b) => b[1]-a[1])
+      .map(([k,v]) => pill(k, v, STATUS_CLASSES[k] || ''))
+      .join('');
   }
 
-  async function openPreview(id, e) {
-    e.stopPropagation();
-    document.getElementById('preview-title').textContent = 'Loading…';
-    document.getElementById('preview-body').innerHTML = '<p style="padding:16px;color:#aaa;">Loading…</p>';
-    document.getElementById('preview-overlay').classList.add('open');
-    document.getElementById('preview-edit-btn').onclick = () => location.href = `/report.html?id=${id}`;
-
+  async function loadDashboard() {
+    let d;
     try {
-      const r = await api.getReport(id);
-      document.getElementById('preview-title').textContent =
-        `${fmtDate(r.weekStart)} – ${fmtDate(r.weekEnd)}`;
-
-      const PURPOSE_LABELS = { isNew:'New', isFollowUp:'Follow-Up', isIllustration:'Illustration', isAfter:'After', isOrders:'Orders' };
-
-      const entriesHtml = (r.entries || []).length ? `
-        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;">
-          <thead><tr style="background:#e8f0fe;">
-            <th style="padding:5px 8px;text-align:left;">#</th>
-            <th style="padding:5px 8px;text-align:left;">Client</th>
-            <th style="padding:5px 8px;text-align:left;">Date</th>
-            <th style="padding:5px 8px;text-align:left;">Purpose</th>
-            <th style="padding:5px 8px;text-align:left;">Content</th>
-          </tr></thead>
-          <tbody>${(r.entries||[]).map((en,i) => {
-            const purposes = Object.entries(en.purpose||{})
-              .filter(([k,v]) => v === true && PURPOSE_LABELS[k])
-              .map(([k]) => PURPOSE_LABELS[k]).join(', ');
-            return `<tr style="border-bottom:1px solid #f0f0f0;">
-              <td style="padding:5px 8px;color:#aaa;">${i+1}</td>
-              <td style="padding:5px 8px;font-weight:bold;">${esc(en.client||'—')}</td>
-              <td style="padding:5px 8px;white-space:nowrap;">${fmtDate(en.date)}</td>
-              <td style="padding:5px 8px;">${esc(purposes||'—')}</td>
-              <td style="padding:5px 8px;">${esc(en.content||'—')}</td>
-            </tr>`;
-          }).join('')}</tbody>
-        </table>` : '<p style="color:#aaa;font-size:13px;">No entries.</p>';
-
-      document.getElementById('preview-body').innerHTML = `
-        <div class="preview-meta-grid">
-          <div><span class="preview-label">Area</span><span>${esc(r.area||'—')}</span></div>
-          <div><span class="preview-label">Filled by</span><span>${esc(r.formFiller||'—')}</span></div>
-          <div><span class="preview-label">Entries</span><span>${(r.entries||[]).length}</span></div>
-        </div>
-        <div class="preview-section-title">Entries</div>
-        ${entriesHtml}
-        ${r.weeklyResults ? `<div class="preview-section-title" style="margin-top:14px;">Weekly Results</div><p style="font-size:13px;">${esc(r.weeklyResults)}</p>` : ''}
-        ${r.suggestions   ? `<div class="preview-section-title" style="margin-top:14px;">Suggestions</div><p style="font-size:13px;">${esc(r.suggestions)}</p>` : ''}
-      `;
+      d = await apiFetch('/dashboard');
     } catch(err) {
-      document.getElementById('preview-body').innerHTML = `<p style="padding:16px;color:#c62828;">${err.message}</p>`;
+      console.error(err);
+      return;
     }
-  }
 
-  async function loadReports() {
-    const grid = document.getElementById('reports-grid');
-    try {
-      const reports = await api.getReports();
-      if (!reports.length) {
-        grid.innerHTML = `<div class="empty-state"><p>No reports yet.</p><small>Click "+ New Report" to create your first weekly report.</small></div>`;
-        return;
-      }
-      grid.innerHTML = reports.map(r => `
-        <div class="report-card" onclick="location.href='/report.html?id=${r._id}'">
-          <div class="week-label">${fmtDate(r.weekStart)} – ${fmtDate(r.weekEnd)}</div>
-          <div class="meta">Area: ${r.area || '—'}</div>
-          <div class="meta">Filled by: ${r.formFiller || '—'}</div>
-          <span class="entry-count">${(r.entries || []).length} entries</span>
-          <div class="card-actions">
-            <button class="btn-sm btn-preview" onclick="openPreview('${r._id}', event)">Preview</button>
-            <button class="btn-sm btn-edit"    onclick="editReport('${r._id}', event)">Edit</button>
-            <button class="btn-sm btn-delete"  onclick="deleteReport('${r._id}', event)">Delete</button>
+    // Top stats
+    document.getElementById('s-contacts').textContent  = d.contacts.total;
+    document.getElementById('s-products').textContent  = d.products.total;
+    document.getElementById('s-orders').textContent    = d.orders.total;
+    document.getElementById('s-orders-sub').textContent = `${d.orders.active} active`;
+    document.getElementById('s-samples').textContent   = d.samples.total;
+
+    const pendingSamples = d.samples.statusCounts['Pending'] || 0;
+    const dispSamples    = d.samples.statusCounts['Dispatched'] || 0;
+    document.getElementById('s-samples-sub').textContent = `${pendingSamples} pending · ${dispSamples} dispatched`;
+
+    // Today banner
+    document.getElementById('ts-active-orders').textContent  = d.orders.active;
+    document.getElementById('ts-upcoming').textContent       = d.meetings.upcoming.length;
+    document.getElementById('ts-samples').textContent        = pendingSamples;
+    document.getElementById('ts-lc-expiring').textContent    = d.tradeDocs.expiringLCs;
+
+    // Order pipeline pills
+    renderPills('order-pills', d.orders.statusCounts);
+    document.getElementById('rev-total').textContent = 'USD ' + fmtMoney(d.orders.totalRevenue);
+    document.getElementById('rev-month').textContent = 'USD ' + fmtMoney(d.orders.monthRevenue);
+
+    // Recent orders
+    const roBody = document.getElementById('recent-orders');
+    if (d.orders.recent.length) {
+      roBody.innerHTML = d.orders.recent.map(o => `
+        <tr onclick="location.href='/orders.html'" style="cursor:pointer;">
+          <td><strong>${esc(o.orderNo)}</strong></td>
+          <td>${esc(o.company)}</td>
+          <td><span class="badge badge-status-${(o.status||'').replace(/\s+/g,'-').toLowerCase()}">${esc(o.status)}</span></td>
+          <td style="text-align:right;">${esc(o.currency||'USD')} ${fmtMoney(o.total)}</td>
+          <td>${fmtDate(o.createdAt)}</td>
+        </tr>`).join('');
+    } else {
+      roBody.innerHTML = '<tr><td colspan="5" style="color:#aaa;text-align:center;padding:16px;">No orders yet.</td></tr>';
+    }
+
+    // Trade Docs
+    renderPills('lc-pills', d.tradeDocs.statusCounts);
+    if (!d.tradeDocs.total) document.getElementById('lc-empty').style.display = 'block';
+    if (d.tradeDocs.expiringLCs > 0) {
+      const w = document.getElementById('lc-expiring-warn');
+      w.style.display = 'block';
+      w.textContent = `⚠️ ${d.tradeDocs.expiringLCs} L/C${d.tradeDocs.expiringLCs>1?'s':''} expiring within 30 days`;
+    }
+
+    // Forecast
+    const fc = d.forecast.forecastTotal;
+    const fa = d.forecast.actualTotal;
+    const fpct = fc > 0 ? Math.min(100, Math.round(fa/fc*100)) : 0;
+    document.getElementById('fc-forecast').textContent = fmt(fc) + ' kg';
+    document.getElementById('fc-actual').textContent   = fmt(fa) + ' kg';
+    document.getElementById('fc-bar').style.width      = fpct + '%';
+    document.getElementById('fc-bar').style.background = fpct >= 100 ? '#2e7d32' : fpct >= 60 ? '#1a3a5c' : '#e65100';
+    document.getElementById('fc-pct').textContent      = fc > 0 ? `${fpct}% of forecast achieved` : 'No forecast entries this year';
+
+    // Samples
+    renderPills('sample-pills', d.samples.statusCounts);
+    if (!d.samples.total) document.getElementById('sample-empty').style.display = 'block';
+
+    // Upcoming meetings
+    const umEl = document.getElementById('upcoming-meetings');
+    if (d.meetings.upcoming.length) {
+      umEl.innerHTML = d.meetings.upcoming.map(m => {
+        const md = new Date(m.date);
+        return `<div class="meeting-row">
+          <div class="meeting-date-box">
+            <div class="mday">${md.getDate()}</div>
+            <div class="mmon">${md.toLocaleString('en-US',{month:'short'})}</div>
           </div>
-        </div>
-      `).join('');
-    } catch (err) {
-      if (err.message.includes('401') || err.message.toLowerCase().includes('token')) logout();
-      else grid.innerHTML = `<div class="empty-state"><p>Failed to load reports.</p><small>${err.message}</small></div>`;
+          <div class="meeting-info">
+            <div class="meeting-title">${esc(m.title)}</div>
+            <div class="meeting-meta">${esc(m.type)} · ${md.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}</div>
+          </div>
+          <span class="badge c-scheduled" style="font-size:10px;padding:2px 8px;">${esc(m.status)}</span>
+        </div>`;
+      }).join('');
+    } else {
+      umEl.innerHTML = '<p style="color:#aaa;font-size:12px;margin:0;">No meetings scheduled in the next 7 days.</p>';
     }
+
+    // Pricing table — use recent active orders
+    const priceRows = document.getElementById('pricing-tbody');
+    const activeOrders = d.orders.recent.filter(o => !['Cancelled','Rejected'].includes(o.status));
+    if (activeOrders.length) {
+      priceRows.innerHTML = activeOrders.map(o => `
+        <tr style="cursor:pointer;" onclick="location.href='/orders.html'">
+          <td><strong>${esc(o.orderNo)}</strong></td>
+          <td>${esc(o.company)}</td>
+          <td>—</td>
+          <td>—</td>
+          <td style="text-align:right;">${esc(o.currency||'USD')} ${fmtMoney(o.total)}</td>
+          <td><span class="badge badge-status-${(o.status||'').replace(/\s+/g,'-').toLowerCase()}">${esc(o.status)}</span></td>
+        </tr>`).join('');
+    } else {
+      priceRows.innerHTML = '<tr><td colspan="6" style="color:#aaa;text-align:center;padding:16px;">No active orders.</td></tr>';
+    }
+
+    // Reports
+    const repEl = document.getElementById('reports-summary');
+    if (d.reports.latest) {
+      const r = d.reports.latest;
+      repEl.innerHTML = `
+        <div style="font-size:12px;color:#555;margin-bottom:10px;">
+          <strong>${d.reports.total}</strong> report${d.reports.total!==1?'s':''} total
+        </div>
+        <div style="background:#f7f9fc;border-radius:6px;padding:10px 12px;border:1px solid #e8eef4;">
+          <div style="font-size:11px;color:#888;margin-bottom:2px;">Latest Report</div>
+          <div style="font-size:13px;font-weight:600;color:#1a3a5c;">${fmtDate(r.weekStart)} – ${fmtDate(r.weekEnd)}</div>
+          <div style="font-size:11px;color:#aaa;margin-top:2px;">${r.area||''} · ${(r.entries||[]).length} entries</div>
+        </div>
+        <div style="margin-top:10px;">
+          <a href="/dashboard.html" style="font-size:12px;color:#2d6a9f;font-weight:600;">View all reports →</a>
+        </div>`;
+    } else {
+      repEl.innerHTML = '<p style="color:#aaa;font-size:12px;margin:0;">No reports yet. <a href="/report.html" style="color:#2d6a9f;">Create first report →</a></p>';
+    }
+
+    // System info
+    document.getElementById('sys-orders').textContent    = d.orders.total;
+    document.getElementById('sys-contacts').textContent  = d.contacts.total;
+    document.getElementById('sys-products').textContent  = d.products.total;
+    document.getElementById('sys-forecasts').textContent = d.forecast.entryCount;
+    document.getElementById('sys-meetings').textContent  = d.meetings.total;
+    document.getElementById('sys-reports').textContent   = d.reports.total;
   }
 
-  loadReports();
+  loadDashboard();
 </script>
 </body>
 </html>

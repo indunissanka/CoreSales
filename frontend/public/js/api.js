@@ -84,6 +84,18 @@ const api = {
   getSettings:      ()       => apiFetch('/settings'),
   saveSettings:     (body)   => apiFetch('/settings', { method: 'PUT', body: JSON.stringify(body) }),
 
+  // Notes
+  getNotes:         ()        => apiFetch('/notes'),
+  createNote:       (body)    => apiFetch('/notes',       { method: 'POST',   body: JSON.stringify(body) }),
+  updateNote:       (id,body) => apiFetch(`/notes/${id}`, { method: 'PUT',    body: JSON.stringify(body) }),
+  deleteNote:       (id)      => apiFetch(`/notes/${id}`, { method: 'DELETE' }),
+
+  // To-Do Lists
+  getTodos:         ()        => apiFetch('/todos'),
+  createTodo:       (body)    => apiFetch('/todos',       { method: 'POST',   body: JSON.stringify(body) }),
+  updateTodo:       (id,body) => apiFetch(`/todos/${id}`, { method: 'PUT',    body: JSON.stringify(body) }),
+  deleteTodo:       (id)      => apiFetch(`/todos/${id}`, { method: 'DELETE' }),
+
   // Backup
   restoreBackup:    (body)   => apiFetch('/backup/import', { method: 'POST', body: JSON.stringify(body) }),
 

@@ -9,6 +9,7 @@ const meetingSchema = new mongoose.Schema({
   location:  String,
   type:      { type: String, enum: ['Call', 'Meeting', 'Site Visit', 'Video Call', 'Other'], default: 'Meeting' },
   notes:     String,
+  todoItems: [{ text: String, done: { type: Boolean, default: false } }],
   status:    { type: String, enum: ['Scheduled', 'Completed', 'Cancelled'], default: 'Scheduled' },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 }, { timestamps: true });

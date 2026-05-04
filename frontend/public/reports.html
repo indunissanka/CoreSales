@@ -1,0 +1,158 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports — CoreSales CRM</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/dashboard.html" class="brand">CoreSales CRM</a>
+  <div class="user-info">
+    <span id="topbar-name"></span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+<nav class="subnav">
+  <a href="/contacts.html">Contacts</a>
+  <a href="/products.html">Products</a>
+  <a href="/orders.html">Orders</a>
+  <a href="/pricing.html">Pricing</a>
+  <a href="/samples.html">Samples</a>
+  <a href="/lc-tracker.html">Trade Docs</a>
+  <a href="/forecast.html">Forecast</a>
+  <a href="/reports.html" class="active">Reports</a>
+  <a href="/meetings.html">Meetings</a>
+  <a href="/settings.html">Settings</a>
+</nav>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <h2>Weekly Reports</h2>
+    <button class="btn-new" onclick="newReport()">+ New Report</button>
+  </div>
+
+  <div class="report-paper" style="padding:20px;">
+    <div class="reports-grid" id="reports-grid">
+      <div class="empty-state"><p>Loading reports…</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- Preview modal -->
+<div class="preview-overlay" id="preview-overlay" onclick="closePreview()">
+  <div class="preview-panel" id="preview-panel" onclick="event.stopPropagation()">
+    <div class="preview-header">
+      <span id="preview-title"></span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm btn-edit" id="preview-edit-btn">Edit</button>
+        <button class="btn-sm" style="background:#e0e0e0;color:#444;" onclick="closePreview()">✕</button>
+      </div>
+    </div>
+    <div class="preview-body" id="preview-body"></div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || !localStorage.getItem('token')) location.replace('/index.html');
+  document.getElementById('topbar-name').textContent = user.name || user.username;
+
+  function logout() { localStorage.clear(); location.replace('/index.html'); }
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
+
+  function newReport() { location.href = '/report.html'; }
+  function editReport(id, e) { e.stopPropagation(); location.href = `/report.html?id=${id}`; }
+
+  async function deleteReport(id, e) {
+    e.stopPropagation();
+    if (!confirm('Delete this report? This cannot be undone.')) return;
+    try { await api.deleteReport(id); loadReports(); }
+    catch (err) { alert('Error: ' + err.message); }
+  }
+
+  function closePreview() { document.getElementById('preview-overlay').classList.remove('open'); }
+
+  async function openPreview(id, e) {
+    e.stopPropagation();
+    document.getElementById('preview-title').textContent = 'Loading…';
+    document.getElementById('preview-body').innerHTML = '<p style="padding:16px;color:#aaa;">Loading…</p>';
+    document.getElementById('preview-overlay').classList.add('open');
+    document.getElementById('preview-edit-btn').onclick = () => location.href = `/report.html?id=${id}`;
+    try {
+      const r = await api.getReport(id);
+      document.getElementById('preview-title').textContent = `${fmtDate(r.weekStart)} – ${fmtDate(r.weekEnd)}`;
+      const PURPOSE_LABELS = { isNew:'New', isFollowUp:'Follow-Up', isIllustration:'Illustration', isAfter:'After', isOrders:'Orders' };
+      const entriesHtml = (r.entries||[]).length ? `
+        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;">
+          <thead><tr style="background:#e8f0fe;">
+            <th style="padding:5px 8px;text-align:left;">#</th>
+            <th style="padding:5px 8px;text-align:left;">Client</th>
+            <th style="padding:5px 8px;text-align:left;">Date</th>
+            <th style="padding:5px 8px;text-align:left;">Purpose</th>
+            <th style="padding:5px 8px;text-align:left;">Content</th>
+          </tr></thead>
+          <tbody>${(r.entries||[]).map((en,i) => {
+            const purposes = Object.entries(en.purpose||{})
+              .filter(([k,v]) => v===true && PURPOSE_LABELS[k])
+              .map(([k]) => PURPOSE_LABELS[k]).join(', ');
+            return `<tr style="border-bottom:1px solid #f0f0f0;">
+              <td style="padding:5px 8px;color:#aaa;">${i+1}</td>
+              <td style="padding:5px 8px;font-weight:bold;">${esc(en.client||'—')}</td>
+              <td style="padding:5px 8px;white-space:nowrap;">${fmtDate(en.date)}</td>
+              <td style="padding:5px 8px;">${esc(purposes||'—')}</td>
+              <td style="padding:5px 8px;">${esc(en.content||'—')}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>` : '<p style="color:#aaa;font-size:13px;">No entries.</p>';
+      document.getElementById('preview-body').innerHTML = `
+        <div class="preview-meta-grid">
+          <div><span class="preview-label">Area</span><span>${esc(r.area||'—')}</span></div>
+          <div><span class="preview-label">Filled by</span><span>${esc(r.formFiller||'—')}</span></div>
+          <div><span class="preview-label">Entries</span><span>${(r.entries||[]).length}</span></div>
+        </div>
+        <div class="preview-section-title">Entries</div>
+        ${entriesHtml}
+        ${r.weeklyResults ? `<div class="preview-section-title" style="margin-top:14px;">Weekly Results</div><p style="font-size:13px;">${esc(r.weeklyResults)}</p>` : ''}
+        ${r.suggestions   ? `<div class="preview-section-title" style="margin-top:14px;">Suggestions</div><p style="font-size:13px;">${esc(r.suggestions)}</p>` : ''}
+      `;
+    } catch(err) {
+      document.getElementById('preview-body').innerHTML = `<p style="padding:16px;color:#c62828;">${err.message}</p>`;
+    }
+  }
+
+  async function loadReports() {
+    const grid = document.getElementById('reports-grid');
+    try {
+      const reports = await api.getReports();
+      if (!reports.length) {
+        grid.innerHTML = `<div class="empty-state"><p>No reports yet.</p><small>Click "+ New Report" to create your first weekly report.</small></div>`;
+        return;
+      }
+      grid.innerHTML = reports.map(r => `
+        <div class="report-card" onclick="location.href='/report.html?id=${r._id}'">
+          <div class="week-label">${fmtDate(r.weekStart)} – ${fmtDate(r.weekEnd)}</div>
+          <div class="meta">Area: ${r.area || '—'}</div>
+          <div class="meta">Filled by: ${r.formFiller || '—'}</div>
+          <span class="entry-count">${(r.entries||[]).length} entries</span>
+          <div class="card-actions">
+            <button class="btn-sm btn-preview" onclick="openPreview('${r._id}', event)">Preview</button>
+            <button class="btn-sm btn-edit"    onclick="editReport('${r._id}', event)">Edit</button>
+            <button class="btn-sm btn-delete"  onclick="deleteReport('${r._id}', event)">Delete</button>
+          </div>
+        </div>
+      `).join('');
+    } catch (err) {
+      if (err.message.includes('401') || err.message.toLowerCase().includes('token')) logout();
+      else grid.innerHTML = `<div class="empty-state"><p>Failed to load reports.</p><small>${err.message}</small></div>`;
+    }
+  }
+
+  loadReports();
+</script>
+</body>
+</html>

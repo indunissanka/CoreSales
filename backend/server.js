@@ -10,6 +10,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 app.use('/api/auth',      require('./routes/auth'));
+app.use('/api/dashboard', require('./routes/dashboard'));
 app.use('/api/reports',   require('./routes/reports'));
 app.use('/api/contacts',  require('./routes/contacts'));
 app.use('/api/products',  require('./routes/products'));
@@ -21,6 +22,8 @@ app.use('/api/currency',  require('./routes/currency'));
 app.use('/api/meetings',  require('./routes/meetings'));
 app.use('/api/settings',  require('./routes/settings'));
 app.use('/api/samples',   require('./routes/samples'));
+app.use('/api/notes',     require('./routes/notes'));
+app.use('/api/todos',     require('./routes/todos'));
 app.use('/api/backup',    require('./routes/backup'));
 app.use('/api/admin',     require('./routes/admin'));
 

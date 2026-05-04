@@ -1,0 +1,218 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notes — CoreSales CRM</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .notes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 4px;
+    }
+    .note-card {
+      border-radius: 8px;
+      padding: 16px;
+      border: 1px solid #d0d8e4;
+      box-shadow: 0 2px 6px rgba(0,0,0,.06);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      cursor: pointer;
+      transition: box-shadow .15s;
+    }
+    .note-card:hover { box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+    .note-card-title { font-size: 14px; font-weight: 700; color: #1a3a5c; word-break: break-word; }
+    .note-card-body  { font-size: 13px; color: #444; white-space: pre-wrap; word-break: break-word; max-height: 120px; overflow: hidden; }
+    .note-card-date  { font-size: 11px; color: #aaa; margin-top: auto; }
+    .note-pin { position: absolute; top: 10px; right: 36px; font-size: 15px; cursor: pointer; opacity: .5; }
+    .note-pin.pinned { opacity: 1; color: #e65100; }
+    .note-del { position: absolute; top: 8px; right: 10px; background: none; border: none; color: #ccc; font-size: 16px; cursor: pointer; }
+    .note-del:hover { color: #c62828; }
+    /* Modal */
+    .note-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; align-items:center; justify-content:center; }
+    .note-overlay.open { display:flex; }
+    .note-modal { background:#fff; border-radius:8px; padding:28px 32px; width:560px; max-width:96vw; max-height:90vh; overflow-y:auto; box-shadow:0 8px 32px rgba(0,0,0,.22); }
+    .note-modal h3 { margin:0 0 16px; font-size:15px; color:#1a3a5c; text-transform:uppercase; letter-spacing:1px; }
+    .note-modal label { font-size:12px; font-weight:600; color:#444; display:block; margin-bottom:3px; }
+    .note-modal input, .note-modal textarea { width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid #c0c8d4; border-radius:4px; font-size:13px; }
+    .note-modal textarea { resize:vertical; min-height:200px; font-family:inherit; }
+    .color-row { display:flex; gap:8px; margin:10px 0 16px; flex-wrap:wrap; }
+    .color-swatch { width:26px; height:26px; border-radius:50%; cursor:pointer; border:2px solid transparent; }
+    .color-swatch.selected { border-color: #1a3a5c; }
+    .modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:16px; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/dashboard.html" class="brand">CoreSales CRM</a>
+  <div class="user-info">
+    <span id="topbar-name"></span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+<nav class="subnav">
+  <a href="/contacts.html">Contacts</a>
+  <a href="/products.html">Products</a>
+  <a href="/orders.html">Orders</a>
+  <a href="/pricing.html">Pricing</a>
+  <a href="/samples.html">Samples</a>
+  <a href="/lc-tracker.html">Trade Docs</a>
+  <a href="/forecast.html">Forecast</a>
+  <a href="/reports.html">Reports</a>
+  <a href="/meetings.html">Meetings</a>
+  <a href="/settings.html">Settings</a>
+</nav>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <h2>Notes</h2>
+    <button class="btn-new" onclick="openModal()">+ New Note</button>
+  </div>
+  <div class="notes-grid" id="notes-grid">
+    <p style="color:#aaa;grid-column:1/-1;text-align:center;padding:40px;">Loading…</p>
+  </div>
+</div>
+
+<!-- Note Modal -->
+<div class="note-overlay" id="note-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="note-modal">
+    <h3 id="modal-heading">New Note</h3>
+    <div style="margin-bottom:12px;">
+      <label>Title *</label>
+      <input type="text" id="f-title" placeholder="Note title">
+    </div>
+    <div style="margin-bottom:4px;">
+      <label>Content</label>
+      <textarea id="f-content" placeholder="Write your note here…"></textarea>
+    </div>
+    <div>
+      <label>Card Color</label>
+      <div class="color-row" id="color-row"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-danger" id="btn-delete" style="display:none;background:#c62828;color:#fff;border:none;padding:7px 18px;border-radius:4px;cursor:pointer;font-size:13px;" onclick="deleteNote()">Delete</button>
+      <button style="background:#ccc;color:#333;border:none;padding:7px 18px;border-radius:4px;cursor:pointer;font-size:13px;" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveNote()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || !localStorage.getItem('token')) location.replace('/index.html');
+  document.getElementById('topbar-name').textContent = user.name || user.username;
+  function logout() { localStorage.clear(); location.replace('/index.html'); }
+
+  const COLORS = ['#ffffff','#fff9c4','#d4edda','#d1ecf1','#f8d7da','#e2d9f3','#fce4d6','#e8f0fe'];
+  let editingId  = null;
+  let chosenColor = '#ffffff';
+  let allNotes   = [];
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; }
+
+  // Build color swatches
+  const colorRow = document.getElementById('color-row');
+  COLORS.forEach(c => {
+    const sw = document.createElement('div');
+    sw.className = 'color-swatch' + (c === '#ffffff' ? ' selected' : '');
+    sw.style.background = c;
+    sw.style.border = c === '#ffffff' ? '2px solid #ccc' : '2px solid transparent';
+    sw.onclick = () => {
+      chosenColor = c;
+      document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+      sw.classList.add('selected');
+    };
+    colorRow.appendChild(sw);
+  });
+
+  function setColor(c) {
+    chosenColor = c;
+    document.querySelectorAll('.color-swatch').forEach((sw, i) => {
+      const match = COLORS[i] === c;
+      sw.classList.toggle('selected', match);
+    });
+  }
+
+  async function load() {
+    allNotes = await api.getNotes();
+    renderGrid();
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById('notes-grid');
+    if (!allNotes.length) {
+      grid.innerHTML = '<p style="color:#aaa;grid-column:1/-1;text-align:center;padding:40px;">No notes yet. Click + New Note to start.</p>';
+      return;
+    }
+    grid.innerHTML = allNotes.map(n => `
+      <div class="note-card" style="background:${n.color||'#fff'};" onclick="openModal('${n._id}')">
+        <span class="note-pin ${n.pinned?'pinned':''}" title="${n.pinned?'Unpin':'Pin'}" onclick="event.stopPropagation();togglePin('${n._id}',${!n.pinned})">📌</span>
+        <button class="note-del" title="Delete" onclick="event.stopPropagation();confirmDelete('${n._id}')">×</button>
+        <div class="note-card-title">${esc(n.title)}</div>
+        ${n.content ? `<div class="note-card-body">${esc(n.content)}</div>` : ''}
+        <div class="note-card-date">${fmtDate(n.updatedAt)}</div>
+      </div>`).join('');
+  }
+
+  function openModal(id) {
+    editingId = id || null;
+    document.getElementById('modal-heading').textContent = id ? 'Edit Note' : 'New Note';
+    document.getElementById('btn-delete').style.display = id ? 'inline-block' : 'none';
+    document.getElementById('f-title').value   = '';
+    document.getElementById('f-content').value = '';
+    setColor('#ffffff');
+
+    if (id) {
+      const n = allNotes.find(x => x._id === id);
+      if (n) {
+        document.getElementById('f-title').value   = n.title || '';
+        document.getElementById('f-content').value = n.content || '';
+        setColor(n.color || '#ffffff');
+      }
+    }
+    document.getElementById('note-overlay').classList.add('open');
+    document.getElementById('f-title').focus();
+  }
+
+  function closeModal() {
+    document.getElementById('note-overlay').classList.remove('open');
+    editingId = null;
+  }
+
+  async function saveNote() {
+    const title = document.getElementById('f-title').value.trim();
+    if (!title) { document.getElementById('f-title').focus(); return; }
+    const body = { title, content: document.getElementById('f-content').value.trim(), color: chosenColor };
+    try {
+      if (editingId) await api.updateNote(editingId, body);
+      else await api.createNote(body);
+      closeModal();
+      await load();
+    } catch (err) { alert(err.message); }
+  }
+
+  async function togglePin(id, pinned) {
+    try { await api.updateNote(id, { pinned }); await load(); } catch (err) { alert(err.message); }
+  }
+
+  async function confirmDelete(id) {
+    if (!confirm('Delete this note?')) return;
+    try { await api.deleteNote(id); await load(); } catch (err) { alert(err.message); }
+  }
+
+  async function deleteNote() {
+    if (!editingId || !confirm('Delete this note?')) return;
+    try { await api.deleteNote(editingId); closeModal(); await load(); } catch (err) { alert(err.message); }
+  }
+
+  load();
+</script>
+</body>
+</html>
