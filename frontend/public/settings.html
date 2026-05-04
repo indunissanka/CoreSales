@@ -125,6 +125,21 @@
         <div style="font-size:11px;color:#2d6a9f;margin-top:5px;">Preview: <strong id="prev-quotation-no">QT-M20260501A</strong></div>
       </div>
     </div>
+    <div style="margin-top:20px;max-width:240px;">
+      <div class="settings-row" style="margin:0;">
+        <label>Default Order Unit</label>
+        <select id="f-default-unit" style="width:100%;padding:7px 10px;border:1px solid #c0c8d4;border-radius:4px;font-size:13px;">
+          <option value="kg">kg</option>
+          <option value="ton">ton</option>
+          <option value="mt">mt</option>
+          <option value="lb">lb</option>
+          <option value="pcs">pcs</option>
+          <option value="box">box</option>
+          <option value="bag">bag</option>
+          <option value="drum">drum</option>
+        </select>
+      </div>
+    </div>
   </div>
 
   <div class="save-bar">
@@ -476,6 +491,7 @@
       document.getElementById('f-bank-details').value    = s.bankDetails   || '';
       document.getElementById('f-order-prefix').value     = s.orderNoPrefix     || 'TC-M';
       document.getElementById('f-quotation-prefix').value = s.quotationNoPrefix || 'QT-M';
+      document.getElementById('f-default-unit').value     = s.defaultUnit       || 'kg';
       if (s.logoBase64) setLogoPreview(s.logoBase64);
       updateNumberPreviews();
     } catch (err) { console.error(err); }
@@ -491,6 +507,7 @@
         logoBase64,
         orderNoPrefix:     document.getElementById('f-order-prefix').value.trim()     || 'TC-M',
         quotationNoPrefix: document.getElementById('f-quotation-prefix').value.trim() || 'QT-M',
+        defaultUnit:       document.getElementById('f-default-unit').value            || 'kg',
       });
       // Cache in localStorage for quick access across pages
       localStorage.setItem('companySettings', JSON.stringify({

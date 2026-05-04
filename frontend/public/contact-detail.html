@@ -45,6 +45,13 @@
       <div class="form-grid-2">
         <div class="form-group"><label>Company *</label><input id="f-company" type="text"></div>
         <div class="form-group"><label>Contact Name *</label><input id="f-name" type="text"></div>
+        <div class="form-group"><label>Status</label>
+          <select id="f-status" class="select-input">
+            <option value="Prospect">Prospect</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
         <div class="form-group"><label>Role</label>
           <select id="f-role" class="select-input">
             <option>Purchasing Manager</option>
@@ -129,6 +136,7 @@
     const body = {
       company: document.getElementById('f-company').value.trim(),
       name:    document.getElementById('f-name').value.trim(),
+      status:  document.getElementById('f-status').value,
       role:    document.getElementById('f-role').value,
       email:   document.getElementById('f-email').value.trim(),
       phone:   document.getElementById('f-phone').value.trim(),
@@ -220,6 +228,7 @@
       document.getElementById('page-title').textContent = contact.company;
       document.getElementById('f-company').value = contact.company || '';
       document.getElementById('f-name').value    = contact.name    || '';
+      document.getElementById('f-status').value  = contact.status  || 'Prospect';
       document.getElementById('f-role').value    = contact.role    || 'Other';
       document.getElementById('f-email').value   = contact.email   || '';
       document.getElementById('f-phone').value   = contact.phone   || '';

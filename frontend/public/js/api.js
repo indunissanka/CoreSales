@@ -143,7 +143,7 @@ const api = {
       const res = await fetch('/api/settings', { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) return;
       const s = await res.json();
-      const cache = { companyName: s.companyName, companySlogan: s.companySlogan, logoBase64: s.logoBase64, sellerAddress: s.sellerAddress, bankDetails: s.bankDetails };
+      const cache = { companyName: s.companyName, companySlogan: s.companySlogan, logoBase64: s.logoBase64, sellerAddress: s.sellerAddress, bankDetails: s.bankDetails, defaultUnit: s.defaultUnit || 'kg' };
       localStorage.setItem('companySettings', JSON.stringify(cache));
       render(cache);
     } catch (_) {}

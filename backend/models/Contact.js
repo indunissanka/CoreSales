@@ -12,6 +12,7 @@ const contactSchema = new mongoose.Schema({
   createdBy:   { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   company:     { type: String, required: true },
   name:        { type: String, required: true },
+  status:      { type: String, enum: ['Active', 'Prospect', 'Inactive'], default: 'Prospect' },
   role:        { type: String, enum: ['Purchasing Manager', 'Lab Technician', 'Director', 'Other'], default: 'Other' },
   email:       String,
   phone:       String,

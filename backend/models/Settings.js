@@ -9,6 +9,7 @@ const settingsSchema = new mongoose.Schema({
   logoBase64:        { type: String, default: '' },
   orderNoPrefix:     { type: String, default: 'TC-M' },
   quotationNoPrefix: { type: String, default: 'QT-M' },
+  defaultUnit:       { type: String, default: 'kg' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Settings', settingsSchema);

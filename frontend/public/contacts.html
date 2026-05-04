@@ -93,6 +93,7 @@
         <div class="week-label">${esc(c.company)}</div>
         <div class="meta">${esc(c.name)}</div>
         <div class="meta" style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+          <span class="badge badge-contact-status-${(c.status||'prospect').toLowerCase()}">${esc(c.status||'Prospect')}</span>
           <span class="badge badge-role">${esc(c.role||'Other')}</span>
           <span style="color:#aaa">${esc(c.country||'')}</span>
         </div>
@@ -134,6 +135,7 @@
       document.getElementById('preview-body').innerHTML = `
         <div class="preview-meta-grid">
           <div><span class="preview-label">Name</span><span>${esc(c.name)}</span></div>
+          <div><span class="preview-label">Status</span><span><span class="badge badge-contact-status-${(c.status||'prospect').toLowerCase()}">${esc(c.status||'Prospect')}</span></span></div>
           <div><span class="preview-label">Role</span><span><span class="badge badge-role">${esc(c.role||'Other')}</span></span></div>
           <div><span class="preview-label">Email</span><span>${c.email ? `<a href="mailto:${esc(c.email)}" style="color:#2d6a9f;">${esc(c.email)}</a>` : '—'}</span></div>
           <div><span class="preview-label">Phone</span><span>${esc(c.phone||'—')}</span></div>

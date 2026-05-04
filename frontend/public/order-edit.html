@@ -337,7 +337,11 @@
     calcTotal();
   }
 
-  function addItem() { items.push({ productId:'', qty:1, unit:'kg', unitPrice:0, drumsPrice:0, bankCharge:0, shipping:0, commission:0 }); renderItems(); }
+  function addItem() {
+    let defUnit = 'kg';
+    try { defUnit = JSON.parse(localStorage.getItem('companySettings') || '{}').defaultUnit || 'kg'; } catch(_) {}
+    items.push({ productId:'', qty:1, unit:defUnit, unitPrice:0, drumsPrice:0, bankCharge:0, shipping:0, commission:0 }); renderItems();
+  }
   function removeItem(idx) { items.splice(idx,1); renderItems(); }
 
   function addTermLine(val) {
