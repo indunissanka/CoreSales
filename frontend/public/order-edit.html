@@ -70,7 +70,10 @@
           </select>
         </div>
         <div class="form-group"><label>Port of Loading</label><input id="f-pol" type="text" placeholder="e.g. Shanghai"></div>
-        <div class="form-group" style="grid-column:1/-1"><label>Port of Destination</label><input id="f-pod" type="text" placeholder="e.g. Chittagong"></div>
+        <div class="form-group"><label>Port of Destination</label><input id="f-pod" type="text" placeholder="e.g. Chittagong"></div>
+        <div class="form-group"><label>Destination Country</label>
+          <select id="f-dest-country" class="select-input"></select>
+        </div>
         <div class="form-group" style="grid-column:1/-1"><label>Notes</label><textarea id="f-notes" rows="2"></textarea></div>
       </div>
     </div>
@@ -251,6 +254,13 @@
   document.getElementById('topbar-name').textContent = user.name || user.username;
   function logout() { localStorage.clear(); location.replace('/index.html'); }
 
+  const COUNTRIES = ["Afghanistan","Albania","Algeria","Angola","Argentina","Armenia","Australia","Austria","Azerbaijan","Bahrain","Bangladesh","Belarus","Belgium","Bolivia","Bosnia and Herzegovina","Brazil","Bulgaria","Cambodia","Cameroon","Canada","Chile","China","Colombia","Croatia","Cuba","Cyprus","Czech Republic","Denmark","Ecuador","Egypt","Estonia","Ethiopia","Finland","France","Georgia","Germany","Ghana","Greece","Guatemala","Hong Kong","Hungary","India","Indonesia","Iran","Iraq","Ireland","Israel","Italy","Ivory Coast","Japan","Jordan","Kazakhstan","Kenya","Kuwait","Kyrgyzstan","Latvia","Lebanon","Libya","Lithuania","Luxembourg","Malaysia","Mexico","Moldova","Mongolia","Morocco","Mozambique","Myanmar","Nepal","Netherlands","New Zealand","Nigeria","North Korea","Norway","Oman","Pakistan","Palestine","Panama","Paraguay","Peru","Philippines","Poland","Portugal","Qatar","Romania","Russia","Saudi Arabia","Senegal","Serbia","Singapore","Slovakia","Slovenia","South Africa","South Korea","Spain","Sri Lanka","Sudan","Sweden","Switzerland","Syria","Taiwan","Tajikistan","Tanzania","Thailand","Tunisia","Turkey","Turkmenistan","Uganda","Ukraine","United Arab Emirates","United Kingdom","United States","Uruguay","Uzbekistan","Venezuela","Vietnam","Yemen","Zambia","Zimbabwe"];
+
+  function buildCountrySelect(el, selected) {
+    el.innerHTML = '<option value="">-- Select Country --</option>' +
+      COUNTRIES.map(c => `<option${c === selected ? ' selected' : ''}>${c}</option>`).join('');
+  }
+
   const params = new URLSearchParams(location.search);
   let orderId    = params.get('id')        || null;
   let contactId  = params.get('contactId') || null;
@@ -392,8 +402,9 @@
       status:            document.getElementById('f-status').value,
       currency:          document.getElementById('f-currency').value,
       incoterm:          document.getElementById('f-incoterm').value,
-      portOfLoading:     document.getElementById('f-pol').value.trim(),
-      portOfDestination: document.getElementById('f-pod').value.trim(),
+      portOfLoading:      document.getElementById('f-pol').value.trim(),
+      portOfDestination:  document.getElementById('f-pod').value.trim(),
+      destinationCountry: document.getElementById('f-dest-country').value,
       notes:             document.getElementById('f-notes').value.trim(),
       inspectionCharges: parseFloat(document.getElementById('f-inspection').value) || 0,
       taxRate:           parseFloat(document.getElementById('f-taxrate').value)    || 0,
@@ -506,6 +517,7 @@
           shipping:   i.shipping   || 0,
           commission: i.commission || 0,
         }));
+        buildCountrySelect(document.getElementById('f-dest-country'), order.destinationCountry || '');
         document.getElementById('f-inspection').value  = order.inspectionCharges || 0;
         document.getElementById('f-taxrate').value      = order.taxRate           || 0;
         document.getElementById('f-bank-method').value = order.bankChargeMethod  || '';
@@ -539,6 +551,7 @@
     renderItems();
   }
 
+  buildCountrySelect(document.getElementById('f-dest-country'), 'Bangladesh');
   load();
 </script>
 </body>
