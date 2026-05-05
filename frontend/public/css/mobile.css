@@ -1,0 +1,488 @@
+/* Mobile Theme — CoreSales CRM */
+
+/* Hide mobile-injected elements on desktop */
+.mobile-bottom-nav,
+.mobile-more-overlay,
+.mobile-more-drawer {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* ── Topbar adjustments ── */
+  .topbar {
+    height: 45px;
+    padding: 0 16px;
+  }
+  .topbar .brand {
+    font-size: 14px;
+    letter-spacing: 0;
+  }
+  .topbar .user-info {
+    gap: 12px;
+    font-size: 12px;
+  }
+  .btn-logout {
+    padding: 3px 10px;
+    font-size: 11px;
+  }
+
+  /* ── Hide desktop subnav ── */
+  .subnav {
+    display: none !important;
+  }
+
+  /* ── Page wrapper padding ── */
+  .page-wrap {
+    padding-bottom: 70px;
+  }
+
+  /* ── Auth form responsive ── */
+  .auth-box {
+    width: 90%;
+    padding: 32px 20px;
+    border-radius: 8px;
+  }
+  .auth-box h1 {
+    font-size: 18px;
+  }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px; /* prevents iOS auto-zoom on input focus */
+  }
+
+  /* ── Entry forms responsive ── */
+  .entry-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .entry-form-2col {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Bottom navigation bar ── */
+  .mobile-bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #1a3a5c;
+    display: flex;
+    justify-content: space-around;
+    align-items: stretch;
+    box-shadow: 0 -1px 8px rgba(0, 0, 0, 0.15);
+    z-index: 9999;
+  }
+
+  .mobile-nav-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.2s, background 0.2s;
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .mobile-nav-tab:active {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .mobile-nav-tab.active {
+    color: #4d9fe0;
+  }
+
+  .mobile-nav-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-nav-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── More drawer overlay ── */
+  .mobile-more-overlay,
+  .mobile-more-drawer {
+    z-index: 10000;
+  }
+  .mobile-more-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1001;
+  }
+
+  .mobile-more-overlay.open {
+    display: block;
+  }
+
+  /* ── More drawer ── */
+  .mobile-more-drawer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 80vh;
+    background: #fff;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1002;
+    transform: translateY(100%);
+    transition: transform 0.3s ease-out;
+    overflow-y: auto;
+  }
+
+  .mobile-more-drawer.open {
+    display: block;
+    transform: translateY(0);
+  }
+
+  .mobile-more-handle {
+    display: flex;
+    justify-content: center;
+    padding: 12px 0;
+  }
+
+  .mobile-more-handle::before {
+    content: '';
+    width: 40px;
+    height: 4px;
+    background: #ccc;
+    border-radius: 2px;
+  }
+
+  .mobile-more-links {
+    list-style: none;
+    padding: 8px 0;
+  }
+
+  .mobile-more-links li {
+    border-bottom: 1px solid #e8e8e8;
+  }
+
+  .mobile-more-links li:last-child {
+    border-bottom: none;
+  }
+
+  .mobile-more-links a {
+    display: block;
+    padding: 16px 20px;
+    color: #1a3a5c;
+    font-weight: 500;
+    font-size: 14px;
+    transition: background 0.2s;
+  }
+
+  .mobile-more-links a:active {
+    background: #f0f4f8;
+  }
+
+  .mobile-more-links a.active {
+    color: #4d9fe0;
+    font-weight: 600;
+  }
+
+  /* ── Data table → card transformation ── */
+  .data-table,
+  .data-table thead,
+  .data-table tbody,
+  .data-table th,
+  .data-table td,
+  .data-table tr {
+    display: block;
+    width: 100%;
+  }
+
+  .data-table {
+    background: transparent;
+    padding: 0 0 12px 0;
+  }
+
+  .data-table thead {
+    display: none;
+  }
+
+  .data-table tbody {
+    display: block;
+  }
+
+  .data-table tr {
+    background: #fff;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    padding: 12px;
+    border: none;
+  }
+
+  .data-table tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .data-table td {
+    padding: 4px 0 8px 0;
+    border: none;
+    font-size: 13px;
+    line-height: 1.4;
+    /* override inline styles that truncate text on mobile */
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    text-align: left !important;
+  }
+
+  .data-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-weight: 600;
+    color: #1a3a5c;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+    opacity: 0.7;
+  }
+
+  .data-table td:first-child {
+    padding-top: 0;
+  }
+
+  .data-table td:last-child {
+    padding-bottom: 0;
+  }
+
+  /* ── Orders table: hide low-priority columns on mobile ── */
+  /* Hide Incoterm and Destination columns (columns 5 and 6) */
+  .data-table td:nth-child(5),
+  .data-table td:nth-child(6),
+  .data-table thead th:nth-child(5),
+  .data-table thead th:nth-child(6) {
+    display: none;
+  }
+
+  /* Make the Actions cell buttons full-width on mobile card */
+  .data-table td:last-child {
+    display: flex;
+    gap: 8px;
+    padding-top: 10px;
+    margin-top: 4px;
+    border-top: 1px solid #f0f0f0;
+  }
+
+  .data-table td:last-child::before {
+    display: none; /* hide "ACTIONS" label above buttons */
+  }
+
+  .data-table td:last-child .btn-sm {
+    flex: 1;
+    text-align: center;
+    padding: 8px 0;
+    font-size: 12px;
+  }
+
+  /* Forecast: hide low-priority columns in card view */
+  #forecast-table td[data-label="Q1 Fcst"],
+  #forecast-table td[data-label="Q1 Act"],
+  #forecast-table td[data-label="Q2 Fcst"],
+  #forecast-table td[data-label="Q2 Act"],
+  #forecast-table td[data-label="Q3 Fcst"],
+  #forecast-table td[data-label="Q3 Act"],
+  #forecast-table td[data-label="Q4 Fcst"],
+  #forecast-table td[data-label="Q4 Act"],
+  #forecast-table td[data-label="Unit"],
+  #forecast-table td[data-label="Progress"] {
+    display: none;
+  }
+
+  /* Card grid (contacts) ── */
+  .reports-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+
+  .report-card {
+    margin-bottom: 0;
+  }
+
+  /* ── Status tabs ── */
+  .status-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 0;
+  }
+
+  .status-tab {
+    flex: 1 1 auto;
+    min-width: calc(33.333% - 8px);
+    padding: 8px 10px;
+    border-radius: 20px;
+    border: 1.5px solid #b0bac4;
+    background: #fff;
+    color: #1a3a5c;
+    font-size: 12px;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+  }
+
+  .status-tab.active {
+    background: #1a3a5c;
+    border-color: #1a3a5c;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(26, 58, 92, 0.2);
+  }
+
+  /* ── Preview panel ── */
+  .preview-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    align-items: flex-end;
+  }
+
+  .preview-overlay.open {
+    display: flex;
+  }
+
+  .preview-panel {
+    width: 100%;
+    height: 85vh;
+    max-height: 85vh;
+    background: #fff;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.15);
+    max-width: 100%;
+  }
+
+  .preview-body {
+    max-height: calc(85vh - 50px);
+  }
+
+  .preview-meta-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Page header ── */
+  .page-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .page-header h1 {
+    width: 100%;
+    font-size: 18px;
+  }
+
+  .page-header .btn-new {
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+
+  /* ── Search and filter inputs ── */
+  .search-input,
+  .select-input {
+    font-size: 16px; /* prevent iOS zoom */
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  /* ── Buttons ── */
+  .btn-sm {
+    padding: 6px 10px;
+    font-size: 11px;
+  }
+
+  /* ── Report form ── */
+  .report-paper {
+    padding: 12px;
+  }
+
+  .inner-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin: 0 0 16px 0;
+    padding: 4px;
+    background: #f0f4f8;
+    border-radius: 8px;
+  }
+
+  .inner-tab {
+    padding: 10px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    text-align: center;
+    color: #1a3a5c;
+    background: transparent;
+    border-radius: 4px;
+    transition: background 0.2s;
+    cursor: pointer;
+  }
+
+  .inner-tab.active {
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  }
+
+  /* ── Inner page tabs (two-col grids, etc.) ── */
+  .two-col-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Badges ── */
+  .badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  /* ── Notes / form fields ── */
+  textarea {
+    font-size: 16px; /* prevent iOS zoom */
+  }
+
+  /* ── Weekly report form ── */
+  .report-bottom {
+    flex-direction: column;
+  }
+
+  .bottom-right {
+    width: 100%;
+  }
+
+  /* ── Footer / bottom spacing ── */
+  body {
+    padding-bottom: 0;
+  }
+}

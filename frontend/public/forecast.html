@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Forecast — CoreSales CRM</title>
   <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <script src="/js/mobile-nav.js" defer></script>
 </head>
 <body>
 
@@ -147,11 +149,18 @@
         const totalF = [1,2,3,4].reduce((s,q) => s + (qs[q]?.forecastQty||0), 0);
         const totalA = [1,2,3,4].reduce((s,q) => s + (qs[q]?.actualQty||0), 0);
         return `<tr>
-          <td><strong>${esc(p.name)}</strong></td>
-          ${[1,2,3,4].map(q => `<td style="text-align:right;">${qs[q]?.forecastQty||'—'}</td><td style="text-align:right;">${qs[q]?.actualQty||'—'}</td>`).join('')}
-          <td style="text-align:right;font-weight:bold;">${totalF}</td>
-          <td style="text-align:right;font-weight:bold;">${totalA}</td>
-          <td></td>
+          <td data-label="Product"><strong>${esc(p.name)}</strong></td>
+          <td data-label="Q1 Fcst" style="text-align:right;">${qs[1]?.forecastQty||'—'}</td>
+          <td data-label="Q1 Act" style="text-align:right;">${qs[1]?.actualQty||'—'}</td>
+          <td data-label="Q2 Fcst" style="text-align:right;">${qs[2]?.forecastQty||'—'}</td>
+          <td data-label="Q2 Act" style="text-align:right;">${qs[2]?.actualQty||'—'}</td>
+          <td data-label="Q3 Fcst" style="text-align:right;">${qs[3]?.forecastQty||'—'}</td>
+          <td data-label="Q3 Act" style="text-align:right;">${qs[3]?.actualQty||'—'}</td>
+          <td data-label="Q4 Fcst" style="text-align:right;">${qs[4]?.forecastQty||'—'}</td>
+          <td data-label="Q4 Act" style="text-align:right;">${qs[4]?.actualQty||'—'}</td>
+          <td data-label="Total Fcst" style="text-align:right;font-weight:bold;">${totalF}</td>
+          <td data-label="Total Act" style="text-align:right;font-weight:bold;">${totalA}</td>
+          <td data-label="Actions"></td>
         </tr>`;
       }).join('');
     } else {
@@ -166,18 +175,18 @@
         const pct      = forecast > 0 ? Math.min(100, Math.round(actual/forecast*100)) : 0;
         const varColor = variance >= 0 ? '#2e7d32' : '#c62828';
         return `<tr>
-          <td>${esc(f.product?.name||'—')}</td>
-          <td>${esc(f.unit||'ton')}</td>
-          <td style="text-align:right;">${forecast.toLocaleString()}</td>
-          <td style="text-align:right;">${actual.toLocaleString()}</td>
-          <td style="text-align:right;color:${varColor};font-weight:bold;">${variance>=0?'+':''}${variance.toLocaleString()}</td>
-          <td style="min-width:120px;">
+          <td data-label="Product">${esc(f.product?.name||'—')}</td>
+          <td data-label="Unit">${esc(f.unit||'ton')}</td>
+          <td data-label="Forecast" style="text-align:right;">${forecast.toLocaleString()}</td>
+          <td data-label="Actual" style="text-align:right;">${actual.toLocaleString()}</td>
+          <td data-label="Variance" style="text-align:right;color:${varColor};font-weight:bold;">${variance>=0?'+':''}${variance.toLocaleString()}</td>
+          <td data-label="Progress" style="min-width:120px;">
             <div style="background:#e0e0e0;border-radius:4px;height:10px;overflow:hidden;width:100px;">
               <div style="background:${pct>=100?'#2e7d32':'#1a3a5c'};width:${pct}%;height:100%;transition:width .3s;"></div>
             </div>
             <span style="font-size:11px;color:#555;">${pct}%</span>
           </td>
-          <td><button class="btn-sm btn-edit" onclick="openEdit('${f._id}',${forecast},${actual},'${esc(f.notes||'')}')">Edit</button>
+          <td data-label="Actions"><button class="btn-sm btn-edit" onclick="openEdit('${f._id}',${forecast},${actual},'${esc(f.notes||'')}')">Edit</button>
               <button class="btn-sm btn-delete" onclick="deleteForecast('${f._id}')">Del</button></td>
         </tr>`;
       }).join('');

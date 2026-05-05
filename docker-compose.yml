@@ -16,6 +16,8 @@ services:
     build: ./backend
     container_name: coresales-backend
     restart: unless-stopped
+    ports:
+      - "3000:3000"
     environment:
       PORT: 3000
       MONGODB_URI: mongodb://admin:password123@mongodb:27017/coresales?authSource=admin

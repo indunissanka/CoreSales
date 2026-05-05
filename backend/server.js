@@ -41,7 +41,7 @@ const connect = () => {
         const first = await User.findOne().sort({ createdAt: 1 });
         if (first) { first.role = 'admin'; await first.save(); console.log(`Promoted ${first.username} to admin`); }
       }
-      app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+      app.listen(PORT, '0.0.0.0', () => console.log(`Backend running on port ${PORT}`));
     })
     .catch(err => {
       if (retries-- > 0) {
