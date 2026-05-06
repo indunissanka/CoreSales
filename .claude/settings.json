@@ -6,7 +6,13 @@
       "Bash(curl -s http://localhost:8080)",
       "Bash(curl -s http://localhost:3000/health)",
       "Bash(docker-compose restart *)",
-      "Bash(sort -t: -k3 -n)"
+      "Bash(sort -t: -k3 -n)",
+      "Bash(DOCKER_HOST=unix:////Users/markwu/.docker/run/docker.sock docker logs coresales-backend --tail=10)",
+      "Bash(DOCKER_HOST=unix:////Users/markwu/.docker/run/docker.sock docker restart coresales-backend)",
+      "Bash(DOCKER_HOST=unix:////Users/markwu/.docker/run/docker.sock docker logs coresales-backend --tail=5)",
+      "Bash(git -C /Users/markwu/Dev/CoreSales status)",
+      "Bash(git -C /Users/markwu/Dev/CoreSales log --oneline -5)",
+      "Bash(git -C /Users/markwu/Dev/CoreSales diff --stat)"
     ]
   }
 }
