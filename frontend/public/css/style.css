@@ -967,3 +967,10 @@ a { text-decoration: none; color: inherit; }
     margin-top: 6px;
   }
 }
+
+/* ── Pagination ── */
+.pager { display:flex; align-items:center; justify-content:center; gap:12px; padding:12px 0; }
+.pager-btn { background:#1a3a5c; color:#fff; border:none; border-radius:4px; padding:5px 14px; font-size:13px; cursor:pointer; transition:background .15s; }
+.pager-btn:hover:not([disabled]) { background:#2d6a9f; }
+.pager-btn[disabled] { background:#ccc; cursor:default; }
+.pager-info { font-size:13px; color:#666; }

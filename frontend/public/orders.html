@@ -60,14 +60,15 @@
     <table class="data-table">
       <thead>
         <tr>
-          <th>Order No</th><th>Company</th><th>Products</th>
+          <th>Order No</th><th>Quotation No</th><th>Company</th><th>Products</th>
           <th>Total</th><th>Incoterm</th><th>Destination</th>
           <th>Status</th><th>Date</th><th>Actions</th>
         </tr>
       </thead>
-      <tbody id="orders-tbody"><tr><td colspan="9" class="empty-cell">Loading…</td></tr></tbody>
+      <tbody id="orders-tbody"><tr><td colspan="10" class="empty-cell">Loading…</td></tr></tbody>
     </table>
   </div>
+  <div id="orders-pager"></div>
 </div>
 
 <!-- Preview panel -->
@@ -85,6 +86,7 @@
   </div>
 </div>
 
+<script src="/js/pagination.js"></script>
 <script src="/js/api.js"></script>
 <script>
   const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -94,16 +96,25 @@
 
   let currentStatus = '';
   let _allOrders = [];
+  let _ordersPage = 1;
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
+  function dateFromOrderNo(orderNo) {
+    const m = String(orderNo||'').match(/(\d{4})(\d{2})(\d{2})/);
+    if (!m) return '—';
+    return new Date(`${m[1]}-${m[2]}-${m[3]}`).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  }
 
   function setStatus(status) {
     currentStatus = status;
+    _ordersPage = 1;
     document.querySelectorAll('.status-tab').forEach(t =>
       t.classList.toggle('active', t.textContent === (status || 'All'))
     );
     load();
   }
+
+  function goOrdersPage(p) { _ordersPage = p; renderOrdersTable(); }
 
   function closePreview() {
     document.getElementById('preview-overlay').classList.remove('open');
@@ -391,33 +402,62 @@
     await load();
   }
 
+  function renderOrdersTable() {
+    const tbody = document.getElementById('orders-tbody');
+    if (!_allOrders.length) { tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">No orders found.</td></tr>`; document.getElementById('orders-pager').innerHTML=''; return; }
+    const page = pageSlice(_allOrders, _ordersPage);
+    tbody.innerHTML = page.map(o => {
+      const products = (o.items||[]).map(i=>i.product?.name||'').filter(Boolean).join(', ')||'—';
+      return `
+        <tr style="cursor:pointer;" onclick="location.href='/order-edit.html?id=${o._id}'">
+          <td><strong>${esc(o.orderNo)}</strong></td>
+          <td>${esc(o.quotationNo||'—')}</td>
+          <td>${esc(o.contact?.company||'—')}</td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(products)}">${esc(products)}</td>
+          <td style="text-align:right;">${esc(o.currency||'USD')} ${(o.totalAmount||0).toLocaleString()}</td>
+          <td style="text-align:center;">${esc(o.incoterm||'—')}</td>
+          <td>${esc(o.portOfDestination||'—')}</td>
+          <td style="text-align:center;"><span class="badge badge-status-${(o.status||'').replace(/\s+/g,'-').toLowerCase()}">${esc(o.status)}</span></td>
+          <td>${dateFromOrderNo(o.orderNo)}</td>
+          <td style="white-space:nowrap;" onclick="event.stopPropagation()">
+            <button class="btn-sm btn-preview" onclick="openPreview('${o._id}')">Preview</button>
+            <button class="btn-sm btn-edit"    onclick="location.href='/order-edit.html?id=${o._id}'">Edit</button>
+            <button class="btn-sm" style="background:#e3f2fd;color:#1565c0;" onclick="duplicateOrder('${o._id}')">Duplicate</button>
+            <button class="btn-sm" style="background:#ffebee;color:#c62828;" onclick="deleteOrder('${o._id}','${esc(o.orderNo)}')">Delete</button>
+          </td>
+        </tr>`;
+    }).join('');
+    renderPager('orders-pager', _allOrders.length, _ordersPage, 'goOrdersPage');
+  }
+
   async function load() {
     const tbody = document.getElementById('orders-tbody');
-    tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">Loading…</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">Loading…</td></tr>`;
     try {
-      const orders = await api.getOrders(currentStatus ? { status: currentStatus } : {});
-      _allOrders = orders;
-      if (!orders.length) { tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">No orders found.</td></tr>`; return; }
-      tbody.innerHTML = orders.map(o => {
-        const products = (o.items||[]).map(i=>i.product?.name||'').filter(Boolean).join(', ')||'—';
-        return `
-          <tr style="cursor:pointer;" onclick="location.href='/order-edit.html?id=${o._id}'">
-            <td><strong>${esc(o.orderNo)}</strong></td>
-            <td>${esc(o.contact?.company||'—')}</td>
-            <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(products)}">${esc(products)}</td>
-            <td style="text-align:right;">${esc(o.currency||'USD')} ${(o.totalAmount||0).toLocaleString()}</td>
-            <td style="text-align:center;">${esc(o.incoterm||'—')}</td>
-            <td>${esc(o.portOfDestination||'—')}</td>
-            <td style="text-align:center;"><span class="badge badge-status-${(o.status||'').replace(/\s+/g,'-').toLowerCase()}">${esc(o.status)}</span></td>
-            <td>${fmtDate(o.createdAt)}</td>
-            <td style="white-space:nowrap;" onclick="event.stopPropagation()">
-              <button class="btn-sm btn-preview" onclick="openPreview('${o._id}')">Preview</button>
-              <button class="btn-sm btn-edit"    onclick="location.href='/order-edit.html?id=${o._id}'">Edit</button>
-            </td>
-          </tr>`;
-      }).join('');
+      _allOrders = await api.getOrders(currentStatus ? { status: currentStatus } : {});
+      renderOrdersTable();
     } catch(err) {
-      tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">${err.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">${err.message}</td></tr>`;
+    }
+  }
+
+  async function deleteOrder(id, orderNo) {
+    if (!confirm(`Delete order ${orderNo}? This cannot be undone.`)) return;
+    try {
+      await api.deleteOrder(id);
+      await load();
+    } catch(err) {
+      alert('Delete failed: ' + err.message);
+    }
+  }
+
+  async function duplicateOrder(id) {
+    try {
+      const copy = await api.duplicateOrder(id);
+      await load();
+      location.href = `/order-edit.html?id=${copy._id}`;
+    } catch(err) {
+      alert('Duplicate failed: ' + err.message);
     }
   }
 

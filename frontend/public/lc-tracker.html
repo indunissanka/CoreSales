@@ -59,6 +59,7 @@
       <tbody id="lc-tbody"><tr><td colspan="9" class="empty-cell">Loading…</td></tr></tbody>
     </table>
   </div>
+  <div id="lc-pager"></div>
 </div>
 
 <!-- Add LC modal -->
@@ -99,6 +100,7 @@
   </div>
 </div>
 
+<script src="/js/pagination.js"></script>
 <script src="/js/api.js"></script>
 <script>
   const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -107,6 +109,8 @@
   function logout() { localStorage.clear(); location.replace('/index.html'); }
 
   let currentStatus = '';
+  let _allLcs = [];
+  let _lcPage = 1;
   let currentUpdateId = null;
   let currentUpdateAction = null;
   let piOrderMap = {};
@@ -121,10 +125,38 @@
 
   function setStatus(status) {
     currentStatus = status;
+    _lcPage = 1;
     document.querySelectorAll('.status-tab').forEach(t =>
       t.classList.toggle('active', t.textContent === (status||'All'))
     );
     load();
+  }
+
+  function goLcPage(p) { _lcPage = p; renderLcTable(); }
+
+  function renderLcTable() {
+    const tbody = document.getElementById('lc-tbody');
+    if (!_allLcs.length) { tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">No letters of credit found.</td></tr>`; document.getElementById('lc-pager').innerHTML=''; return; }
+    tbody.innerHTML = pageSlice(_allLcs, _lcPage).map(lc => {
+      const days = daysSince(lc.piDate);
+      const overdue = lc.status === 'Pending' && days > 14;
+      return `
+        <tr>
+          <td>${esc(lc.order?.orderNo||'—')}</td>
+          <td>${esc(lc.proformaInvoice?.piNumber||'—')}</td>
+          <td>${fmtDate(lc.piDate)}</td>
+          <td style="text-align:center;${overdue?'color:#c62828;font-weight:bold;':''}">${days !== null ? days + 'd' : '—'}${overdue?' ⚠':''}</td>
+          <td>${esc(lc.lcNumber||'—')}</td>
+          <td>${esc(lc.issuingBank||'—')}</td>
+          <td style="text-align:center;"><span class="badge badge-status-${(lc.status||'').replace(/\s+/g,'-').toLowerCase()}">${esc(lc.status)}</span></td>
+          <td>${fmtDate(lc.expiryDate)}</td>
+          <td style="white-space:nowrap;">
+            ${lc.status==='Pending' ? `<button class="btn-sm btn-edit" onclick="openUpdate('${lc._id}','opened')">Mark Opened</button>` : ''}
+            ${lc.status!=='Discrepancy Found' && lc.status!=='Settled' ? `<button class="btn-sm btn-delete" onclick="openUpdate('${lc._id}','discrepancy')">Discrepancy</button>` : ''}
+          </td>
+        </tr>`;
+    }).join('');
+    renderPager('lc-pager', _allLcs.length, _lcPage, 'goLcPage');
   }
 
   async function load() {
@@ -143,29 +175,8 @@
           alerts.map(a => `<a href="/order-edit.html?id=${a.order?._id||a.order}" style="color:#fff;text-decoration:underline;">${esc(a.order?.orderNo||'Order')}</a>`).join(', ');
       } else { banner.style.display = 'none'; }
 
-      if (!lcs.length) {
-        tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">No letters of credit found.</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = lcs.map(lc => {
-        const days = daysSince(lc.piDate);
-        const overdue = lc.status === 'Pending' && days > 14;
-        return `
-          <tr>
-            <td>${esc(lc.order?.orderNo||'—')}</td>
-            <td>${esc(lc.proformaInvoice?.piNumber||'—')}</td>
-            <td>${fmtDate(lc.piDate)}</td>
-            <td style="text-align:center;${overdue?'color:#c62828;font-weight:bold;':''}">${days !== null ? days + 'd' : '—'}${overdue?' ⚠':''}</td>
-            <td>${esc(lc.lcNumber||'—')}</td>
-            <td>${esc(lc.issuingBank||'—')}</td>
-            <td style="text-align:center;"><span class="badge badge-status-${(lc.status||'').replace(/\s+/g,'-').toLowerCase()}">${esc(lc.status)}</span></td>
-            <td>${fmtDate(lc.expiryDate)}</td>
-            <td style="white-space:nowrap;">
-              ${lc.status==='Pending' ? `<button class="btn-sm btn-edit" onclick="openUpdate('${lc._id}','opened')">Mark Opened</button>` : ''}
-              ${lc.status!=='Discrepancy Found' && lc.status!=='Settled' ? `<button class="btn-sm btn-delete" onclick="openUpdate('${lc._id}','discrepancy')">Discrepancy</button>` : ''}
-            </td>
-          </tr>`;
-      }).join('');
+      _allLcs = lcs;
+      renderLcTable();
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">${err.message}</td></tr>`;
     }

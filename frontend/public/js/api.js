@@ -49,6 +49,8 @@ const api = {
   getOrder:         (id)        => apiFetch(`/orders/${id}`),
   createOrder:      (body)      => apiFetch('/orders',       { method: 'POST',   body: JSON.stringify(body) }),
   updateOrder:      (id,body)   => apiFetch(`/orders/${id}`, { method: 'PUT',    body: JSON.stringify(body) }),
+  deleteOrder:      (id)        => apiFetch(`/orders/${id}`, { method: 'DELETE' }),
+  duplicateOrder:   (id)        => apiFetch(`/orders/${id}/duplicate`, { method: 'POST' }),
 
   // Proforma Invoices
   getPIs:           ()          => apiFetch('/pi'),

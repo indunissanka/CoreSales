@@ -86,6 +86,7 @@
   <div class="todo-grid" id="todo-grid">
     <p style="color:#aaa;grid-column:1/-1;text-align:center;padding:40px;">Loading…</p>
   </div>
+  <div id="todos-pager"></div>
 </div>
 
 <!-- Modal -->
@@ -115,6 +116,7 @@
   </div>
 </div>
 
+<script src="/js/pagination.js"></script>
 <script src="/js/api.js"></script>
 <script>
   const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -126,6 +128,7 @@
   let editingId   = null;
   let chosenColor = '#ffffff';
   let allLists    = [];
+  let _todosPage  = 1;
 
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; }
@@ -155,13 +158,16 @@
     renderGrid();
   }
 
+  function goTodosPage(p) { _todosPage = p; renderGrid(); }
+
   function renderGrid() {
     const grid = document.getElementById('todo-grid');
     if (!allLists.length) {
       grid.innerHTML = '<p style="color:#aaa;grid-column:1/-1;text-align:center;padding:40px;">No to-do lists yet. Click + New List to start.</p>';
+      document.getElementById('todos-pager').innerHTML = '';
       return;
     }
-    grid.innerHTML = allLists.map(list => {
+    grid.innerHTML = pageSlice(allLists, _todosPage).map(list => {
       const total = (list.items||[]).length;
       const done  = (list.items||[]).filter(i => i.done).length;
       const pct   = total > 0 ? Math.round(done/total*100) : 0;
@@ -183,6 +189,7 @@
         <div class="todo-card-date">${fmtDate(list.updatedAt)}</div>
       </div>`;
     }).join('');
+    renderPager('todos-pager', allLists.length, _todosPage, 'goTodosPage');
   }
 
   async function toggleItem(listId, itemId, done) {

@@ -78,6 +78,7 @@
   <div class="notes-grid" id="notes-grid">
     <p style="color:#aaa;grid-column:1/-1;text-align:center;padding:40px;">Loading…</p>
   </div>
+  <div id="notes-pager"></div>
 </div>
 
 <!-- Note Modal -->
@@ -104,6 +105,7 @@
   </div>
 </div>
 
+<script src="/js/pagination.js"></script>
 <script src="/js/api.js"></script>
 <script>
   const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -115,6 +117,7 @@
   let editingId  = null;
   let chosenColor = '#ffffff';
   let allNotes   = [];
+  let _notesPage = 1;
 
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : ''; }
@@ -147,13 +150,16 @@
     renderGrid();
   }
 
+  function goNotesPage(p) { _notesPage = p; renderGrid(); }
+
   function renderGrid() {
     const grid = document.getElementById('notes-grid');
     if (!allNotes.length) {
       grid.innerHTML = '<p style="color:#aaa;grid-column:1/-1;text-align:center;padding:40px;">No notes yet. Click + New Note to start.</p>';
+      document.getElementById('notes-pager').innerHTML = '';
       return;
     }
-    grid.innerHTML = allNotes.map(n => `
+    grid.innerHTML = pageSlice(allNotes, _notesPage).map(n => `
       <div class="note-card" style="background:${n.color||'#fff'};" onclick="openModal('${n._id}')">
         <span class="note-pin ${n.pinned?'pinned':''}" title="${n.pinned?'Unpin':'Pin'}" onclick="event.stopPropagation();togglePin('${n._id}',${!n.pinned})">📌</span>
         <button class="note-del" title="Delete" onclick="event.stopPropagation();confirmDelete('${n._id}')">×</button>
@@ -161,6 +167,7 @@
         ${n.content ? `<div class="note-card-body">${esc(n.content)}</div>` : ''}
         <div class="note-card-date">${fmtDate(n.updatedAt)}</div>
       </div>`).join('');
+    renderPager('notes-pager', allNotes.length, _notesPage, 'goNotesPage');
   }
 
   function openModal(id) {

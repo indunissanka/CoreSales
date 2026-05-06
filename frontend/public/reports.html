@@ -41,6 +41,7 @@
       <div class="empty-state"><p>Loading reports…</p></div>
     </div>
   </div>
+  <div id="reports-pager"></div>
 </div>
 
 <!-- Preview modal -->
@@ -57,6 +58,7 @@
   </div>
 </div>
 
+<script src="/js/pagination.js"></script>
 <script src="/js/api.js"></script>
 <script>
   const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -67,13 +69,18 @@
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
 
+  let _allReports = [];
+  let _reportsPage = 1;
+
+  function goReportsPage(p) { _reportsPage = p; renderReportsGrid(); }
+
   function newReport() { location.href = '/report.html'; }
   function editReport(id, e) { e.stopPropagation(); location.href = `/report.html?id=${id}`; }
 
   async function deleteReport(id, e) {
     e.stopPropagation();
     if (!confirm('Delete this report? This cannot be undone.')) return;
-    try { await api.deleteReport(id); loadReports(); }
+    try { await api.deleteReport(id); _allReports = _allReports.filter(r=>r._id!==id); renderReportsGrid(); }
     catch (err) { alert('Error: ' + err.message); }
   }
 
@@ -127,27 +134,30 @@
     }
   }
 
+  function renderReportsGrid() {
+    const grid = document.getElementById('reports-grid');
+    if (!_allReports.length) { grid.innerHTML = `<div class="empty-state"><p>No reports yet.</p><small>Click "+ New Report" to create your first weekly report.</small></div>`; document.getElementById('reports-pager').innerHTML=''; return; }
+    grid.innerHTML = pageSlice(_allReports, _reportsPage).map(r => `
+      <div class="report-card" onclick="location.href='/report.html?id=${r._id}'">
+        <div class="week-label">${fmtDate(r.weekStart)} – ${fmtDate(r.weekEnd)}</div>
+        <div class="meta">Area: ${r.area || '—'}</div>
+        <div class="meta">Filled by: ${r.formFiller || '—'}</div>
+        <span class="entry-count">${(r.entries||[]).length} entries</span>
+        <div class="card-actions">
+          <button class="btn-sm btn-preview" onclick="openPreview('${r._id}', event)">Preview</button>
+          <button class="btn-sm btn-edit"    onclick="editReport('${r._id}', event)">Edit</button>
+          <button class="btn-sm btn-delete"  onclick="deleteReport('${r._id}', event)">Delete</button>
+        </div>
+      </div>
+    `).join('');
+    renderPager('reports-pager', _allReports.length, _reportsPage, 'goReportsPage');
+  }
+
   async function loadReports() {
     const grid = document.getElementById('reports-grid');
     try {
-      const reports = await api.getReports();
-      if (!reports.length) {
-        grid.innerHTML = `<div class="empty-state"><p>No reports yet.</p><small>Click "+ New Report" to create your first weekly report.</small></div>`;
-        return;
-      }
-      grid.innerHTML = reports.map(r => `
-        <div class="report-card" onclick="location.href='/report.html?id=${r._id}'">
-          <div class="week-label">${fmtDate(r.weekStart)} – ${fmtDate(r.weekEnd)}</div>
-          <div class="meta">Area: ${r.area || '—'}</div>
-          <div class="meta">Filled by: ${r.formFiller || '—'}</div>
-          <span class="entry-count">${(r.entries||[]).length} entries</span>
-          <div class="card-actions">
-            <button class="btn-sm btn-preview" onclick="openPreview('${r._id}', event)">Preview</button>
-            <button class="btn-sm btn-edit"    onclick="editReport('${r._id}', event)">Edit</button>
-            <button class="btn-sm btn-delete"  onclick="deleteReport('${r._id}', event)">Delete</button>
-          </div>
-        </div>
-      `).join('');
+      _allReports = await api.getReports();
+      renderReportsGrid();
     } catch (err) {
       if (err.message.includes('401') || err.message.toLowerCase().includes('token')) logout();
       else grid.innerHTML = `<div class="empty-state"><p>Failed to load reports.</p><small>${err.message}</small></div>`;

@@ -130,6 +130,7 @@
       </tbody>
     </table>
   </div>
+  <div id="samples-pager"></div>
 </div>
 
 <!-- Preview panel -->
@@ -228,6 +229,7 @@
   </div>
 </div>
 
+<script src="/js/pagination.js"></script>
 <script src="/js/api.js"></script>
 <script>
   const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -240,6 +242,8 @@
 
   let editingId   = null;
   let currentStatus = '';
+  let _allSamples = [];
+  let _samplesPage = 1;
   let allContacts = [];
   let allProducts = [];
   let allOrders   = [];
@@ -304,11 +308,14 @@
 
   function setStatus(s) {
     currentStatus = s;
+    _samplesPage = 1;
     document.querySelectorAll('.status-tab').forEach(t =>
       t.classList.toggle('active', t.textContent === (s || 'All'))
     );
     loadSamples();
   }
+
+  function goSamplesPage(p) { _samplesPage = p; renderSamplesTable(); }
 
   // ── Product rows ──
   function addProductRow(productId = '', qty = 0.1) {
@@ -443,32 +450,35 @@
   }
 
   // ── Table ──
+  function renderSamplesTable() {
+    const tbody = document.getElementById('samples-tbody');
+    if (!_allSamples.length) { tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">No sample shipments found.</td></tr>`; document.getElementById('samples-pager').innerHTML=''; return; }
+    tbody.innerHTML = pageSlice(_allSamples, _samplesPage).map(s => {
+      const prods = (s.products||[]).map(p => `${p.product?.name||'?'} (${p.quantity})`).join(', ') || '—';
+      const statusSlug = (s.status||'').toLowerCase();
+      return `<tr>
+        <td><strong>${esc(s.company?.company || s.company?.name || '—')}</strong></td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(prods)}">${esc(prods)}</td>
+        <td>${esc(s.courier||'—')}</td>
+        <td style="font-family:monospace;">${trackingLink(s.courier, s.waybillNumber)}</td>
+        <td><span class="badge badge-${statusSlug}">${esc(s.status)}</span></td>
+        <td>${s.relatedDocument ? `<a href="/order-edit.html?id=${s.relatedDocument._id||s.relatedDocument}" style="color:#2d6a9f;">${esc(s.relatedDocument.orderNo||'Order')}</a>` : '—'}</td>
+        <td>${fmtDate(s.createdAt)}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn-sm btn-preview" onclick="openPreview('${s._id}')">Preview</button>
+          <button class="btn-sm btn-edit"    onclick="openModal('${s._id}')">Edit</button>
+        </td>
+      </tr>`;
+    }).join('');
+    renderPager('samples-pager', _allSamples.length, _samplesPage, 'goSamplesPage');
+  }
+
   async function loadSamples() {
     const tbody = document.getElementById('samples-tbody');
     tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">Loading…</td></tr>`;
     try {
-      const samples = await api.getSamples(currentStatus ? { status: currentStatus } : {});
-      if (!samples.length) {
-        tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">No sample shipments found.</td></tr>`;
-        return;
-      }
-      tbody.innerHTML = samples.map(s => {
-        const prods = (s.products||[]).map(p => `${p.product?.name||'?'} (${p.quantity})`).join(', ') || '—';
-        const statusSlug = (s.status||'').toLowerCase();
-        return `<tr>
-          <td><strong>${esc(s.company?.company || s.company?.name || '—')}</strong></td>
-          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(prods)}">${esc(prods)}</td>
-          <td>${esc(s.courier||'—')}</td>
-          <td style="font-family:monospace;">${trackingLink(s.courier, s.waybillNumber)}</td>
-          <td><span class="badge badge-${statusSlug}">${esc(s.status)}</span></td>
-          <td>${s.relatedDocument ? `<a href="/order-edit.html?id=${s.relatedDocument._id||s.relatedDocument}" style="color:#2d6a9f;">${esc(s.relatedDocument.orderNo||'Order')}</a>` : '—'}</td>
-          <td>${fmtDate(s.createdAt)}</td>
-          <td style="white-space:nowrap;">
-            <button class="btn-sm btn-preview" onclick="openPreview('${s._id}')">Preview</button>
-            <button class="btn-sm btn-edit"    onclick="openModal('${s._id}')">Edit</button>
-          </td>
-        </tr>`;
-      }).join('');
+      _allSamples = await api.getSamples(currentStatus ? { status: currentStatus } : {});
+      renderSamplesTable();
     } catch (err) {
       tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">${err.message}</td></tr>`;
     }

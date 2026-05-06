@@ -15,13 +15,13 @@ router.get('/', async (req, res) => {
     let orders = await Order.find(filter)
       .populate('contact', 'company name')
       .populate('items.product', 'name sku')
-      .sort({ createdAt: -1 });
+      .sort({ orderNo: -1 });
     await autoAdvanceStatus(orders);
     // Re-fetch only if any statuses were updated
     orders = await Order.find(filter)
       .populate('contact', 'company name')
       .populate('items.product', 'name sku')
-      .sort({ createdAt: -1 });
+      .sort({ orderNo: -1 });
     res.json(orders);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -36,7 +36,7 @@ router.get('/line-items', async (req, res) => {
     const orders = await Order.find(filter)
       .populate('contact', 'company name')
       .populate('items.product', 'name sku')
-      .sort({ createdAt: -1 });
+      .sort({ orderNo: -1 });
     const rows = [];
     for (const o of orders) {
       for (const item of o.items) {
@@ -168,15 +168,31 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
   try {
-    const order = await Order.findOneAndUpdate(
-      { _id: req.params.id, createdBy: req.userId },
-      { status: 'Cancelled' },
-      { new: true }
-    );
+    const order = await Order.findOneAndDelete({ _id: req.params.id, createdBy: req.userId });
     if (!order) return res.status(404).json({ error: 'Not found' });
-    res.json(order);
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/:id/duplicate', async (req, res) => {
+  try {
+    const src = await Order.findOne({ _id: req.params.id, createdBy: req.userId });
+    if (!src) return res.status(404).json({ error: 'Not found' });
+    const newOrderNo = await generateOrderNo(req.userId);
+    const { _id, orderNo, quotationNo, createdAt, updatedAt, proformaInvoice, letterOfCredit, ...rest } = src.toObject();
+    const copy = new Order({
+      ...rest,
+      orderNo: newOrderNo,
+      status: 'Enquiry',
+      shippingSchedule: {},
+      createdBy: req.userId,
+    });
+    await copy.save();
+    res.status(201).json(copy);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 

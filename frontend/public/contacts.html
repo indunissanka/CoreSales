@@ -46,11 +46,12 @@
 
   <div id="import-status" style="display:none;" class="import-status-bar"></div>
 
-  <div class="report-paper" style="padding:20px;">
+  <div class="report-paper" style="padding:25px;">
     <div class="reports-grid" id="contacts-grid">
       <div class="empty-state"><p>Loading…</p></div>
     </div>
   </div>
+  <div id="contacts-pager"></div>
 </div>
 
 <!-- Preview modal -->
@@ -67,6 +68,7 @@
   </div>
 </div>
 
+<script src="/js/pagination.js"></script>
 <script src="/js/api.js"></script>
 <script>
   const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -75,6 +77,8 @@
   function logout() { localStorage.clear(); location.replace('/index.html'); }
 
   let allContacts = [];
+  let _contactsPage = 1;
+  let _filteredContacts = [];
   const CSV_HEADERS = ['company','name','role','email','phone','country','city','notes'];
   const CHANNEL_COLORS = { WhatsApp:'#25d366', Email:'#1a73e8', Phone:'#ff6d00', 'In-Person':'#9c27b0' };
 
@@ -83,14 +87,18 @@
 
   function filterContacts() {
     const q = document.getElementById('search-input').value.toLowerCase();
-    const filtered = q ? allContacts.filter(c => (c.company+c.name).toLowerCase().includes(q)) : allContacts;
-    renderContacts(filtered);
+    _filteredContacts = q ? allContacts.filter(c => (c.company+c.name).toLowerCase().includes(q)) : allContacts;
+    _contactsPage = 1;
+    renderContacts();
   }
 
-  function renderContacts(contacts) {
+  function goContactsPage(p) { _contactsPage = p; renderContacts(); }
+
+  function renderContacts() {
+    const contacts = _filteredContacts;
     const grid = document.getElementById('contacts-grid');
-    if (!contacts.length) { grid.innerHTML = `<div class="empty-state"><p>No contacts found.</p></div>`; return; }
-    grid.innerHTML = contacts.map(c => `
+    if (!contacts.length) { grid.innerHTML = `<div class="empty-state"><p>No contacts found.</p></div>`; document.getElementById('contacts-pager').innerHTML=''; return; }
+    grid.innerHTML = pageSlice(contacts, _contactsPage, 25).map(c => `
       <div class="report-card" onclick="location.href='/contact-detail.html?id=${c._id}'">
         <div class="week-label">${esc(c.company)}</div>
         <div class="meta">${esc(c.name)}</div>
@@ -107,6 +115,7 @@
         </div>
       </div>
     `).join('');
+    renderPager('contacts-pager', contacts.length, _contactsPage, 'goContactsPage', 25);
   }
 
   function closePreview() {
@@ -155,7 +164,7 @@
 
   async function deleteContact(id) {
     if (!confirm('Delete this contact?')) return;
-    try { await api.deleteContact(id); allContacts = allContacts.filter(c=>c._id!==id); filterContacts(); }
+    try { await api.deleteContact(id); allContacts = allContacts.filter(c=>c._id!==id); _filteredContacts = _filteredContacts.filter(c=>c._id!==id); renderContacts(); }
     catch (err) { alert(err.message); }
   }
 
