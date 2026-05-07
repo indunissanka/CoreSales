@@ -3,6 +3,16 @@ const router   = express.Router();
 const auth     = require('../middleware/auth');
 const Settings = require('../models/Settings');
 
+// Public — returns only the company name (used on login page before auth)
+router.get('/public', async (req, res) => {
+  try {
+    const s = await Settings.findOne({}, 'companyName').lean();
+    res.json({ companyName: (s && s.companyName) || '' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.use(auth);
 
 router.get('/', async (req, res) => {

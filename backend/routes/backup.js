@@ -58,13 +58,16 @@ router.post('/import', async (req, res) => {
     const upsert = (Model, docs, extraFilter = {}) => {
       if (!docs || !docs.length) return Promise.resolve({ upsertedCount: 0, modifiedCount: 0 });
       return Model.bulkWrite(
-        docs.map(doc => ({
-          updateOne: {
-            filter: { _id: doc._id, ...extraFilter },
-            update: { $set: { ...doc, ...extraFilter } },
-            upsert: true,
-          },
-        }))
+        docs.map(doc => {
+          const { _id, ...fields } = doc;
+          return {
+            updateOne: {
+              filter: { _id, ...extraFilter },
+              update: { $set: { ...fields, ...extraFilter } },
+              upsert: true,
+            },
+          };
+        })
       );
     };
 
@@ -82,10 +85,10 @@ router.post('/import', async (req, res) => {
 
     // Settings is one record per user
     if (b.settings && b.settings.length) {
-      const s = b.settings[0];
+      const { _id: _sid, ...sFields } = b.settings[0];
       await Settings.findOneAndUpdate(
         { user: uid },
-        { $set: { ...s, user: uid } },
+        { $set: { ...sFields, user: uid } },
         { upsert: true }
       );
     }

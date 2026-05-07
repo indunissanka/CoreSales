@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(docker compose *)",
-      "PowerShell(head -100)"
+      "PowerShell(head -100)",
+      "Bash(docker exec coresales-backend node -e ' *)"
     ]
   }
 }

@@ -11,7 +11,7 @@
 <body>
 <div class="auth-wrap">
   <div class="auth-box">
-    <h1>Sales Weekly Report</h1>
+    <h1 id="login-title">CoreSales CRM</h1>
     <p class="subtitle">Sign in to manage your weekly reports</p>
 
     <div class="auth-tabs">
@@ -61,6 +61,23 @@
 <script>
   // Redirect if already logged in
   if (localStorage.getItem('token')) location.replace('/dashboard.html');
+
+  // Set company name in header
+  (async () => {
+    const fallback = 'CoreSales CRM';
+    try {
+      const cached = localStorage.getItem('companySettings');
+      if (cached) {
+        const name = JSON.parse(cached).companyName;
+        if (name) document.getElementById('login-title').textContent = name;
+      }
+      const res = await fetch('/api/settings/public');
+      if (res.ok) {
+        const { companyName } = await res.json();
+        document.getElementById('login-title').textContent = companyName || fallback;
+      }
+    } catch (_) {}
+  })();
 
   // Show Register tab only when registration is open
   (async () => {
