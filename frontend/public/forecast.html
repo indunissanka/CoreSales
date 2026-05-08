@@ -176,7 +176,7 @@
         const varColor = variance >= 0 ? '#2e7d32' : '#c62828';
         return `<tr>
           <td data-label="Product">${esc(f.product?.name||'—')}</td>
-          <td data-label="Unit">${esc(f.unit||'ton')}</td>
+          <td data-label="Unit">${esc(f.unit||'kg')}</td>
           <td data-label="Forecast" style="text-align:right;">${forecast.toLocaleString()}</td>
           <td data-label="Actual" style="text-align:right;">${actual.toLocaleString()}</td>
           <td data-label="Variance" style="text-align:right;color:${varColor};font-weight:bold;">${variance>=0?'+':''}${variance.toLocaleString()}</td>

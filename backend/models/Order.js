@@ -34,7 +34,7 @@ const orderSchema = new mongoose.Schema({
   contact:           { type: mongoose.Schema.Types.ObjectId, ref: 'Contact', required: true },
   status:            {
     type: String,
-    enum: ['Enquiry', 'Quotation Sent', 'PI Issued', 'LC Opened', 'Shipped', 'Delivered', 'Cancelled', 'Rejected'],
+    enum: ['Enquiry', 'Quotation Sent', 'PI Issued', 'LC Opened', 'Shipped', 'Production', 'Booking', 'Cargo Closing', 'ETD (Departure)', 'ETA (Arrival)', 'Delivered', 'Cancelled', 'Rejected'],
     default: 'Enquiry',
   },
   items:             [orderItemSchema],

@@ -69,7 +69,7 @@
   <!-- Summary cards -->
   <div class="summary-cards" id="summary-cards">
     <div class="summary-card"><div class="sc-label">Total Line Items</div><div class="sc-value" id="sc-count">—</div></div>
-    <div class="summary-card"><div class="sc-label">Total Qty (ton)</div><div class="sc-value" id="sc-qty">—</div></div>
+    <div class="summary-card"><div class="sc-label">Total Qty (kg)</div><div class="sc-value" id="sc-qty">—</div></div>
     <div class="summary-card"><div class="sc-label">Total Value (USD)</div><div class="sc-value" id="sc-value">—</div></div>
     <div class="summary-card"><div class="sc-label">Avg Unit Price</div><div class="sc-value" id="sc-avg">—</div></div>
     <div class="summary-card"><div class="sc-label">Companies</div><div class="sc-value" id="sc-companies">—</div></div>
@@ -231,7 +231,7 @@
       <td>${esc(r.productName)}</td>
       <td style="color:#888;font-size:11px;">${esc(r.sku)}</td>
       <td style="text-align:right;">${Number(r.quantity).toLocaleString()}</td>
-      <td>${esc(r.unit||'ton')}</td>
+      <td>${esc(r.unit||'kg')}</td>
       <td style="text-align:right;">${fmt2(r.unitPrice)}</td>
       <td style="text-align:right;">${fmt2(r.drumsPrice)}</td>
       <td style="text-align:right;">${fmt2(r.bankCharge)}</td>
@@ -299,7 +299,7 @@
       lines.push([
         r.company, r.orderNo, r.quotationNo||'', r.orderStatus,
         r.orderDate ? new Date(r.orderDate).toISOString().slice(0,10) : '',
-        r.productName, r.sku, r.quantity, r.unit||'ton',
+        r.productName, r.sku, r.quantity, r.unit||'kg',
         r.unitPrice||0, r.drumsPrice||0, r.bankCharge||0,
         r.shipping||0, r.commission||0, r.unitTotal||0, r.lineTotal||0, r.currency||'USD',
       ].map(csvCell).join(','));

@@ -16,9 +16,8 @@ router.get('/', async (req, res) => {
       .populate('contact', 'company name')
       .populate('items.product', 'name sku')
       .sort({ orderNo: -1 });
-    await autoAdvanceStatus(orders);
-    // Re-fetch only if any statuses were updated
-    orders = await Order.find(filter)
+    const changed = await autoAdvanceStatus(orders);
+    if (changed) orders = await Order.find(filter)
       .populate('contact', 'company name')
       .populate('items.product', 'name sku')
       .sort({ orderNo: -1 });
@@ -101,26 +100,38 @@ router.get('/:id', async (req, res) => {
 });
 
 // Auto-advance order status based on shipping schedule dates.
-// Rules (only advance, never touch Cancelled/Rejected):
-//   ETD passed + status is PI Issued or LC Opened  → Shipped
-//   ETA or deliveryDate passed + status is Shipped → Delivered
+// Finds the highest milestone whose date has passed and advances status to it.
+// Only moves forward — never touches Cancelled/Rejected/Delivered.
 async function autoAdvanceStatus(orders) {
   const now = new Date();
+  const STAGES = [
+    'Enquiry','Quotation Sent','PI Issued','LC Opened',
+    'Production','Booking','Cargo Closing','ETD (Departure)','ETA (Arrival)','Delivered',
+  ];
+  const MILESTONES = [
+    { field: 'bookingDate',      status: 'Booking' },
+    { field: 'cargoClosingDate', status: 'Cargo Closing' },
+    { field: 'etd',              status: 'ETD (Departure)' },
+    { field: 'eta',              status: 'ETA (Arrival)' },
+    { field: 'deliveryDate',     status: 'Delivered' },
+  ];
+  const PRODUCTION_IDX = STAGES.indexOf('Production');
   const ops = [];
   for (const o of orders) {
     if (['Cancelled', 'Rejected', 'Delivered'].includes(o.status)) continue;
+    const curIdx = STAGES.indexOf(o.status);
+    if (curIdx < PRODUCTION_IDX) continue; // only auto-advance once at Production or beyond
     const ss = o.shippingSchedule || {};
-    let next = null;
-    if (!next && ss.etd && new Date(ss.etd) <= now && ['PI Issued', 'LC Opened'].includes(o.status)) {
-      next = 'Shipped';
+    let nextStatus = null;
+    for (const m of MILESTONES) {
+      if (ss[m.field] && new Date(ss[m.field]) <= now) nextStatus = m.status;
     }
-    if (!next && o.status === 'Shipped') {
-      const arrived = (ss.eta && new Date(ss.eta) <= now) || (ss.deliveryDate && new Date(ss.deliveryDate) <= now);
-      if (arrived) next = 'Delivered';
-    }
-    if (next) ops.push(Order.updateOne({ _id: o._id }, { status: next }));
+    if (!nextStatus) continue;
+    const nextIdx = STAGES.indexOf(nextStatus);
+    if (nextIdx > curIdx) ops.push(Order.updateOne({ _id: o._id }, { status: nextStatus }));
   }
   if (ops.length) await Promise.all(ops);
+  return ops.length > 0;
 }
 
 function calcItems(rawItems, body) {
@@ -197,3 +208,4 @@ router.post('/:id/duplicate', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.autoAdvanceOrderStatus = autoAdvanceStatus;

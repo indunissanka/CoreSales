@@ -50,7 +50,11 @@
     <button class="status-tab" onclick="setStatus('Quotation Sent')">Quotation Sent</button>
     <button class="status-tab" onclick="setStatus('PI Issued')">PI Issued</button>
     <button class="status-tab" onclick="setStatus('LC Opened')">LC Opened</button>
-    <button class="status-tab" onclick="setStatus('Shipped')">Shipped</button>
+    <button class="status-tab" onclick="setStatus('Production')">Production</button>
+    <button class="status-tab" onclick="setStatus('Booking')">Booking</button>
+    <button class="status-tab" onclick="setStatus('Cargo Closing')">Cargo Closing</button>
+    <button class="status-tab" onclick="setStatus('ETD (Departure)')">ETD</button>
+    <button class="status-tab" onclick="setStatus('ETA (Arrival)')">ETA</button>
     <button class="status-tab" onclick="setStatus('Delivered')">Delivered</button>
     <button class="status-tab" onclick="setStatus('Cancelled')">Cancelled</button>
     <button class="status-tab" onclick="setStatus('Rejected')">Rejected</button>
@@ -96,7 +100,7 @@
 
   let currentStatus = '';
   let _allOrders = [];
-  let _ordersPage = 1;
+  let _ordersPage = parseInt(new URLSearchParams(location.search).get('page')) || 1;
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
   function dateFromOrderNo(orderNo) {
@@ -193,7 +197,7 @@
     document.getElementById('preview-title').textContent = 'Loading…';
     document.getElementById('preview-body').innerHTML = '<p style="padding:16px;color:#aaa;">Loading…</p>';
     document.getElementById('preview-overlay').classList.add('open');
-    document.getElementById('preview-edit-btn').onclick = () => location.href = `/order-edit.html?id=${id}`;
+    document.getElementById('preview-edit-btn').onclick = () => location.href = `/order-edit.html?id=${id}&page=${_ordersPage}`;
 
     try {
       const o = await api.getOrder(id);
@@ -223,7 +227,7 @@
               <tr style="background:${idx%2===0?'#fff':'#f7f9fc'};border-bottom:1px solid #e8e8e8;">
                 <td style="padding:5px 8px;">${esc(i.product?.name||'—')}<br><span style="font-size:10px;color:#999;">${esc(i.product?.sku||'')}</span></td>
                 <td style="padding:5px 8px;text-align:right;">${Number(i.quantity).toLocaleString()}</td>
-                <td style="padding:5px 8px;">${esc(i.unit||'ton')}</td>
+                <td style="padding:5px 8px;">${esc(i.unit||'kg')}</td>
                 <td style="padding:5px 8px;text-align:right;">${fmt(i.unitPrice)}</td>
                 <td style="padding:5px 8px;text-align:right;">${fmt(i.drumsPrice)}</td>
                 <td style="padding:5px 8px;text-align:right;">${fmt(i.bankCharge)}</td>
@@ -263,7 +267,7 @@
         <div class="preview-meta-grid" style="grid-template-columns:1fr 1fr 1fr;">
           <div><span class="preview-label">Company</span><span>${esc(o.contact?.company||'—')}</span></div>
           <div><span class="preview-label">Contact Name</span><span>${esc(o.contact?.name||'—')}</span></div>
-          <div><span class="preview-label">Status</span><span><span class="badge badge-status-${(o.status||'').replace(/\s+/g,'-').toLowerCase()}">${esc(o.status)}</span></span></div>
+          <div><span class="preview-label">Status</span><span><span class="badge badge-status-${statusSlug(o.status)}">${esc(o.status)}</span></span></div>
           <div><span class="preview-label">Incoterm</span><span>${esc(o.incoterm||'—')}</span></div>
           <div><span class="preview-label">Currency</span><span>${cur}</span></div>
           <div><span class="preview-label">Bank Charge Method</span><span>${esc(o.bankChargeMethod||'—')}</span></div>
@@ -409,7 +413,7 @@
     tbody.innerHTML = page.map(o => {
       const products = (o.items||[]).map(i=>i.product?.name||'').filter(Boolean).join(', ')||'—';
       return `
-        <tr style="cursor:pointer;" onclick="location.href='/order-edit.html?id=${o._id}'">
+        <tr style="cursor:pointer;" onclick="location.href='/order-edit.html?id=${o._id}&page=${_ordersPage}'">
           <td><strong>${esc(o.orderNo)}</strong></td>
           <td>${esc(o.quotationNo||'—')}</td>
           <td>${esc(o.contact?.company||'—')}</td>
@@ -417,11 +421,11 @@
           <td style="text-align:right;">${esc(o.currency||'USD')} ${(o.totalAmount||0).toLocaleString()}</td>
           <td style="text-align:center;">${esc(o.incoterm||'—')}</td>
           <td>${esc(o.portOfDestination||'—')}</td>
-          <td style="text-align:center;"><span class="badge badge-status-${(o.status||'').replace(/\s+/g,'-').toLowerCase()}">${esc(o.status)}</span></td>
+          <td style="text-align:center;"><span class="badge badge-status-${statusSlug(o.status)}">${esc(o.status)}</span></td>
           <td>${dateFromOrderNo(o.orderNo)}</td>
           <td style="white-space:nowrap;" onclick="event.stopPropagation()">
             <button class="btn-sm btn-preview" onclick="openPreview('${o._id}')">Preview</button>
-            <button class="btn-sm btn-edit"    onclick="location.href='/order-edit.html?id=${o._id}'">Edit</button>
+            <button class="btn-sm btn-edit"    onclick="location.href='/order-edit.html?id=${o._id}&page=${_ordersPage}'">Edit</button>
             <button class="btn-sm" style="background:#e3f2fd;color:#1565c0;" onclick="duplicateOrder('${o._id}')">Duplicate</button>
             <button class="btn-sm" style="background:#ffebee;color:#c62828;" onclick="deleteOrder('${o._id}','${esc(o.orderNo)}')">Delete</button>
           </td>

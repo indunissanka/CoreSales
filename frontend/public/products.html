@@ -87,17 +87,17 @@
 
   let allProducts = [];
   let _filteredProducts = [];
-  let _productsPage = 1;
+  let _productsPage = parseInt(new URLSearchParams(location.search).get('page')) || 1;
   const CSV_HEADERS = ['name','sku','category','grade','casNumber','packagingTypes','unitOfMeasure','basePrice','priceLinkNote','technicalNotes'];
 
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
 
-  function filterProducts() {
+  function filterProducts(resetPage = true) {
     const q   = document.getElementById('search-input').value.toLowerCase();
     const cat = document.getElementById('cat-filter').value;
     _filteredProducts = allProducts.filter(p => (!q||p.name.toLowerCase().includes(q)) && (!cat||p.category===cat));
-    _productsPage = 1;
+    if (resetPage) _productsPage = 1;
     renderProducts();
   }
 
@@ -114,11 +114,11 @@
         <td>${esc(p.category||'—')}</td>
         <td>${esc(p.grade||'—')}</td>
         <td style="text-align:right;">${p.basePrice ? p.basePrice.toLocaleString() : '—'}</td>
-        <td>${esc(p.unitOfMeasure||'ton')}</td>
+        <td>${esc(p.unitOfMeasure||'kg')}</td>
         <td>${fmtDate(p.priceLastUpdated)}</td>
         <td style="white-space:nowrap;">
           <button class="btn-sm btn-preview" onclick="openPreview('${p._id}')">Preview</button>
-          <button class="btn-sm btn-edit"    onclick="location.href='/product-edit.html?id=${p._id}'">Edit</button>
+          <button class="btn-sm btn-edit"    onclick="location.href='/product-edit.html?id=${p._id}&page=${_productsPage}'">Edit</button>
           <button class="btn-sm btn-delete"  onclick="deactivate('${p._id}')">Remove</button>
         </td>
       </tr>
@@ -134,7 +134,7 @@
     document.getElementById('preview-title').textContent = 'Loading…';
     document.getElementById('preview-body').innerHTML = '<p style="padding:16px;color:#aaa;">Loading…</p>';
     document.getElementById('preview-overlay').classList.add('open');
-    document.getElementById('preview-edit-btn').onclick = () => location.href = `/product-edit.html?id=${id}`;
+    document.getElementById('preview-edit-btn').onclick = () => location.href = `/product-edit.html?id=${id}&page=${_productsPage}`;
 
     try {
       const p = await api.getProduct(id);
@@ -146,7 +146,7 @@
           <div><span class="preview-label">Category</span><span>${esc(p.category||'—')}</span></div>
           <div><span class="preview-label">Grade</span><span>${esc(p.grade||'—')}</span></div>
           <div><span class="preview-label">CAS Number</span><span>${esc(p.casNumber||'—')}</span></div>
-          <div><span class="preview-label">Unit</span><span>${esc(p.unitOfMeasure||'ton')}</span></div>
+          <div><span class="preview-label">Unit</span><span>${esc(p.unitOfMeasure||'kg')}</span></div>
           <div><span class="preview-label">Base Price</span><span>${p.basePrice ? 'USD '+p.basePrice.toLocaleString() : '—'}</span></div>
         </div>
         ${p.priceLinkNote ? `<div class="preview-section-title">Price Indicator</div><p style="font-size:13px;">${esc(p.priceLinkNote)}</p>` : ''}
@@ -170,7 +170,7 @@
   function downloadCSV(){
     if(!allProducts.length){alert('No products to export.');return;}
     const rows=[CSV_HEADERS];
-    allProducts.forEach(p=>rows.push([csvCell(p.name||''),csvCell(p.sku||''),csvCell(p.category||''),csvCell(p.grade||''),csvCell(p.casNumber||''),csvCell((p.packagingTypes||[]).join('; ')),csvCell(p.unitOfMeasure||'ton'),csvCell(p.basePrice!=null?p.basePrice:''),csvCell(p.priceLinkNote||''),csvCell(p.technicalNotes||'')]));
+    allProducts.forEach(p=>rows.push([csvCell(p.name||''),csvCell(p.sku||''),csvCell(p.category||''),csvCell(p.grade||''),csvCell(p.casNumber||''),csvCell((p.packagingTypes||[]).join('; ')),csvCell(p.unitOfMeasure||'kg'),csvCell(p.basePrice!=null?p.basePrice:''),csvCell(p.priceLinkNote||''),csvCell(p.technicalNotes||'')]));
     const a=document.createElement('a');
     a.href=URL.createObjectURL(new Blob(['﻿'+rows.map(r=>r.join(',')).join('\r\n')],{type:'text/csv;charset=utf-8;'}));
     a.download='products.csv';a.click();
@@ -212,7 +212,7 @@
       const sel = document.getElementById('cat-filter');
       while(sel.options.length>1) sel.remove(1);
       cats.forEach(c=>sel.insertAdjacentHTML('beforeend',`<option value="${esc(c)}">${esc(c)}</option>`));
-      filterProducts();
+      filterProducts(false);
     } catch(err) {
       document.getElementById('products-tbody').innerHTML=`<tr><td colspan="8" class="empty-cell">${err.message}</td></tr>`;
     }

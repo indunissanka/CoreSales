@@ -8,7 +8,7 @@ const productSchema = new mongoose.Schema({
   grade:            String,
   casNumber:        String,
   packagingTypes:   [String],
-  unitOfMeasure:    { type: String, enum: ['kg', 'ton', 'L'], default: 'ton' },
+  unitOfMeasure:    { type: String, enum: ['kg', 'ton', 'L'], default: 'kg' },
   basePrice:        Number,
   priceLastUpdated: Date,
   priceLinkNote:    String,

@@ -33,7 +33,7 @@
 <div class="page-wrap" style="max-width:700px;">
   <div class="page-header">
     <h2 id="page-title">New Product</h2>
-    <button class="btn-back" onclick="location.href='/products.html'">← Back</button>
+    <button class="btn-back" onclick="location.href='/products.html?page='+(new URLSearchParams(location.search).get('page')||1)">← Back</button>
   </div>
 
   <div class="report-paper">
@@ -45,8 +45,8 @@
       <div class="form-group"><label>CAS Number</label><input id="f-cas" type="text" placeholder="e.g. 63148-62-9"></div>
       <div class="form-group"><label>Unit of Measure</label>
         <select id="f-unit" class="select-input">
-          <option value="ton">ton</option>
           <option value="kg">kg</option>
+          <option value="ton">ton</option>
           <option value="L">L</option>
         </select>
       </div>
@@ -76,7 +76,7 @@
     <div id="save-status" class="save-status" style="margin:12px 0;"></div>
     <div style="display:flex;gap:10px;">
       <button class="btn-save" onclick="save()">Save Product</button>
-      <button class="btn-back" onclick="location.href='/products.html'">Cancel</button>
+      <button class="btn-back" onclick="location.href='/products.html?page='+(new URLSearchParams(location.search).get('page')||1)">Cancel</button>
     </div>
   </div>
 </div>
@@ -143,7 +143,7 @@
       document.getElementById('f-category').value  = p.category    || '';
       document.getElementById('f-grade').value     = p.grade       || '';
       document.getElementById('f-cas').value       = p.casNumber   || '';
-      document.getElementById('f-unit').value      = p.unitOfMeasure || 'ton';
+      document.getElementById('f-unit').value      = p.unitOfMeasure || 'kg';
       document.getElementById('f-price').value     = p.basePrice   || '';
       document.getElementById('f-price-note').value= p.priceLinkNote || '';
       document.getElementById('f-packaging').value = (p.packagingTypes || []).join(', ');

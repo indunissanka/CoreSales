@@ -34,7 +34,7 @@
   <div class="page-header">
     <h2 id="page-title">New Order</h2>
     <div style="display:flex;gap:10px;">
-      <button class="btn-back" onclick="location.href='/orders.html'">← Back</button>
+      <button class="btn-back" onclick="location.href='/orders.html?page='+(new URLSearchParams(location.search).get('page')||1)">← Back</button>
       <button class="btn-new" id="btn-generate-pi" style="display:none;" onclick="generatePI()">Generate P/I</button>
     </div>
   </div>
@@ -53,9 +53,14 @@
           <select id="f-contact" class="select-input" onchange="onContactChange(this.value)"><option value="">Loading contacts…</option></select>
         </div>
         <div class="form-group"><label>Status</label>
-          <select id="f-status" class="select-input">
-            <option>Enquiry</option><option>Quotation Sent</option><option>PI Issued</option>
-            <option>LC Opened</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option><option>Rejected</option>
+          <select id="f-status" class="select-input" onchange="renderStepper()">
+            <option>Enquiry</option>
+            <option>Quotation Sent</option>
+            <option>PI Issued</option>
+            <option>LC Opened</option>
+            <option>Production</option>
+            <option>Cancelled</option>
+            <option>Rejected</option>
           </select>
         </div>
         <div class="form-group"><label>Currency</label>
@@ -188,15 +193,16 @@
   <!-- Shipping Schedule -->
   <div class="report-paper" style="margin-bottom:24px;">
     <h3 style="color:#1a3a5c;font-size:14px;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid #d6e4f0;">Shipping Schedule</h3>
+    <div id="status-stepper" style="margin-bottom:18px;"></div>
     <div class="form-grid-2">
-      <div class="form-group"><label>Production Date</label><input id="ss-production-date" type="date"></div>
-      <div class="form-group"><label>Booking Date</label><input id="ss-booking-date" type="date"></div>
-      <div class="form-group"><label>Cargo Closing Date</label><input id="ss-cargo-closing" type="date"></div>
-      <div class="form-group"><label>ETD (Departure)</label><input id="ss-etd" type="date"></div>
-      <div class="form-group"><label>ETA (Arrival)</label><input id="ss-eta" type="date"></div>
-      <div class="form-group"><label>Delivery Date</label><input id="ss-delivery-date" type="date"></div>
-      <div class="form-group"><label>Carrier</label><input id="ss-carrier" type="text" placeholder="e.g. DHL, Maersk"></div>
-      <div class="form-group"><label>Tracking / B/L Number</label><input id="ss-tracking" type="text" placeholder="Tracking or Bill of Lading number"></div>
+      <div class="form-group" id="ss-fg-production"><label>Production Date</label><input id="ss-production-date" type="date" oninput="syncStatusFromDates()"></div>
+      <div class="form-group" id="ss-fg-booking"><label>Booking Date</label><input id="ss-booking-date" type="date" oninput="syncStatusFromDates()"></div>
+      <div class="form-group"><label>Cargo Closing Date</label><input id="ss-cargo-closing" type="date" oninput="syncStatusFromDates()"></div>
+      <div class="form-group" id="ss-fg-etd"><label>ETD (Departure)</label><input id="ss-etd" type="date" oninput="syncStatusFromDates()"></div>
+      <div class="form-group" id="ss-fg-eta"><label>ETA (Arrival)</label><input id="ss-eta" type="date" oninput="syncStatusFromDates()"></div>
+      <div class="form-group" id="ss-fg-delivery"><label>Delivery Date</label><input id="ss-delivery-date" type="date" oninput="syncStatusFromDates()"></div>
+      <div class="form-group" id="ss-fg-carrier"><label>Carrier</label><input id="ss-carrier" type="text" placeholder="e.g. DHL, Maersk"></div>
+      <div class="form-group" id="ss-fg-tracking"><label>Tracking / B/L Number</label><input id="ss-tracking" type="text" placeholder="Tracking or Bill of Lading number"></div>
       <div class="form-group" style="grid-column:1/-1;">
         <label>Tags</label>
         <div style="display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:4px;">
@@ -221,7 +227,7 @@
   <div id="save-status" class="save-status" style="margin-bottom:8px;"></div>
   <div style="display:flex;gap:10px;">
     <button class="btn-save" onclick="saveOrder()">Save Order</button>
-    <button class="btn-back" onclick="location.href='/orders.html'">Cancel</button>
+    <button class="btn-back" onclick="location.href='/orders.html?page='+(new URLSearchParams(location.search).get('page')||1)">Cancel</button>
   </div>
 </div>
 
@@ -374,7 +380,7 @@
   function onContactChange(id) {
     if (!id) return;
     const country = contactCountryMap[id];
-    if (country) document.getElementById('f-dest-country').value = country;
+    if (country) buildCountrySelect(document.getElementById('f-dest-country'), country);
   }
 
   function reindexTerms() {
@@ -388,6 +394,7 @@
   }
 
   async function saveOrder() {
+    syncStatusFromDates(); // auto-advance status based on dates before saving
     const contact = document.getElementById('f-contact').value;
     if (!contact) { showStatus('Select a contact.', true); return; }
     const orderItems = items
@@ -395,7 +402,7 @@
       .map(i => ({
         product:    i.productId,
         quantity:   parseFloat(i.qty)        || 0,
-        unit:       i.unit || 'ton',
+        unit:       i.unit || 'kg',
         unitPrice:  parseFloat(i.unitPrice)  || 0,
         drumsPrice: parseFloat(i.drumsPrice) || 0,
         bankCharge: parseFloat(i.bankCharge) || 0,
@@ -501,6 +508,9 @@
         document.getElementById('f-order-no').value = orderNo;
         document.getElementById('f-quotation-no').value = quotationNo;
       } catch (e) { /* ignore */ }
+      renderItems();
+      renderStepper();
+      return;
     }
 
     if (orderId) {
@@ -511,7 +521,14 @@
         document.getElementById('f-quotation-no').value  = order.quotationNo || '';
         document.getElementById('f-exchange-rate').value = order.exchangeRate != null ? order.exchangeRate : '';
         document.getElementById('f-contact').value   = order.contact?._id || order.contact || '';
-        document.getElementById('f-status').value    = order.status    || 'Enquiry';
+        const statusSel = document.getElementById('f-status');
+        const AUTO_STATUSES = ['Booking','Cargo Closing','ETD (Departure)','ETA (Arrival)','Delivered'];
+        if (AUTO_STATUSES.includes(order.status)) {
+          const opt = document.createElement('option');
+          opt.value = order.status; opt.textContent = order.status + ' (auto)'; opt.disabled = true;
+          statusSel.insertBefore(opt, statusSel.firstChild);
+        }
+        statusSel.value = order.status || 'Enquiry';
         document.getElementById('f-currency').value  = order.currency  || 'USD';
         document.getElementById('f-incoterm').value  = order.incoterm  || 'FOB';
         document.getElementById('f-pol').value       = order.portOfLoading     || '';
@@ -542,6 +559,7 @@
         document.getElementById('ss-etd').value             = toDateInput(ss.etd);
         document.getElementById('ss-eta').value             = toDateInput(ss.eta);
         document.getElementById('ss-delivery-date').value   = toDateInput(ss.deliveryDate);
+        syncStatusFromDates();
         document.getElementById('ss-carrier').value         = ss.carrier       || '';
         document.getElementById('ss-tracking').value        = ss.trackingNumber|| '';
         document.getElementById('ss-notes').value           = ss.shipmentNotes || '';
@@ -553,16 +571,91 @@
         if (order.letterOfCredit) {
           document.getElementById('lc-widget').style.display = 'block';
           document.getElementById('lc-status-info').innerHTML =
-            `<span class="badge badge-status-${(order.letterOfCredit.status||'pending').replace(/\s+/g,'-').toLowerCase()}">${esc(order.letterOfCredit.status||'Pending')}</span>
+            `<span class="badge badge-status-${statusSlug(order.letterOfCredit.status||'pending')}">${esc(order.letterOfCredit.status||'Pending')}</span>
              <a href="/lc-tracker.html" style="margin-left:8px;font-size:12px;color:#2d6a9f;">View L/C Tracker →</a>`;
         }
       } catch (err) { alert(err.message); }
     }
     renderItems();
+    renderStepper();
   }
 
   buildCountrySelect(document.getElementById('f-dest-country'), 'Bangladesh');
   load();
+
+  // ── Status stepper & shipping sync ──
+  const STATUS_STAGES = ['Enquiry','Quotation Sent','PI Issued','LC Opened','Production','Booking','Cargo Closing','ETD (Departure)','ETA (Arrival)','Delivered'];
+  const STAGE_ICONS   = ['📋','📄','📑','🏦','🏭','📅','📦','🛳️','⚓','✅'];
+
+  function renderStepper() {
+    const current = document.getElementById('f-status').value;
+    const el = document.getElementById('status-stepper');
+    if (!el) return;
+
+    if (current === 'Cancelled' || current === 'Rejected') {
+      el.innerHTML = `<div style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:#ffebee;border:1px solid #ef9a9a;border-radius:6px;font-size:13px;font-weight:700;color:#b71c1c;">
+        ✖ Order ${esc(current)}
+      </div>`;
+      highlightShippingFields(current);
+      return;
+    }
+
+    const curIdx = STATUS_STAGES.indexOf(current);
+    const steps = STATUS_STAGES.map((s, i) => {
+      let bg, color, border;
+      if (i < curIdx)       { bg='#e8f5e9'; color='#2e7d32'; border='#a5d6a7'; }
+      else if (i === curIdx){ bg='#1a3a5c'; color='#fff';    border='#1a3a5c'; }
+      else                  { bg='#f5f5f5'; color='#bbb';    border='#e0e0e0'; }
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:0;">
+        <div style="width:32px;height:32px;border-radius:50%;background:${bg};border:2px solid ${border};display:flex;align-items:center;justify-content:center;font-size:14px;">${i < curIdx ? '✓' : STAGE_ICONS[i]}</div>
+        <div style="font-size:10px;font-weight:${i===curIdx?'700':'500'};color:${i===curIdx?'#1a3a5c':i<curIdx?'#2e7d32':'#bbb'};text-align:center;line-height:1.2;">${s}</div>
+      </div>`;
+    });
+
+    const connectors = STATUS_STAGES.slice(0,-1).map((_,i) => {
+      const done = i < curIdx;
+      return `<div style="flex:1;height:2px;background:${done?'#a5d6a7':'#e0e0e0'};margin-top:15px;"></div>`;
+    });
+
+    let combined = '';
+    steps.forEach((s, i) => { combined += s; if (i < steps.length-1) combined += connectors[i]; });
+    el.innerHTML = `<div style="display:flex;align-items:flex-start;gap:0;padding:12px 8px;background:#f7f9fc;border:1px solid #d0d8e4;border-radius:6px;">${combined}</div>`;
+    highlightShippingFields(current);
+  }
+
+  function highlightShippingFields(status) {
+    const allGroups = ['ss-fg-production','ss-fg-booking','ss-fg-etd','ss-fg-eta','ss-fg-delivery','ss-fg-carrier','ss-fg-tracking'];
+    const highlight = {
+      'Production':      ['ss-fg-production'],
+      'Booking':         ['ss-fg-booking'],
+      'Cargo Closing':   ['ss-fg-carrier'],
+      'ETD (Departure)': ['ss-fg-etd','ss-fg-carrier','ss-fg-tracking'],
+      'ETA (Arrival)':   ['ss-fg-eta'],
+      'Delivered':       ['ss-fg-delivery'],
+      'PI Issued':       ['ss-fg-production','ss-fg-booking'],
+      'LC Opened':       [],
+    }[status] || [];
+    allGroups.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.borderLeft  = highlight.includes(id) ? '3px solid #1a3a5c' : '';
+      el.style.paddingLeft = highlight.includes(id) ? '8px' : '';
+    });
+  }
+
+  function syncStatusFromDates() {
+    // Shipping statuses (Booking and beyond) are auto-advanced by the backend.
+    // Only sync up to Production from the production date field.
+    const sel = document.getElementById('f-status');
+    if (['Cancelled','Rejected'].includes(sel.value)) { renderStepper(); return; }
+    const prodDate = document.getElementById('ss-production-date').value;
+    if (prodDate) {
+      const curIdx = STATUS_STAGES.indexOf(sel.value);
+      const prodIdx = STATUS_STAGES.indexOf('Production');
+      if (prodIdx > curIdx) sel.value = 'Production';
+    }
+    renderStepper();
+  }
 </script>
 </body>
 </html>
