@@ -34,7 +34,7 @@
   <div class="page-header">
     <h2 id="page-title">New Contact</h2>
     <div style="display:flex;gap:10px;">
-      <button class="btn-back" onclick="location.href='/contacts.html'">← Back</button>
+      <button class="btn-back" onclick="location.href='/contacts.html?page='+(new URLSearchParams(location.search).get('page')||1)">← Back</button>
       <button class="btn-new" onclick="location.href='/order-edit.html?contactId='+contactId">+ New Order</button>
     </div>
   </div>
@@ -223,7 +223,7 @@
       <tbody>${orders.map(o => `
         <tr onclick="location.href='/order-edit.html?id=${o._id}'" style="cursor:pointer;border-bottom:1px solid #eee;">
           <td style="padding:4px 8px;">${esc(o.orderNo)}</td>
-          <td style="padding:4px 8px;text-align:center;"><span class="badge badge-status-${(o.status||'').replace(/\s+/g,'-').toLowerCase()}">${esc(o.status)}</span></td>
+          <td style="padding:4px 8px;text-align:center;"><span class="badge badge-status-${statusSlug(o.status)}">${esc(o.status)}</span></td>
           <td style="padding:4px 8px;text-align:right;">${o.currency} ${(o.totalAmount||0).toLocaleString()}</td>
         </tr>`).join('')}
       </tbody></table>`;

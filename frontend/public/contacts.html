@@ -77,7 +77,7 @@
   function logout() { localStorage.clear(); location.replace('/index.html'); }
 
   let allContacts = [];
-  let _contactsPage = 1;
+  let _contactsPage = parseInt(new URLSearchParams(location.search).get('page')) || 1;
   let _filteredContacts = [];
   const CSV_HEADERS = ['company','name','role','email','phone','country','city','notes'];
   const CHANNEL_COLORS = { WhatsApp:'#25d366', Email:'#1a73e8', Phone:'#ff6d00', 'In-Person':'#9c27b0' };
@@ -85,10 +85,10 @@
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
 
-  function filterContacts() {
+  function filterContacts(resetPage = true) {
     const q = document.getElementById('search-input').value.toLowerCase();
     _filteredContacts = q ? allContacts.filter(c => (c.company+c.name).toLowerCase().includes(q)) : allContacts;
-    _contactsPage = 1;
+    if (resetPage) _contactsPage = 1;
     renderContacts();
   }
 
@@ -99,7 +99,7 @@
     const grid = document.getElementById('contacts-grid');
     if (!contacts.length) { grid.innerHTML = `<div class="empty-state"><p>No contacts found.</p></div>`; document.getElementById('contacts-pager').innerHTML=''; return; }
     grid.innerHTML = pageSlice(contacts, _contactsPage, 25).map(c => `
-      <div class="report-card" onclick="location.href='/contact-detail.html?id=${c._id}'">
+      <div class="report-card" onclick="location.href='/contact-detail.html?id=${c._id}&page=${_contactsPage}'">
         <div class="week-label">${esc(c.company)}</div>
         <div class="meta">${esc(c.name)}</div>
         <div class="meta" style="display:flex;gap:8px;align-items:center;margin-top:4px;">
@@ -110,7 +110,7 @@
         ${c.phone ? `<div class="meta" style="margin-top:4px;">📱 ${esc(c.phone)}</div>` : ''}
         <div class="card-actions">
           <button class="btn-sm btn-preview" onclick="event.stopPropagation();openPreview('${c._id}')">Preview</button>
-          <button class="btn-sm btn-edit"    onclick="event.stopPropagation();location.href='/contact-detail.html?id=${c._id}'">Edit</button>
+          <button class="btn-sm btn-edit"    onclick="event.stopPropagation();location.href='/contact-detail.html?id=${c._id}&page=${_contactsPage}'">Edit</button>
           <button class="btn-sm btn-delete"  onclick="event.stopPropagation();deleteContact('${c._id}')">Delete</button>
         </div>
       </div>
@@ -126,7 +126,7 @@
     document.getElementById('preview-title').textContent = 'Loading…';
     document.getElementById('preview-body').innerHTML = '<p style="padding:16px;color:#aaa;">Loading…</p>';
     document.getElementById('preview-overlay').classList.add('open');
-    document.getElementById('preview-edit-btn').onclick = () => location.href = `/contact-detail.html?id=${id}`;
+    document.getElementById('preview-edit-btn').onclick = () => location.href = `/contact-detail.html?id=${id}&page=${_contactsPage}`;
 
     try {
       const c = await api.getContact(id);
@@ -225,7 +225,7 @@
   }
 
   async function load() {
-    try { allContacts=await api.getContacts(); filterContacts(); }
+    try { allContacts=await api.getContacts(); filterContacts(false); }
     catch(err){ document.getElementById('contacts-grid').innerHTML=`<div class="empty-state"><p>${err.message}</p></div>`; }
   }
 

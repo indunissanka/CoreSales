@@ -158,6 +158,11 @@ const api = {
   });
 })();
 
+// Converts a status string to a CSS badge slug, e.g. "ETD (Departure)" → "etd-departure"
+function statusSlug(s) {
+  return String(s || '').replace(/[()]/g, '').trim().replace(/\s+/g, '-').toLowerCase();
+}
+
 function toQS(params) {
   if (!params || !Object.keys(params).length) return '';
   const p = Object.entries(params).filter(([,v]) => v !== undefined && v !== null && v !== '');

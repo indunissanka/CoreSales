@@ -10,6 +10,7 @@ const Sample   = require('../models/Sample');
 const Forecast = require('../models/Forecast');
 const Meeting  = require('../models/Meeting');
 const Report   = require('../models/Report');
+const { autoAdvanceOrderStatus } = require('./orders');
 
 router.get('/', auth, async (req, res) => {
   try {
@@ -30,13 +31,20 @@ router.get('/', auth, async (req, res) => {
     ] = await Promise.all([
       Contact.countDocuments({ createdBy: uid }),
       Product.countDocuments({ createdBy: uid }),
-      Order.find({ createdBy: uid }).populate('contact','company').populate('items.product','name'),
+      Order.find({ createdBy: uid }).sort({ orderNo: 1 }).populate('contact','company').populate('items.product','name'),
       Sample.find({ createdBy: uid }).populate('company','company'),
       Forecast.find({ createdBy: uid, year: now.getFullYear() }),
-      Meeting.find({ createdBy: uid }).sort({ date: -1 }),
+      Meeting.find({ createdBy: uid }).sort({ date: 1 }),
       Report.find({ userId: uid }).sort({ weekStart: -1 }),
       require('../models/LetterOfCredit').find({ createdBy: uid }),
     ]);
+
+    // Auto-advance statuses (excludes Delivered — must be set manually)
+    const changed = await autoAdvanceOrderStatus(orders);
+    if (changed) {
+      const fresh = await Order.find({ createdBy: uid }).sort({ orderNo: 1 }).populate('contact','company').populate('items.product','name');
+      orders.splice(0, orders.length, ...fresh);
+    }
 
     // Orders summary
     const orderStatusCounts = {};
@@ -49,9 +57,11 @@ router.get('/', auth, async (req, res) => {
       }
     }
     const activeOrders = orders.filter(o => !['Cancelled','Rejected','Delivered'].includes(o.status));
-    const recentOrders = orders.slice(0, 5).map(o => ({
+    const recentOrders = orders.filter(o => o.status !== 'Rejected').map(o => ({
       _id: o._id, orderNo: o.orderNo, company: o.contact?.company || '—',
       status: o.status, total: o.totalAmount, currency: o.currency, createdAt: o.createdAt,
+      incoterm: o.incoterm || '—',
+      products: (o.items || []).map(i => i.product?.name).filter(Boolean).join(', ') || '—',
     }));
 
     // Samples summary
@@ -78,6 +88,23 @@ router.get('/', auth, async (req, res) => {
       return diff >= 0 && diff <= 30;
     }).length;
 
+    // Shipping status — from LC Opened through to ETA
+    const shippingOrders = orders
+      .filter(o => ['PI Issued', 'LC Opened', 'Shipped', 'Production', 'Booking', 'Cargo Closing', 'ETD (Departure)', 'ETA (Arrival)'].includes(o.status))
+      .map(o => ({
+        _id: o._id,
+        orderNo: o.orderNo,
+        company: o.contact?.company || '—',
+        status: o.status,
+        etd: o.shippingSchedule?.etd || null,
+        eta: o.shippingSchedule?.eta || null,
+        carrier: o.shippingSchedule?.carrier || '—',
+        portOfLoading: o.portOfLoading || '—',
+        portOfDestination: o.portOfDestination || '—',
+        currency: o.currency,
+        total: o.totalAmount,
+      }));
+
     res.json({
       contacts:  { total: totalContacts },
       products:  { total: totalProducts },
@@ -87,6 +114,7 @@ router.get('/', auth, async (req, res) => {
         totalRevenue, monthRevenue,
         recent: recentOrders,
       },
+      shipping:  { orders: shippingOrders },
       samples:   { total: samples.length, statusCounts: sampleStatusCounts },
       forecast:  { forecastTotal, actualTotal, entryCount: forecasts.length },
       meetings:  { total: meetings.length, upcoming: upcomingMeetings },

@@ -3,7 +3,8 @@
     "allow": [
       "Bash(docker compose *)",
       "PowerShell(head -100)",
-      "Bash(docker exec coresales-backend node -e ' *)"
+      "Bash(docker exec coresales-backend node -e ' *)",
+      "Bash(git push *)"
     ]
   }
 }

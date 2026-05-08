@@ -648,6 +648,11 @@ a { text-decoration: none; color: inherit; }
 .badge-status-pi-issued          { background: #e8eaf6; color: #283593; }
 .badge-status-lc-opened          { background: #e0f2f1; color: #00695c; }
 .badge-status-shipped            { background: #e8f5e9; color: #2e7d32; }
+.badge-status-production         { background: #fce4ec; color: #880e4f; }
+.badge-status-booking            { background: #ede7f6; color: #4527a0; }
+.badge-status-cargo-closing      { background: #fff3e0; color: #bf360c; }
+.badge-status-etd-departure      { background: #e0f7fa; color: #00695c; }
+.badge-status-eta-arrival        { background: #e8f5e9; color: #1b5e20; }
 .badge-status-delivered          { background: #c8e6c9; color: #1b5e20; }
 .badge-status-cancelled          { background: #fdecea; color: #c62828; }
 .badge-status-rejected           { background: #4a0000; color: #fff; }

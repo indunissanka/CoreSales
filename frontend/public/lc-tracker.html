@@ -148,7 +148,7 @@
           <td style="text-align:center;${overdue?'color:#c62828;font-weight:bold;':''}">${days !== null ? days + 'd' : '—'}${overdue?' ⚠':''}</td>
           <td>${esc(lc.lcNumber||'—')}</td>
           <td>${esc(lc.issuingBank||'—')}</td>
-          <td style="text-align:center;"><span class="badge badge-status-${(lc.status||'').replace(/\s+/g,'-').toLowerCase()}">${esc(lc.status)}</span></td>
+          <td style="text-align:center;"><span class="badge badge-status-${statusSlug(lc.status)}">${esc(lc.status)}</span></td>
           <td>${fmtDate(lc.expiryDate)}</td>
           <td style="white-space:nowrap;">
             ${lc.status==='Pending' ? `<button class="btn-sm btn-edit" onclick="openUpdate('${lc._id}','opened')">Mark Opened</button>` : ''}

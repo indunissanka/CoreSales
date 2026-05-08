@@ -70,12 +70,12 @@
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
 
   let _allReports = [];
-  let _reportsPage = 1;
+  let _reportsPage = parseInt(new URLSearchParams(location.search).get('page')) || 1;
 
   function goReportsPage(p) { _reportsPage = p; renderReportsGrid(); }
 
   function newReport() { location.href = '/report.html'; }
-  function editReport(id, e) { e.stopPropagation(); location.href = `/report.html?id=${id}`; }
+  function editReport(id, e) { e.stopPropagation(); location.href = `/report.html?id=${id}&page=${_reportsPage}`; }
 
   async function deleteReport(id, e) {
     e.stopPropagation();
@@ -91,7 +91,7 @@
     document.getElementById('preview-title').textContent = 'Loading…';
     document.getElementById('preview-body').innerHTML = '<p style="padding:16px;color:#aaa;">Loading…</p>';
     document.getElementById('preview-overlay').classList.add('open');
-    document.getElementById('preview-edit-btn').onclick = () => location.href = `/report.html?id=${id}`;
+    document.getElementById('preview-edit-btn').onclick = () => location.href = `/report.html?id=${id}&page=${_reportsPage}`;
     try {
       const r = await api.getReport(id);
       document.getElementById('preview-title').textContent = `${fmtDate(r.weekStart)} – ${fmtDate(r.weekEnd)}`;
@@ -138,7 +138,7 @@
     const grid = document.getElementById('reports-grid');
     if (!_allReports.length) { grid.innerHTML = `<div class="empty-state"><p>No reports yet.</p><small>Click "+ New Report" to create your first weekly report.</small></div>`; document.getElementById('reports-pager').innerHTML=''; return; }
     grid.innerHTML = pageSlice(_allReports, _reportsPage).map(r => `
-      <div class="report-card" onclick="location.href='/report.html?id=${r._id}'">
+      <div class="report-card" onclick="location.href='/report.html?id=${r._id}&page=${_reportsPage}'">
         <div class="week-label">${fmtDate(r.weekStart)} – ${fmtDate(r.weekEnd)}</div>
         <div class="meta">Area: ${r.area || '—'}</div>
         <div class="meta">Filled by: ${r.formFiller || '—'}</div>

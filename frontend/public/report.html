@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -158,7 +158,7 @@
 
     <!-- Save bar -->
     <div class="save-bar" id="save-bar">
-      <button class="btn-back" onclick="location.href='/dashboard.html'">&#8592; Back to Dashboard</button>
+      <button class="btn-back" onclick="location.href='/reports.html?page='+(new URLSearchParams(location.search).get('page')||1)">&#8592; Back to Dashboard</button>
       <span class="save-status" id="save-status"></span>
       <div style="display:flex;gap:10px;">
         <label class="btn-back" style="cursor:pointer;" title="Import entries from CSV">
@@ -414,7 +414,8 @@ async function saveReport() {
     } else {
       const created = await api.createReport(payload);
       reportId = created._id;
-      history.replaceState(null, '', `/report.html?id=${reportId}`);
+      const _pg = new URLSearchParams(location.search).get('page');
+      history.replaceState(null, '', `/report.html?id=${reportId}${_pg ? '&page='+_pg : ''}`);
     }
     statusEl.textContent = 'Saved ✓';
     setTimeout(() => { statusEl.textContent = ''; }, 3000);
