@@ -44,7 +44,7 @@ router.get('/line-items', async (req, res) => {
           orderNo:         o.orderNo,
           quotationNo:     o.quotationNo || '',
           orderStatus:     o.status,
-          orderDate:       o.createdAt,
+          orderDate:       (() => { const m = (o.orderNo||'').match(/(\d{4})(\d{2})(\d{2})/); return m ? new Date(`${m[1]}-${m[2]}-${m[3]}`) : o.createdAt; })(),
           currency:        o.currency,
           company:         o.contact?.company || o.contact?.name || '—',
           contactId:       o.contact?._id,
