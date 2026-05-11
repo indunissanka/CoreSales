@@ -1,4 +1,4 @@
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 16;
 
 function renderPager(containerId, total, page, goFn, pageSize) {
   const ps = pageSize || PAGE_SIZE;
