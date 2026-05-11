@@ -75,9 +75,15 @@ router.post('/import', async (req, res) => {
       );
     };
 
+    const products = (b.products || []).map(p => {
+      const doc = { ...p };
+      if (!doc.sku) delete doc.sku;
+      return doc;
+    });
+
     const [rc, rp, ro, rpi, rlc, rs, rf, rm, rr, rn, rt] = await Promise.all([
       upsert(Contact,         b.contacts         || [], { createdBy: uid }),
-      upsert(Product,         b.products         || [], { createdBy: uid }),
+      upsert(Product,         products,                 { createdBy: uid }),
       upsert(Order,           b.orders           || [], { createdBy: uid }),
       upsert(ProformaInvoice, b.proformaInvoices || [], { createdBy: uid }),
       upsert(LetterOfCredit,  b.lettersOfCredit  || [], { createdBy: uid }),
