@@ -36,7 +36,7 @@ router.post('/', async (req, res) => {
       .populate('contact');
     if (!order) return res.status(404).json({ error: 'Order not found' });
 
-    const piNumber = await generatePINumber();
+    const piNumber = await generatePINumber(order.createdAt, req.userId);
     const issuedDate = new Date();
     const validUntil = new Date(issuedDate);
     validUntil.setDate(validUntil.getDate() + Number(validDays));
@@ -47,6 +47,7 @@ router.post('/', async (req, res) => {
       quantity:    item.quantity,
       unit:        item.unit,
       unitPrice:   item.unitPrice,
+      unitTotal:   item.unitTotal,
       lineTotal:   item.lineTotal,
     }));
 

@@ -27,7 +27,7 @@ router.get('/', async (req, res) => {
 router.put('/', async (req, res) => {
   try {
     const allowed = ['companyName', 'companySlogan', 'sellerAddress', 'bankDetails', 'logoBase64',
-                     'orderNoPrefix', 'quotationNoPrefix', 'defaultUnit'];
+                     'orderNoPrefix', 'quotationNoPrefix', 'piNoPrefix', 'defaultUnit'];
     const update  = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) update[k] = req.body[k]; });
     const s = await Settings.findOneAndUpdate(

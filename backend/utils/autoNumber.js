@@ -38,10 +38,15 @@ async function generateQuotationNo(userId) {
   return `${prefix}${letterSuffix(count)}`;
 }
 
-async function generatePINumber() {
-  const year  = new Date().getFullYear();
-  const count = await ProformaInvoice().countDocuments({ piNumber: new RegExp(`^PI-${year}-`) });
-  return `PI-${year}-${String(count + 1).padStart(4, '0')}`;
+async function generatePINumber(orderDate, userId) {
+  const pfx  = await getUserPrefix(userId, 'piNoPrefix', 'TP-M');
+  const d    = orderDate ? new Date(orderDate) : new Date();
+  const yyyy = d.getFullYear();
+  const mm   = String(d.getMonth() + 1).padStart(2, '0');
+  const dd   = String(d.getDate()).padStart(2, '0');
+  const prefix = `${pfx}${yyyy}${mm}${dd}`;
+  const count  = await ProformaInvoice().countDocuments({ piNumber: new RegExp(`^${escapeRegex(prefix)}`) });
+  return `${prefix}${letterSuffix(count)}`;
 }
 
 function escapeRegex(s) {

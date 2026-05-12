@@ -271,14 +271,13 @@
         <th>SKU</th>
         <th class="num">Qty</th>
         <th>Unit</th>
-        <th class="num">Unit Price</th>
-        <th class="num">Amount</th>
+        <th class="num">Unit Total</th>
       </tr>
     </thead>
     <tbody id="pi-items-tbody"></tbody>
     <tfoot>
       <tr>
-        <td colspan="5" class="num">SUBTOTAL</td>
+        <td colspan="4" class="num">SUBTOTAL</td>
         <td class="num" id="pi-subtotal">0.00</td>
       </tr>
     </tfoot>
@@ -398,8 +397,7 @@
           <td style="color:#666;">${esc(item.sku||'')}</td>
           <td class="num">${Number(item.quantity).toLocaleString()}</td>
           <td>${esc(item.unit||'')}</td>
-          <td class="num">${fmt2(item.unitPrice)}</td>
-          <td class="num"><strong>${fmt2(item.lineTotal)}</strong></td>
+          <td class="num"><strong>${fmt2(item.unitTotal)}</strong></td>
         </tr>`).join('');
 
       // Totals

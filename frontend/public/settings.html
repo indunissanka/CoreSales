@@ -115,7 +115,7 @@
   <div class="settings-card">
     <h3>Numbering Format</h3>
     <p style="font-size:12px;color:#888;margin:0 0 20px;">Set the prefix for auto-generated numbers. The suffix is always <code style="background:#f0f4f8;padding:1px 5px;border-radius:3px;">YYYYMMDD + Letter</code> (e.g. <span id="num-example-suffix">20260501A</span>).</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
       <div class="settings-row" style="margin:0;">
         <label>Order No Prefix</label>
         <input type="text" id="f-order-prefix" placeholder="TC-M" oninput="updateNumberPreviews()">
@@ -125,6 +125,11 @@
         <label>Quotation No Prefix</label>
         <input type="text" id="f-quotation-prefix" placeholder="QT-M" oninput="updateNumberPreviews()">
         <div style="font-size:11px;color:#2d6a9f;margin-top:5px;">Preview: <strong id="prev-quotation-no">QT-M20260501A</strong></div>
+      </div>
+      <div class="settings-row" style="margin:0;">
+        <label>Proforma Invoice Prefix</label>
+        <input type="text" id="f-pi-prefix" placeholder="TP-M" oninput="updateNumberPreviews()">
+        <div style="font-size:11px;color:#2d6a9f;margin-top:5px;">Preview: <strong id="prev-pi-no">TP-M20260501A</strong></div>
       </div>
     </div>
     <div style="margin-top:20px;max-width:240px;">
@@ -408,8 +413,10 @@
     document.getElementById('num-example-suffix').textContent = suffix;
     const oPfx = document.getElementById('f-order-prefix').value     || 'TC-M';
     const qPfx = document.getElementById('f-quotation-prefix').value || 'QT-M';
+    const pPfx = document.getElementById('f-pi-prefix').value        || 'TP-M';
     document.getElementById('prev-order-no').textContent     = oPfx + suffix;
     document.getElementById('prev-quotation-no').textContent = qPfx + suffix;
+    document.getElementById('prev-pi-no').textContent        = pPfx + suffix;
   }
 
   async function changePassword() {
@@ -493,6 +500,7 @@
       document.getElementById('f-bank-details').value    = s.bankDetails   || '';
       document.getElementById('f-order-prefix').value     = s.orderNoPrefix     || 'TC-M';
       document.getElementById('f-quotation-prefix').value = s.quotationNoPrefix || 'QT-M';
+      document.getElementById('f-pi-prefix').value        = s.piNoPrefix        || 'TP-M';
       document.getElementById('f-default-unit').value     = s.defaultUnit       || 'kg';
       if (s.logoBase64) setLogoPreview(s.logoBase64);
       updateNumberPreviews();
@@ -509,6 +517,7 @@
         logoBase64,
         orderNoPrefix:     document.getElementById('f-order-prefix').value.trim()     || 'TC-M',
         quotationNoPrefix: document.getElementById('f-quotation-prefix').value.trim() || 'QT-M',
+        piNoPrefix:        document.getElementById('f-pi-prefix').value.trim()        || 'TP-M',
         defaultUnit:       document.getElementById('f-default-unit').value            || 'kg',
       });
       // Cache in localStorage for quick access across pages

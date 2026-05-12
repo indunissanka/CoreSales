@@ -6,6 +6,7 @@ const piLineItemSchema = new mongoose.Schema({
   quantity:    Number,
   unit:        String,
   unitPrice:   Number,
+  unitTotal:   Number,
   lineTotal:   Number,
 });
 
