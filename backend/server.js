@@ -26,6 +26,7 @@ app.use('/api/notes',     require('./routes/notes'));
 app.use('/api/todos',     require('./routes/todos'));
 app.use('/api/backup',    require('./routes/backup'));
 app.use('/api/admin',     require('./routes/admin'));
+app.use('/api/search',    require('./routes/search'));
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 

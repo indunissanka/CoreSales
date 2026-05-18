@@ -4,7 +4,10 @@
       "Bash(docker compose *)",
       "PowerShell(head -100)",
       "Bash(docker exec coresales-backend node -e ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\mark\\\\OneDrive\\\\Documents\\\\GitHub\\\\CoreSales\" -Recurse -Directory)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "PowerShell(head -20)"
     ]
   }
 }
