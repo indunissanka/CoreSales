@@ -47,4 +47,42 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.get('/csv', async (req, res) => {
+  try {
+    const filter = { createdBy: req.userId };
+    if (req.query.status) filter.status = req.query.status;
+    if (req.query.contactId) filter.contact = req.query.contactId;
+    const orders = await Order.find(filter)
+      .populate('contact', 'company name')
+      .populate('items.product', 'name sku')
+      .sort({ orderNo: -1 });
+    const esc = v => {
+      const s = String(v == null ? '' : v);
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
+    };
+    const fmtDate = d => d ? new Date(d).toISOString().slice(0, 10) : '';
+    const headers = ['OrderNo','QuotationNo','Status','Date','Company','Product','SKU','Qty','Unit','UnitPrice','DrumsPrice','BankCharge','Shipping','Commission','UnitTotal','LineTotal','Currency'];
+    let csv = headers.join(',') + '\n';
+    for (const o of orders) {
+      for (const item of o.items) {
+        const date = (() => { const m = (o.orderNo||'').match(/(\d{4})(\d{2})(\d{2})/); return m ? `${m[1]}-${m[2]}-${m[3]}` : ''; })();
+        csv += [
+          esc(o.orderNo), esc(o.quotationNo||''), esc(o.status), date,
+          esc(o.contact?.company || o.contact?.name || '—'),
+          esc(item.product?.name || '—'), esc(item.product?.sku || ''),
+          item.quantity, esc(item.unit),
+          item.unitPrice, item.drumsPrice||0, item.bankCharge||0,
+          item.shipping||0, item.commission||0,
+          item.unitTotal, item.lineTotal, esc(o.currency||'USD'),
+        ].join(',') + '\n';
+      }
+    }
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', 'attachment; filename="pricing.csv"');
+    res.send(csv);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
