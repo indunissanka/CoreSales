@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+    input, select, button { font-size: 14px; padding: 8px 12px; border-radius: 6px; border: 1px solid #ccc; }
+    button { background: #1a3a5c; color: #fff; border: none; cursor: pointer; }
+    button:hover { background: #2d6a9f; }
+    pre { background: #f5f5f5; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+    .row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+    .row label { font-weight: 600; min-width: 80px; }
+    .row input { flex: 1; min-width: 200px; }
+    .error { color: #c62828; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background: #f0f4f8; font-weight: 700; font-size: 11px; text-transform: uppercase; }
+    .status { padding: 8px 12px; border-radius: 6px; display: none; margin-bottom: 12px; }
+    .status.success { display: block; background: #e8f5e9; color: #2e7d32; }
+    .status.error { display: block; background: #fdecea; color: #c62828; }
+  </style>
+</head>
+<body>
+  <h2>API Test</h2>
+
+  <div class="row">
+    <label>API URL</label>
+    <input type="text" id="apiUrl" value="/api/pricing" style="flex:1;">
+  </div>
+  <div class="row">
+    <label>API Key</label>
+    <input type="text" id="apiKey" placeholder="Paste your API key" style="flex:1;">
+  </div>
+  <div class="row">
+    <label>Method</label>
+    <select id="apiMethod">
+      <option value="GET">GET</option>
+      <option value="POST">POST</option>
+      <option value="PUT">PUT</option>
+      <option value="DELETE">DELETE</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>Body (optional)</label>
+    <input type="text" id="apiBody" placeholder='e.g. {"key":"value"}' style="flex:1;">
+  </div>
+  <div style="display:flex;gap:10px;margin-bottom:20px;">
+    <button onclick="sendRequest()">Send Request</button>
+    <button onclick="loadEndpoints()" style="background:#555;">Show Available Endpoints</button>
+  </div>
+
+  <div id="status" class="status"></div>
+  <pre id="output">Waiting for request…</pre>
+
+  <div id="endpoints" style="display:none;">
+    <h3>Available Endpoints</h3>
+    <ul style="font-size:13px;line-height:1.8;">
+      <li><code>/api/pricing</code> — Pricing line items</li>
+      <li><code>/api/contacts</code> — Contacts</li>
+      <li><code>/api/orders</code> — Orders</li>
+      <li><code>/api/orders/line-items</code> — Order line items</li>
+      <li><code>/api/products</code> — Products</li>
+      <li><code>/api/forecasts</code> — Forecasts</li>
+      <li><code>/api/samples</code> — Samples</li>
+      <li><code>/api/reports</code> — Reports</li>
+    </ul>
+  </div>
+
+  <script>
+    function showStatus(msg, type) {
+      const el = document.getElementById('status');
+      el.textContent = msg;
+      el.className = 'status ' + (type || '');
+    }
+
+    function buildUrl() {
+      let url = document.getElementById('apiUrl').value.trim();
+      const key = document.getElementById('apiKey').value.trim();
+      if (key) {
+        url += (url.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(key);
+      }
+      return url;
+    }
+
+    async function sendRequest() {
+      const url = buildUrl();
+      const method = document.getElementById('apiMethod').value;
+      const bodyRaw = document.getElementById('apiBody').value.trim();
+      const opts = { method };
+
+      if (bodyRaw && ['POST', 'PUT'].includes(method)) {
+        try {
+          JSON.parse(bodyRaw);
+          opts.headers = { 'Content-Type': 'application/json' };
+          opts.body = bodyRaw;
+        } catch (_) {
+          showStatus('Invalid JSON body', 'error');
+          return;
+        }
+      }
+
+      document.getElementById('output').textContent = 'Loading…';
+      showStatus('');
+
+      try {
+        const res = await fetch(url, opts);
+        const data = await res.json().catch(() => ({ raw: 'Not JSON' }));
+        const pretty = JSON.stringify(data, null, 2);
+        document.getElementById('output').textContent =
+          res.ok
+            ? pretty
+            : data.error
+              ? 'ERROR ' + res.status + ': ' + data.error + '\n\n' + pretty
+              : 'HTTP ' + res.status + '\n\n' + pretty;
+        if (res.ok) showStatus('OK (' + res.status + ')', 'success');
+        else showStatus('Error (' + res.status + ')', 'error');
+      } catch (err) {
+        document.getElementById('output').textContent = 'Network error: ' + err.message;
+        showStatus('Request failed', 'error');
+      }
+    }
+
+    function loadEndpoints() {
+      const el = document.getElementById('endpoints');
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+  </script>
+</body>
+</html>

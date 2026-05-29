@@ -15,7 +15,7 @@ module.exports = async (req, res, next) => {
     }
   }
 
-  const apiKeyValue = req.headers['x-api-key'];
+  const apiKeyValue = req.headers['x-api-key'] || req.query.key;
   if (apiKeyValue) {
     try {
       const apiKey = await ApiKey.findOne({ key: apiKeyValue, isActive: true });
