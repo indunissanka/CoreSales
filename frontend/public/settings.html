@@ -258,10 +258,22 @@
   headers: { 'Authorization': 'Bearer YOUR_API_KEY' }
 })</pre>
         <p style="margin:0 0 8px;"><strong>From Excel (Power Query)</strong><br>
-        Use <em>Get Data → From Web</em> with this URL format:</p>
-        <pre style="background:#1a3a5c;color:#e8f0fe;padding:10px;border-radius:6px;overflow-x:auto;font-size:11px;margin:0 0 10px;">https://your-domain.com/api/contacts
-Header: Authorization = Bearer YOUR_API_KEY</pre>
-        <p style="margin:0;color:#888;">Available endpoints: <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/contacts</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/orders</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/products</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/pricing</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/forecasts</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/samples</code></p>
+        Use <em>Get Data → From Web</em> with the <strong>CSV URL</strong> (easiest):<br>
+        <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">https://your-domain.com/api/pricing/csv?key=YOUR_API_KEY</code></p>
+        <p style="margin:0 0 8px;">Or use <em>Blank Query → Advanced Editor</em> with this M code for JSON:</p>
+        <pre style="background:#1a3a5c;color:#e8f0fe;padding:10px;border-radius:6px;overflow-x:auto;font-size:11px;margin:0 0 10px;">let
+    url = "https://your-domain.com/api/pricing?key=YOUR_API_KEY",
+    source = Web.Contents(url),
+    json = Json.Document(source, 65001),
+    toTable = Table.FromList(json, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+    expand = Table.ExpandRecordColumn(toTable, "Column1",
+      {"company","orderNo","quotationNo","orderStatus","orderDate",
+       "productName","sku","quantity","unit","unitPrice",
+       "drumsPrice","bankCharge","shipping","commission",
+       "unitTotal","lineTotal","currency"})
+in
+    expand</pre>
+        <p style="margin:0;color:#888;">Available endpoints: <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/contacts</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/orders</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/products</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/pricing</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/pricing/csv</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/forecasts</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/samples</code></p>
       </div>
     </details>
   </div>

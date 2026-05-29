@@ -61,14 +61,14 @@ router.get('/csv', async (req, res) => {
       return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
     };
     const fmtDate = d => d ? new Date(d).toISOString().slice(0, 10) : '';
-    const headers = ['OrderNo','QuotationNo','Status','Date','Company','Product','SKU','Qty','Unit','UnitPrice','DrumsPrice','BankCharge','Shipping','Commission','UnitTotal','LineTotal','Currency'];
+    const headers = ['Company','Order No','Quotation No','Order Status','Date','Product','SKU','Qty','Unit','Unit Price','Drums Price','Bank Charge','Shipping','Commission','Unit Total','Line Total','Currency'];
     let csv = headers.join(',') + '\n';
     for (const o of orders) {
       for (const item of o.items) {
         const date = (() => { const m = (o.orderNo||'').match(/(\d{4})(\d{2})(\d{2})/); return m ? `${m[1]}-${m[2]}-${m[3]}` : ''; })();
         csv += [
-          esc(o.orderNo), esc(o.quotationNo||''), esc(o.status), date,
           esc(o.contact?.company || o.contact?.name || '—'),
+          esc(o.orderNo), esc(o.quotationNo||''), esc(o.status), date,
           esc(item.product?.name || '—'), esc(item.product?.sku || ''),
           item.quantity, esc(item.unit),
           item.unitPrice, item.drumsPrice||0, item.bankCharge||0,
