@@ -1,9 +1,11 @@
 const express        = require('express');
 const bcrypt         = require('bcryptjs');
+const crypto         = require('crypto');
 const router         = express.Router();
 const adminAuth      = require('../middleware/adminAuth');
 const User           = require('../models/User');
 const SystemSettings = require('../models/SystemSettings');
+const ApiKey         = require('../models/ApiKey');
 
 router.use(adminAuth);
 
@@ -77,6 +79,46 @@ router.delete('/users/:id', async (req, res) => {
       return res.status(400).json({ error: 'Cannot delete your own account' });
     const user = await User.findByIdAndDelete(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/admin/api-keys — list all API keys (key masked)
+router.get('/api-keys', async (req, res) => {
+  try {
+    const keys = await ApiKey.find({}).sort({ createdAt: -1 });
+    res.json(keys.map(k => ({
+      _id: k._id,
+      label: k.label,
+      keyPreview: k.key.slice(0, 8) + '…',
+      isActive: k.isActive,
+      createdAt: k.createdAt
+    })));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/api-keys — generate a new API key
+router.post('/api-keys', async (req, res) => {
+  try {
+    const { label } = req.body;
+    if (!label) return res.status(400).json({ error: 'label is required' });
+    const key = crypto.randomBytes(32).toString('hex');
+    const apiKey = await ApiKey.create({ label, key, createdBy: req.userId });
+    res.status(201).json({ _id: apiKey._id, label: apiKey.label, key, createdAt: apiKey.createdAt });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE /api/admin/api-keys/:id — revoke an API key
+router.delete('/api-keys/:id', async (req, res) => {
+  try {
+    const apiKey = await ApiKey.findByIdAndDelete(req.params.id);
+    if (!apiKey) return res.status(404).json({ error: 'API key not found' });
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

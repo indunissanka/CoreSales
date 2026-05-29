@@ -184,6 +184,33 @@
     .status-msg.error   { background: #fdecea; color: #c62828; display: block; }
 
     .empty-users { text-align: center; padding: 32px; color: #aaa; font-size: 13px; }
+
+    /* API Keys */
+    .apikey-form { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+    .apikey-form input { flex: 1; min-width: 160px; border: 1px solid #ccc; border-radius: 8px; padding: 9px 12px; font-size: 13px; outline: none; }
+    .apikey-form input:focus { border-color: #2d6a9f; }
+    .apikey-reveal {
+      background: #f0f4f8; border: 1px solid #d0d8e4; border-radius: 8px;
+      padding: 12px 14px; font-family: monospace; font-size: 13px; word-break: break-all;
+      display: none; margin-top: 12px; position: relative;
+    }
+    .apikey-reveal.show { display: block; }
+    .apikey-reveal .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #2d6a9f; color: #fff; border: none; border-radius: 6px;
+      padding: 4px 10px; font-size: 11px; cursor: pointer;
+    }
+    .apikey-warn { font-size: 11px; color: #e65100; margin-top: 6px; font-weight: 700; }
+    .apikeys-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 16px; }
+    .apikeys-table th {
+      background: #f0f4f8; color: #1a3a5c; font-weight: 700; font-size: 11px;
+      text-transform: uppercase; letter-spacing: .5px; padding: 10px 12px;
+      text-align: left; border-bottom: 2px solid #d0d8e4; white-space: nowrap;
+    }
+    .apikeys-table td { padding: 10px 12px; border-bottom: 1px solid #f0f4f8; vertical-align: middle; }
+    .apikeys-table tbody tr:hover td { background: #f7f9fc; }
+    .apikeys-table tbody tr:last-child td { border-bottom: none; }
+    .key-preview { font-family: monospace; font-size: 12px; color: #555; }
   </style>
   <link rel="stylesheet" href="/css/mobile.css">
   <script src="/js/mobile-nav.js" defer></script>
@@ -237,6 +264,32 @@
               <span class="toggle-track"></span>
             </label>
           </div>
+        </div>
+      </div>
+
+      <!-- API Keys -->
+      <div class="admin-card">
+        <div class="admin-card-header">🔑 API Keys</div>
+        <div class="admin-card-body">
+          <div id="apikey-status" class="status-msg" style="margin-bottom:12px;"></div>
+          <div class="apikey-form">
+            <div style="flex:1;">
+              <label style="font-size:12px;font-weight:700;color:#555;display:block;margin-bottom:4px;">Label</label>
+              <input type="text" id="apikey-label" placeholder="e.g. My Script">
+            </div>
+            <button class="btn-new" onclick="generateApiKey()">Generate</button>
+          </div>
+          <div id="apikey-reveal" class="apikey-reveal">
+            <button class="copy-btn" onclick="copyApiKey()">Copy</button>
+            <span id="apikey-value"></span>
+            <div class="apikey-warn">⚠ Save this key — it won't be shown again.</div>
+          </div>
+          <table class="apikeys-table">
+            <thead><tr><th>Label</th><th>Key</th><th>Created</th><th></th></tr></thead>
+            <tbody id="apikeys-tbody">
+              <tr><td colspan="4" class="empty-users">Loading…</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -307,7 +360,9 @@
       </div>
     </div>
 
-  </div>
+  </div><!-- end admin-grid -->
+
+
 </div>
 
 <!-- Edit User Modal -->
@@ -506,9 +561,67 @@
     }
   }
 
+  // ── API Keys ─────────────────────────────────────────────────
+  async function loadApiKeys() {
+    try {
+      const keys = await apiFetch('/admin/api-keys');
+      const tbody = document.getElementById('apikeys-tbody');
+      if (!keys.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-users">No API keys yet.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = keys.map(k => `
+        <tr>
+          <td><strong>${esc(k.label)}</strong></td>
+          <td class="key-preview">${esc(k.keyPreview)}</td>
+          <td style="font-size:12px;color:#888;">${fmtDate(k.createdAt)}</td>
+          <td><button class="btn-sm btn-delete" onclick="revokeApiKey('${k._id}','${esc(k.label)}')">Revoke</button></td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      document.getElementById('apikeys-tbody').innerHTML =
+        `<tr><td colspan="4" class="empty-users" style="color:#c62828;">${esc(err.message)}</td></tr>`;
+    }
+  }
+
+  async function generateApiKey() {
+    const label = document.getElementById('apikey-label').value.trim();
+    if (!label) { showStatus('apikey-status', 'Enter a label before generating.', 'error'); return; }
+    try {
+      const data = await apiFetch('/admin/api-keys', { method: 'POST', body: JSON.stringify({ label }) });
+      document.getElementById('apikey-value').textContent = data.key;
+      document.getElementById('apikey-reveal').classList.add('show');
+      document.getElementById('apikey-label').value = '';
+      showStatus('apikey-status', 'API key created. Copy it now.', 'success');
+      loadApiKeys();
+    } catch (err) {
+      showStatus('apikey-status', err.message, 'error');
+    }
+  }
+
+  function copyApiKey() {
+    const val = document.getElementById('apikey-value').textContent;
+    navigator.clipboard.writeText(val).then(() => {
+      showStatus('apikey-status', 'Key copied to clipboard.', 'success');
+    });
+  }
+
+  async function revokeApiKey(id, label) {
+    if (!confirm(`Revoke API key "${label}"? It will stop working immediately.`)) return;
+    try {
+      await apiFetch(`/admin/api-keys/${id}`, { method: 'DELETE' });
+      document.getElementById('apikey-reveal').classList.remove('show');
+      showStatus('apikey-status', `Key "${label}" revoked.`, 'success');
+      loadApiKeys();
+    } catch (err) {
+      showStatus('apikey-status', err.message, 'error');
+    }
+  }
+
   // ── Init ─────────────────────────────────────────────────────
   loadSystem();
   loadUsers();
+  loadApiKeys();
 </script>
 </body>
 </html>

@@ -226,6 +226,46 @@
     </div>
   </div>
 
+  <!-- API Keys -->
+  <div class="settings-card" id="apikey-card" style="display:none;margin-top:32px;">
+    <h3>API Keys <span style="font-weight:400;font-size:11px;color:#e74c3c;">Admin Only</span></h3>
+    <div id="apikey-status" class="status-msg" style="margin-bottom:12px;padding:8px 12px;border-radius:5px;font-size:12px;display:none;"></div>
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;">
+      <div style="flex:1;min-width:160px;">
+        <label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:4px;">Label</label>
+        <input type="text" id="apikey-label" placeholder="e.g. My Script" style="width:100%;padding:9px 12px;border:1px solid #c0c8d4;border-radius:5px;font-size:13px;box-sizing:border-box;">
+      </div>
+      <button class="btn-save" onclick="generateApiKey()">Generate</button>
+    </div>
+    <div id="apikey-reveal" style="display:none;background:#f0f4f8;border:1px solid #d0d8e4;border-radius:8px;padding:12px 14px;font-family:monospace;font-size:13px;word-break:break-all;margin-bottom:12px;position:relative;">
+      <button class="btn-sm" style="position:absolute;top:8px;right:8px;background:#2d6a9f;color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;" onclick="copyApiKey()">Copy</button>
+      <span id="apikey-value"></span>
+      <div style="font-size:11px;color:#e65100;margin-top:6px;font-weight:700;">⚠ Save this key — it won't be shown again.</div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="data-table" id="apikeys-table" style="width:100%;font-size:13px;">
+        <thead><tr><th>Label</th><th>Key</th><th>Created</th><th></th></tr></thead>
+        <tbody id="apikeys-tbody"><tr><td colspan="4" class="empty-cell">Loading…</td></tr></tbody>
+      </table>
+    </div>
+
+    <details style="margin-top:16px;font-size:13px;color:#555;cursor:pointer;">
+      <summary style="font-weight:600;color:#1a3a5c;">How to use API keys</summary>
+      <div style="margin-top:10px;padding:12px;background:#f7f9fc;border-radius:8px;font-size:12px;line-height:1.6;">
+        <p style="margin:0 0 8px;"><strong>From another website or app</strong><br>
+        Include the key in the <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">Authorization</code> header:</p>
+        <pre style="background:#1a3a5c;color:#e8f0fe;padding:10px;border-radius:6px;overflow-x:auto;font-size:11px;margin:0 0 10px;">fetch('https://your-domain.com/api/contacts', {
+  headers: { 'Authorization': 'Bearer YOUR_API_KEY' }
+})</pre>
+        <p style="margin:0 0 8px;"><strong>From Excel (Power Query)</strong><br>
+        Use <em>Get Data → From Web</em> with this URL format:</p>
+        <pre style="background:#1a3a5c;color:#e8f0fe;padding:10px;border-radius:6px;overflow-x:auto;font-size:11px;margin:0 0 10px;">https://your-domain.com/api/contacts
+Header: Authorization = Bearer YOUR_API_KEY</pre>
+        <p style="margin:0;color:#888;">Available endpoints: <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/contacts</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/orders</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/products</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/pricing</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/forecasts</code>, <code style="background:#eef2f7;padding:2px 6px;border-radius:3px;">/api/samples</code></p>
+      </div>
+    </details>
+  </div>
+
   <!-- Data Backup -->
   <div class="settings-card" style="margin-top:32px;">
     <h3>Data Backup</h3>
@@ -334,14 +374,73 @@
       </tr>`).join('');
   }
 
+  function showApikeyStatus(msg, type) {
+    const el = document.getElementById('apikey-status');
+    el.textContent = msg;
+    el.style.display = msg ? 'block' : 'none';
+    el.style.background = type === 'error' ? '#fdecea' : '#e8f5e9';
+    el.style.color = type === 'error' ? '#c62828' : '#2e7d32';
+  }
+
+  async function loadApiKeys() {
+    try {
+      const keys = await apiFetch('/admin/api-keys');
+      const tbody = document.getElementById('apikeys-tbody');
+      if (!keys.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty-cell">No API keys yet.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = keys.map(k => `
+        <tr>
+          <td>${esc(k.label)}</td>
+          <td style="font-family:monospace;font-size:12px;color:#555;">${esc(k.keyPreview)}</td>
+          <td style="font-size:12px;color:#aaa;">${fmtDate(k.createdAt)}</td>
+          <td><button class="btn-sm" style="background:#ffebee;color:#c62828;" onclick="revokeApiKey('${k._id}','${esc(k.label)}')">Revoke</button></td>
+        </tr>`).join('');
+    } catch (err) {
+      document.getElementById('apikeys-tbody').innerHTML =
+        `<tr><td colspan="4" class="empty-cell" style="color:#c62828;">${esc(err.message)}</td></tr>`;
+    }
+  }
+
+  async function generateApiKey() {
+    const label = document.getElementById('apikey-label').value.trim();
+    if (!label) { showApikeyStatus('Enter a label before generating.', 'error'); return; }
+    try {
+      const data = await apiFetch('/admin/api-keys', { method: 'POST', body: JSON.stringify({ label }) });
+      document.getElementById('apikey-value').textContent = data.key;
+      document.getElementById('apikey-reveal').style.display = 'block';
+      document.getElementById('apikey-label').value = '';
+      showApikeyStatus('API key created. Copy it now.', 'success');
+      loadApiKeys();
+    } catch (err) { showApikeyStatus(err.message, 'error'); }
+  }
+
+  function copyApiKey() {
+    const val = document.getElementById('apikey-value').textContent;
+    navigator.clipboard.writeText(val).then(() => showApikeyStatus('Key copied to clipboard.', 'success'));
+  }
+
+  async function revokeApiKey(id, label) {
+    if (!confirm(`Revoke API key "${label}"? It will stop working immediately.`)) return;
+    try {
+      await apiFetch(`/admin/api-keys/${id}`, { method: 'DELETE' });
+      document.getElementById('apikey-reveal').style.display = 'none';
+      showApikeyStatus(`Key "${label}" revoked.`, 'success');
+      loadApiKeys();
+    } catch (err) { showApikeyStatus(err.message, 'error'); }
+  }
+
   async function loadAdminPanel() {
     if (user.role !== 'admin') return;
     document.getElementById('admin-card').style.display = '';
+    document.getElementById('apikey-card').style.display = '';
     try {
       const [sys, users] = await Promise.all([api.getAdminSystem(), api.getAdminUsers()]);
       setToggleUI(sys.registrationOpen);
       renderAdminUsers(users);
     } catch (err) { console.error(err); }
+    loadApiKeys();
   }
 
   async function toggleRegistration(on) {

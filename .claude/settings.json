@@ -12,7 +12,19 @@
       "Bash(DOCKER_HOST=unix:////Users/markwu/.docker/run/docker.sock docker logs coresales-backend --tail=5)",
       "Bash(git -C /Users/markwu/Dev/CoreSales status)",
       "Bash(git -C /Users/markwu/Dev/CoreSales log --oneline -5)",
-      "Bash(git -C /Users/markwu/Dev/CoreSales diff --stat)"
+      "Bash(git -C /Users/markwu/Dev/CoreSales diff --stat)",
+      "Bash(curl -s http://localhost:8080 -o /dev/null -w \"Frontend HTTP %{http_code}\\\\n\")",
+      "Bash(node -e \"const {chromium} = require\\('playwright'\\); \\(async\\(\\)=>{ const b = await chromium.launch\\(\\); const p = await b.newPage\\(\\); await p.goto\\('http://localhost:8080'\\); await p.screenshot\\({path:'C:/Users/mark/AppData/Local/Temp/ss_home.png'}\\); console.log\\('title:', await p.title\\(\\)\\); await b.close\\(\\); }\\)\\(\\)\")",
+      "PowerShell(npx playwright --version 2>&1)",
+      "PowerShell($tmpDir = \"$env:TEMP\\\\ss_run_coresales\"; New-Item -ItemType Directory -Force -Path $tmpDir | Out-Null; Set-Location $tmpDir; npm init -y 2>&1 | Select-Object -Last 3; npm install playwright 2>&1 | Select-Object -Last 5)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"admin123\"}')",
+      "Bash(curl -s http://localhost:3000/api/auth/registration-status)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"mark.wu@taicounty.com.tw\",\"password\":\"101nissanka\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"mark\",\"password\":\"101nissanka\"}')",
+      "Bash(docker exec *)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"mark.wu@taicounty.com.tw\",\"password\":\"101Nissanka\"}')",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/login -H \"Content-Type: application/json\" -d '{\"username\":\"mark\",\"password\":\"101Nissanka\"}')",
+      "Bash(curl -s http://localhost:8080/admin.html)"
     ]
   }
 }
