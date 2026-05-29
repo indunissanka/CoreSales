@@ -20,6 +20,7 @@ app.use('/api/lc',        require('./routes/letterOfCredits'));
 app.use('/api/forecasts', require('./routes/forecasts'));
 app.use('/api/currency',  require('./routes/currency'));
 app.use('/api/meetings',  require('./routes/meetings'));
+app.use('/api/pricing',  require('./routes/pricing'));
 app.use('/api/settings',  require('./routes/settings'));
 app.use('/api/samples',   require('./routes/samples'));
 app.use('/api/notes',     require('./routes/notes'));
