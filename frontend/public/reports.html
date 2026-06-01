@@ -69,6 +69,7 @@
   function logout() { localStorage.clear(); location.replace('/index.html'); }
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
+  function fmtWeekDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}) : '—'; }
 
   let _allReports = [];
   let _reportsPage = parseInt(new URLSearchParams(location.search).get('page')) || 1;
@@ -95,7 +96,7 @@
     document.getElementById('preview-edit-btn').onclick = () => location.href = `/report.html?id=${id}&page=${_reportsPage}`;
     try {
       const r = await api.getReport(id);
-      document.getElementById('preview-title').textContent = `${fmtDate(r.weekStart)} – ${fmtDate(r.weekEnd)}`;
+      document.getElementById('preview-title').textContent = `${fmtWeekDate(r.weekStart)} – ${fmtWeekDate(r.weekEnd)}`;
       const PURPOSE_LABELS = { isNew:'New', isFollowUp:'Follow-Up', isIllustration:'Illustration', isAfter:'After', isOrders:'Orders' };
       const entriesHtml = (r.entries||[]).length ? `
         <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;">
@@ -140,7 +141,7 @@
     if (!_allReports.length) { grid.innerHTML = `<div class="empty-state"><p>No reports yet.</p><small>Click "+ New Report" to create your first weekly report.</small></div>`; document.getElementById('reports-pager').innerHTML=''; return; }
     grid.innerHTML = pageSlice(_allReports, _reportsPage).map(r => `
       <div class="report-card" onclick="location.href='/report.html?id=${r._id}&page=${_reportsPage}'">
-        <div class="week-label">${fmtDate(r.weekStart)} – ${fmtDate(r.weekEnd)}</div>
+        <div class="week-label">${fmtWeekDate(r.weekStart)} – ${fmtWeekDate(r.weekEnd)}</div>
         <div class="meta">Area: ${r.area || '—'}</div>
         <div class="meta">Filled by: ${r.formFiller || '—'}</div>
         <span class="entry-count">${(r.entries||[]).length} entries</span>

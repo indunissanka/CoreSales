@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Weekly Report — Sales Weekly Report</title>
+  <title>Weekly Report</title>
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/mobile.css">
   <script src="/js/mobile-nav.js" defer></script>
@@ -21,15 +21,15 @@
 <div class="report-page">
   <div class="report-paper">
 
-    <div class="report-title">Sales Weekly Report</div>
+    <div class="report-title" id="report-title-label">Sales Weekly Report</div>
 
     <!-- Meta / header row -->
     <div class="report-meta">
       <div class="meta-field">
         <label>Date Range:</label>
-        <input type="date" id="weekStart" title="Week start">
+        <input type="date" id="weekStart" title="Week start" onchange="updateWeekTitle()">
         <span style="margin:0 4px;font-weight:bold;">To</span>
-        <input type="date" id="weekEnd" title="Week end">
+        <input type="date" id="weekEnd" title="Week end" onchange="updateWeekTitle()">
       </div>
       <div class="meta-field" style="margin-left:auto;">
         <label>Area:</label>
@@ -205,6 +205,7 @@ if (params.get('id')) {
   document.getElementById('formFiller').value = user.name || '';
   document.getElementById('area').value       = user.area  || '';
   document.getElementById('ef-date').value    = toInputDate(now);
+  updateWeekTitle();
   hideAddForm();
 }
 
@@ -215,6 +216,18 @@ function toInputDate(d) {
 function fmtDate(d) {
   if (!d) return '';
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function fmtWeekDate(d) {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+function updateWeekTitle() {
+  const s = document.getElementById('weekStart').value;
+  const e = document.getElementById('weekEnd').value;
+  if (!s || !e) return;
+  const label = `Weekly Report — ${fmtWeekDate(s)} – ${fmtWeekDate(e)}`;
+  document.getElementById('report-title-label').textContent = label;
+  document.title = label;
 }
 function chk(v) { return v ? '&#10003;' : ''; }
 function decisionBadge(v) {
@@ -375,6 +388,7 @@ async function loadReport(id) {
     document.getElementById('suggestions').value = r.suggestions || '';
     document.getElementById('weeklyResults').value  = r.weeklyResults  || '';
     document.getElementById('monthlyResults').value = r.monthlyResults || '';
+    updateWeekTitle();
     entries = r.entries || [];
     renderTable();
     hideAddForm();

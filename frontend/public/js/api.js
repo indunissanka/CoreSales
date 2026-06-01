@@ -134,7 +134,9 @@ const api = {
     } else {
       el.textContent = name;
     }
-    document.title = document.title.replace(/^.*?—/, name + ' —').replace(/^CoreSales CRM$/, name);
+    if (!document.title.startsWith('Weekly Report')) {
+      document.title = document.title.replace(/^.*?—/, name + ' —').replace(/^CoreSales CRM$/, name);
+    }
   }
 
   // Apply cached value immediately (no flash)
