@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Marketing — CoreSales CRM</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/mobile.css">
+  <script src="/js/mobile-nav.js" defer></script>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="/dashboard.html" class="brand">CoreSales CRM</a>
+  <div class="user-info">
+    <span id="topbar-name"></span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</div>
+<nav class="subnav">
+  <a href="/contacts.html">Contacts</a>
+  <a href="/products.html">Products</a>
+  <a href="/orders.html">Orders</a>
+  <a href="/pricing.html">Pricing</a>
+  <a href="/samples.html">Samples</a>
+  <a href="/lc-tracker.html">Trade Docs</a>
+  <a href="/forecast.html">Forecast</a>
+  <a href="/reports.html">Reports</a>
+  <a href="/meetings.html">Meetings</a>
+  <a href="/marketing.html" class="active">Marketing</a>
+  <a href="/settings.html">Settings</a>
+</nav>
+
+<div class="page-wrap">
+  <div class="page-header">
+    <h2>📣 Marketing</h2>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <input type="text" id="search-input" class="search-input" placeholder="Search company, person or email…" oninput="onSearch()">
+      <label class="btn-back" style="cursor:pointer;" title="Import contacts from CSV">
+        ↑ Upload CSV
+        <input type="file" id="csv-upload" accept=".csv" style="display:none;" onchange="importCSV(event)">
+      </label>
+      <button class="btn-back" onclick="downloadCSV()" title="Export contacts to CSV">↓ Download CSV</button>
+      <button class="btn-new" onclick="openModal()">+ New Contact</button>
+    </div>
+  </div>
+
+  <div id="import-status" style="display:none;" class="import-status-bar"></div>
+
+  <div class="report-paper" style="padding:25px;">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Company</th>
+          <th>Contact Person</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Notes</th>
+          <th>Added</th>
+          <th style="width:100px;"></th>
+        </tr>
+      </thead>
+      <tbody id="marketing-tbody">
+        <tr><td colspan="7" class="empty-cell">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div id="marketing-pager"></div>
+</div>
+
+<!-- Create / Edit Modal -->
+<div class="preview-overlay" id="form-modal" onclick="closeModal()">
+  <div class="preview-panel" style="max-width:480px;" onclick="event.stopPropagation()">
+    <div class="preview-header">
+      <span id="modal-title">New Marketing Contact</span>
+      <button class="btn-sm" style="background:#e0e0e0;color:#444;" onclick="closeModal()">✕</button>
+    </div>
+    <div class="preview-body">
+      <div id="modal-error" style="display:none;background:#fdecea;color:#c62828;padding:8px 12px;border-radius:6px;font-size:13px;margin-bottom:12px;"></div>
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#555;display:block;margin-bottom:4px;">Company Name *</label>
+          <input type="text" id="f-company" placeholder="e.g. Acme Corp" style="width:100%;border:1px solid #ccc;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#555;display:block;margin-bottom:4px;">Contact Person *</label>
+          <input type="text" id="f-person" placeholder="e.g. Jane Smith" style="width:100%;border:1px solid #ccc;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#555;display:block;margin-bottom:4px;">Email Address *</label>
+          <input type="email" id="f-email" placeholder="e.g. jane@acme.com" style="width:100%;border:1px solid #ccc;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#555;display:block;margin-bottom:4px;">Phone Number</label>
+          <input type="text" id="f-phone" placeholder="e.g. +1 555 000 0000" style="width:100%;border:1px solid #ccc;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#555;display:block;margin-bottom:4px;">Notes</label>
+          <textarea id="f-notes" rows="3" placeholder="Any notes…" style="width:100%;border:1px solid #ccc;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;resize:vertical;"></textarea>
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+          <button class="btn-back" onclick="closeModal()">Cancel</button>
+          <button class="btn-new" id="modal-save-btn" onclick="saveContact()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/js/pagination.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/search.js" defer></script>
+<script>
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user || !localStorage.getItem('token')) location.replace('/index.html');
+  document.getElementById('topbar-name').textContent = user.name || user.username;
+  function logout() { localStorage.clear(); location.replace('/index.html'); }
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const MKT_CSV_HEADERS = ['companyName','contactPerson','email','phone','notes'];
+  let allItems = [];
+  let filtered  = [];
+  let _page     = 1;
+  let editingId = null;
+  const MKT_PAGE_SIZE = 25;
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
+
+  function onSearch(resetPage = true) {
+    const q = document.getElementById('search-input').value.toLowerCase();
+    filtered = q ? allItems.filter(m =>
+      (m.companyName + m.contactPerson + m.email).toLowerCase().includes(q)
+    ) : allItems;
+    if (resetPage) _page = 1;
+    render();
+  }
+
+  function goPage(p) { _page = p; render(); }
+
+  function render() {
+    const tbody = document.getElementById('marketing-tbody');
+    if (!filtered.length) {
+      tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">No marketing contacts found. Click "+ New Contact" to add one.</td></tr>`;
+      document.getElementById('marketing-pager').innerHTML = '';
+      return;
+    }
+    tbody.innerHTML = pageSlice(filtered, _page, MKT_PAGE_SIZE).map(m => `
+      <tr>
+        <td style="font-weight:600;">${esc(m.companyName)}</td>
+        <td>${esc(m.contactPerson)}</td>
+        <td><a href="mailto:${esc(m.email)}" style="color:#2d6a9f;">${esc(m.email)}</a></td>
+        <td>${esc(m.phone || '—')}</td>
+        <td style="color:#666;font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(m.notes)}">${esc(m.notes ? m.notes.slice(0,60) + (m.notes.length>60?'…':'') : '—')}</td>
+        <td style="font-size:12px;color:#aaa;white-space:nowrap;">${fmtDate(m.createdAt)}</td>
+        <td style="white-space:nowrap;">
+          <button class="btn-sm btn-edit"   onclick="openModal('${m._id}')">Edit</button>
+          <button class="btn-sm btn-delete" onclick="deleteItem('${m._id}')">Delete</button>
+        </td>
+      </tr>
+    `).join('');
+    renderPager('marketing-pager', filtered.length, _page, 'goPage', MKT_PAGE_SIZE);
+  }
+
+  function openModal(id) {
+    editingId = id || null;
+    document.getElementById('modal-title').textContent = id ? 'Edit Marketing Contact' : 'New Marketing Contact';
+    document.getElementById('modal-error').style.display = 'none';
+    if (id) {
+      const m = allItems.find(x => x._id === id);
+      document.getElementById('f-company').value = m.companyName || '';
+      document.getElementById('f-person').value  = m.contactPerson || '';
+      document.getElementById('f-email').value   = m.email || '';
+      document.getElementById('f-phone').value   = m.phone || '';
+      document.getElementById('f-notes').value   = m.notes || '';
+    } else {
+      document.getElementById('f-company').value = '';
+      document.getElementById('f-person').value  = '';
+      document.getElementById('f-email').value   = '';
+      document.getElementById('f-phone').value   = '';
+      document.getElementById('f-notes').value   = '';
+    }
+    document.getElementById('form-modal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('form-modal').classList.remove('open');
+    editingId = null;
+  }
+
+  async function saveContact() {
+    const companyName   = document.getElementById('f-company').value.trim();
+    const contactPerson = document.getElementById('f-person').value.trim();
+    const email         = document.getElementById('f-email').value.trim();
+    const phone         = document.getElementById('f-phone').value.trim();
+    const notes         = document.getElementById('f-notes').value.trim();
+
+    const errEl = document.getElementById('modal-error');
+    const showErr = msg => { errEl.textContent = msg; errEl.style.display = 'block'; };
+
+    if (!companyName)   return showErr('Company Name is required.');
+    if (!contactPerson) return showErr('Contact Person is required.');
+    if (!email)         return showErr('Email Address is required.');
+    if (!EMAIL_RE.test(email)) return showErr('Please enter a valid email address.');
+
+    errEl.style.display = 'none';
+    const btn = document.getElementById('modal-save-btn');
+    btn.disabled = true; btn.textContent = 'Saving…';
+
+    try {
+      const body = { companyName, contactPerson, email, phone, notes };
+      if (editingId) {
+        const updated = await api.updateMarketing(editingId, body);
+        allItems = allItems.map(x => x._id === editingId ? updated : x);
+      } else {
+        const created = await api.createMarketing(body);
+        allItems.unshift(created);
+      }
+      onSearch(false);
+      closeModal();
+    } catch (err) {
+      showErr(err.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Save';
+    }
+  }
+
+  async function deleteItem(id) {
+    const m = allItems.find(x => x._id === id);
+    if (!confirm(`Delete "${m ? m.companyName : 'this contact'}"? This cannot be undone.`)) return;
+    try {
+      await api.deleteMarketing(id);
+      allItems = allItems.filter(x => x._id !== id);
+      onSearch(false);
+    } catch (err) { alert(err.message); }
+  }
+
+  /* ── CSV Download ── */
+  function csvCell(v) {
+    const s = String(v == null ? '' : v);
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function downloadCSV() {
+    if (!allItems.length) { alert('No contacts to export.'); return; }
+    const rows = [MKT_CSV_HEADERS];
+    allItems.forEach(m => rows.push(MKT_CSV_HEADERS.map(h => csvCell(m[h] || ''))));
+    const csv = rows.map(r => r.join(',')).join('\r\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' }));
+    a.download = 'marketing.csv'; a.click();
+  }
+
+  /* ── CSV Upload ── */
+  function parseCSV(text) {
+    return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').map(line => {
+      const cells = []; let cur = ''; let inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') { if (inQ && line[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+        else if (ch === ',' && !inQ) { cells.push(cur.trim()); cur = ''; }
+        else cur += ch;
+      }
+      cells.push(cur.trim()); return cells;
+    }).filter(r => r.some(c => c));
+  }
+  function showImportStatus(msg, isError) {
+    const el = document.getElementById('import-status');
+    el.textContent = msg; el.style.display = msg ? 'block' : 'none';
+    el.style.background = isError ? '#fdecea' : '#e8f5e9';
+    el.style.color = isError ? '#c62828' : '#2e7d32';
+  }
+  async function importCSV(event) {
+    const file = event.target.files[0]; event.target.value = '';
+    if (!file) return;
+    const rows = parseCSV(await file.text());
+    if (!rows.length) { alert('CSV file is empty.'); return; }
+    const hi = rows.findIndex(r => r.some(c => c.toLowerCase() === 'companyname' || c.toLowerCase() === 'company'));
+    if (hi === -1) { alert('Could not find header row. Expected a "companyName" column. Download a template first.'); return; }
+    const rawHeaders = rows[hi].map(h => h.toLowerCase().trim());
+    const headerMap = {
+      companyname: 'companyName', company: 'companyName',
+      contactperson: 'contactPerson', contact: 'contactPerson', name: 'contactPerson',
+      email: 'email', phone: 'phone', notes: 'notes',
+    };
+    const headers = rawHeaders.map(h => headerMap[h] || h);
+    const dataRows = rows.slice(hi + 1).filter(r => r.some(c => c));
+    if (!dataRows.length) { alert('No data rows found.'); return; }
+    if (!confirm(`Import ${dataRows.length} contact(s)?`)) return;
+    showImportStatus(`Importing 0 / ${dataRows.length}…`, false);
+    let imported = 0, failed = 0;
+    for (const row of dataRows) {
+      const obj = {}; headers.forEach((h, i) => { if (MKT_CSV_HEADERS.includes(h)) obj[h] = row[i] || ''; });
+      if (!obj.companyName || !obj.contactPerson || !obj.email) { failed++; continue; }
+      try { await api.createMarketing(obj); imported++; showImportStatus(`Importing ${imported} / ${dataRows.length}…`, false); }
+      catch (e) { failed++; }
+    }
+    showImportStatus(`Import complete: ${imported} added${failed ? `, ${failed} skipped` : ''}`, failed > 0 && imported === 0);
+    await load();
+  }
+
+  async function load() {
+    try {
+      const data = await api.getMarketing({ limit: 500 });
+      allItems = data.items || data;
+      onSearch(false);
+    } catch (err) {
+      document.getElementById('marketing-tbody').innerHTML = `<tr><td colspan="7" class="empty-cell">${esc(err.message)}</td></tr>`;
+    }
+  }
+
+  load();
+</script>
+</body>
+</html>

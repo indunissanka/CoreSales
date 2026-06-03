@@ -31,6 +31,13 @@ const api = {
   updateReport:  (id,body) => apiFetch(`/reports/${id}`, { method: 'PUT',    body: JSON.stringify(body) }),
   deleteReport:  (id)      => apiFetch(`/reports/${id}`, { method: 'DELETE' }),
 
+  // Marketing
+  getMarketing:       (params)  => apiFetch('/marketing' + toQS(params)),
+  getMarketingItem:   (id)      => apiFetch(`/marketing/${id}`),
+  createMarketing:    (body)    => apiFetch('/marketing',       { method: 'POST',   body: JSON.stringify(body) }),
+  updateMarketing:    (id,body) => apiFetch(`/marketing/${id}`, { method: 'PUT',    body: JSON.stringify(body) }),
+  deleteMarketing:    (id)      => apiFetch(`/marketing/${id}`, { method: 'DELETE' }),
+
   // Contacts
   getContacts:      (params)    => apiFetch('/contacts' + toQS(params)),
   getContact:       (id)        => apiFetch(`/contacts/${id}`),

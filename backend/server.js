@@ -19,6 +19,7 @@ app.use('/api/pi',        require('./routes/proformaInvoices'));
 app.use('/api/lc',        require('./routes/letterOfCredits'));
 app.use('/api/forecasts', require('./routes/forecasts'));
 app.use('/api/currency',  require('./routes/currency'));
+app.use('/api/marketing', require('./routes/marketing'));
 app.use('/api/meetings',  require('./routes/meetings'));
 app.use('/api/pricing',  require('./routes/pricing'));
 app.use('/api/settings',  require('./routes/settings'));
