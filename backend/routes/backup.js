@@ -13,6 +13,7 @@ const Report          = require('../models/Report');
 const Note            = require('../models/Note');
 const TodoList        = require('../models/TodoList');
 const Settings        = require('../models/Settings');
+const Marketing       = require('../models/Marketing');
 
 router.use(auth);
 
@@ -21,7 +22,7 @@ router.get('/export', async (req, res) => {
   try {
     const uid = req.userId;
     const [contacts, products, orders, proformaInvoices, lettersOfCredit,
-           samples, forecasts, meetings, reports, notes, todos, settings] = await Promise.all([
+           samples, forecasts, meetings, reports, notes, todos, marketing, settings] = await Promise.all([
       Contact.find({ createdBy: uid }).lean(),
       Product.find({ createdBy: uid }).lean(),
       Order.find({ createdBy: uid }).lean(),
@@ -33,6 +34,7 @@ router.get('/export', async (req, res) => {
       Report.find({ userId: uid }).lean(),
       Note.find({ createdBy: uid }).lean(),
       TodoList.find({ createdBy: uid }).lean(),
+      Marketing.find({ createdBy: uid }).lean(),
       Settings.findOne({ user: uid }).lean(),
     ]);
 
@@ -40,7 +42,7 @@ router.get('/export', async (req, res) => {
       exportedAt: new Date().toISOString(),
       userId: uid,
       contacts, products, orders, proformaInvoices, lettersOfCredit,
-      samples, forecasts, meetings, reports, notes, todos,
+      samples, forecasts, meetings, reports, notes, todos, marketing,
       settings: settings ? [settings] : [],
     };
 
@@ -81,7 +83,7 @@ router.post('/import', async (req, res) => {
       return doc;
     });
 
-    const [rc, rp, ro, rpi, rlc, rs, rf, rm, rr, rn, rt] = await Promise.all([
+    const [rc, rp, ro, rpi, rlc, rs, rf, rm, rr, rn, rt, rmkt] = await Promise.all([
       upsert(Contact,         b.contacts         || [], { createdBy: uid }),
       upsert(Product,         products,                 { createdBy: uid }),
       upsert(Order,           b.orders           || [], { createdBy: uid }),
@@ -93,6 +95,7 @@ router.post('/import', async (req, res) => {
       upsert(Report,          b.reports          || [], { userId: uid }),
       upsert(Note,            b.notes            || [], { createdBy: uid }),
       upsert(TodoList,        b.todos            || [], { createdBy: uid }),
+      upsert(Marketing,       b.marketing        || [], { createdBy: uid }),
     ]);
 
     // Settings is one record per user
@@ -111,6 +114,7 @@ router.post('/import', async (req, res) => {
       proformaInvoices: count(rpi), lettersOfCredit: count(rlc),
       samples: count(rs), forecasts: count(rf), meetings: count(rm),
       reports: count(rr), notes: count(rn), todos: count(rt),
+      marketing: count(rmkt),
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
