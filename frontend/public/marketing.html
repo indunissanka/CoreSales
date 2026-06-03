@@ -7,6 +7,15 @@
   <link rel="stylesheet" href="/css/style.css">
   <link rel="stylesheet" href="/css/mobile.css">
   <script src="/js/mobile-nav.js" defer></script>
+  <style>
+    .sort-th { cursor:pointer; user-select:none; white-space:nowrap; }
+    .sort-th:hover { background:#e8f0f8; }
+    .sort-arrow { margin-left:4px; color:#aaa; font-size:11px; }
+    .sort-th.active .sort-arrow { color:#1a3a5c; }
+    .bulk-bar { display:none; align-items:center; gap:12px; background:#fff3e0; border:1px solid #ffb74d;
+                border-radius:8px; padding:8px 16px; margin-bottom:12px; font-size:13px; }
+    .bulk-bar.visible { display:flex; }
+  </style>
 </head>
 <body>
 
@@ -47,21 +56,29 @@
 
   <div id="import-status" style="display:none;" class="import-status-bar"></div>
 
+  <div id="bulk-bar" class="bulk-bar">
+    <span id="bulk-count">0 selected</span>
+    <button class="btn-sm btn-delete" onclick="bulkDelete()">Delete Selected</button>
+    <button class="btn-sm" style="background:#e0e0e0;color:#444;" onclick="clearSelection()">Cancel</button>
+  </div>
+
   <div class="report-paper" style="padding:25px;">
     <table class="data-table">
       <thead>
         <tr>
-          <th>Company</th>
-          <th>Contact Person</th>
-          <th>Email</th>
+          <th style="width:36px;"><input type="checkbox" id="select-all" onclick="toggleSelectAll(this)" title="Select all on this page"></th>
+          <th class="sort-th active" id="th-companyName" onclick="setSort('companyName')">Company <span class="sort-arrow">▲</span></th>
+          <th class="sort-th" id="th-contactPerson" onclick="setSort('contactPerson')">Contact Person <span class="sort-arrow">↕</span></th>
+          <th class="sort-th" id="th-email" onclick="setSort('email')">Email <span class="sort-arrow">↕</span></th>
           <th>Phone</th>
+          <th class="sort-th" id="th-country" onclick="setSort('country')">Country <span class="sort-arrow">↕</span></th>
           <th>Notes</th>
-          <th>Added</th>
+          <th class="sort-th" id="th-createdAt" onclick="setSort('createdAt')">Added <span class="sort-arrow">↕</span></th>
           <th style="width:100px;"></th>
         </tr>
       </thead>
       <tbody id="marketing-tbody">
-        <tr><td colspan="7" class="empty-cell">Loading…</td></tr>
+        <tr><td colspan="9" class="empty-cell">Loading…</td></tr>
       </tbody>
     </table>
   </div>
@@ -95,6 +112,10 @@
           <input type="text" id="f-phone" placeholder="e.g. +1 555 000 0000" style="width:100%;border:1px solid #ccc;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
         </div>
         <div>
+          <label style="font-size:12px;font-weight:700;color:#555;display:block;margin-bottom:4px;">Country</label>
+          <input type="text" id="f-country" placeholder="e.g. United States" style="width:100%;border:1px solid #ccc;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;">
+        </div>
+        <div>
           <label style="font-size:12px;font-weight:700;color:#555;display:block;margin-bottom:4px;">Notes</label>
           <textarea id="f-notes" rows="3" placeholder="Any notes…" style="width:100%;border:1px solid #ccc;border-radius:8px;padding:9px 12px;font-size:13px;outline:none;resize:vertical;"></textarea>
         </div>
@@ -117,20 +138,97 @@
   function logout() { localStorage.clear(); location.replace('/index.html'); }
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const MKT_CSV_HEADERS = ['companyName','contactPerson','email','phone','notes'];
-  let allItems = [];
+  const MKT_CSV_HEADERS = ['companyName','contactPerson','email','phone','country','notes'];
+  let allItems  = [];
   let filtered  = [];
+  let selected  = new Set();
   let _page     = 1;
   let editingId = null;
+  let sortKey   = 'companyName';
+  let sortDir   = 1; // 1=asc, -1=desc
   const MKT_PAGE_SIZE = 25;
 
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
 
+  /* ── Sorting ── */
+  function setSort(key) {
+    if (sortKey === key) { sortDir *= -1; } else { sortKey = key; sortDir = 1; }
+    updateSortHeaders();
+    render();
+  }
+
+  function updateSortHeaders() {
+    const cols = ['companyName','contactPerson','email','country','createdAt'];
+    cols.forEach(k => {
+      const th = document.getElementById('th-' + k);
+      if (!th) return;
+      const arrow = th.querySelector('.sort-arrow');
+      if (k === sortKey) {
+        th.classList.add('active');
+        arrow.textContent = sortDir === 1 ? '▲' : '▼';
+      } else {
+        th.classList.remove('active');
+        arrow.textContent = '↕';
+      }
+    });
+  }
+
+  function sortedFiltered() {
+    return [...filtered].sort((a, b) => {
+      let av = a[sortKey] || '', bv = b[sortKey] || '';
+      if (sortKey === 'createdAt') { av = new Date(av); bv = new Date(bv); return sortDir * (av - bv); }
+      return sortDir * String(av).localeCompare(String(bv), undefined, { sensitivity: 'base' });
+    });
+  }
+
+  /* ── Selection ── */
+  function toggleSelectAll(cb) {
+    const rows = pageSlice(sortedFiltered(), _page, MKT_PAGE_SIZE);
+    rows.forEach(m => cb.checked ? selected.add(m._id) : selected.delete(m._id));
+    render();
+  }
+
+  function toggleSelect(id, cb) {
+    cb.checked ? selected.add(id) : selected.delete(id);
+    updateBulkBar();
+    syncSelectAll();
+  }
+
+  function updateBulkBar() {
+    const bar = document.getElementById('bulk-bar');
+    document.getElementById('bulk-count').textContent = `${selected.size} selected`;
+    bar.classList.toggle('visible', selected.size > 0);
+  }
+
+  function syncSelectAll() {
+    const rows = pageSlice(sortedFiltered(), _page, MKT_PAGE_SIZE);
+    const allChecked = rows.length > 0 && rows.every(m => selected.has(m._id));
+    document.getElementById('select-all').checked = allChecked;
+  }
+
+  function clearSelection() {
+    selected.clear();
+    render();
+  }
+
+  async function bulkDelete() {
+    if (!selected.size) return;
+    if (!confirm(`Delete ${selected.size} contact(s)? This cannot be undone.`)) return;
+    const ids = [...selected];
+    for (const id of ids) {
+      try { await api.deleteMarketing(id); allItems = allItems.filter(x => x._id !== id); }
+      catch (e) { /* skip failed */ }
+    }
+    selected.clear();
+    onSearch(false);
+  }
+
+  /* ── Search / render ── */
   function onSearch(resetPage = true) {
     const q = document.getElementById('search-input').value.toLowerCase();
     filtered = q ? allItems.filter(m =>
-      (m.companyName + m.contactPerson + m.email).toLowerCase().includes(q)
+      (m.companyName + m.contactPerson + m.email + (m.country||'')).toLowerCase().includes(q)
     ) : allItems;
     if (resetPage) _page = 1;
     render();
@@ -141,17 +239,22 @@
   function render() {
     const tbody = document.getElementById('marketing-tbody');
     if (!filtered.length) {
-      tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">No marketing contacts found. Click "+ New Contact" to add one.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">No marketing contacts found. Click "+ New Contact" to add one.</td></tr>`;
       document.getElementById('marketing-pager').innerHTML = '';
+      document.getElementById('select-all').checked = false;
+      updateBulkBar();
       return;
     }
-    tbody.innerHTML = pageSlice(filtered, _page, MKT_PAGE_SIZE).map(m => `
-      <tr>
+    const sorted = sortedFiltered();
+    tbody.innerHTML = pageSlice(sorted, _page, MKT_PAGE_SIZE).map(m => `
+      <tr style="${selected.has(m._id) ? 'background:#fff8e1;' : ''}">
+        <td><input type="checkbox" ${selected.has(m._id) ? 'checked' : ''} onclick="toggleSelect('${m._id}',this)"></td>
         <td style="font-weight:600;">${esc(m.companyName)}</td>
         <td>${esc(m.contactPerson)}</td>
         <td><a href="mailto:${esc(m.email)}" style="color:#2d6a9f;">${esc(m.email)}</a></td>
         <td>${esc(m.phone || '—')}</td>
-        <td style="color:#666;font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(m.notes)}">${esc(m.notes ? m.notes.slice(0,60) + (m.notes.length>60?'…':'') : '—')}</td>
+        <td>${esc(m.country || '—')}</td>
+        <td style="color:#666;font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(m.notes)}">${esc(m.notes ? m.notes.slice(0,60)+(m.notes.length>60?'…':'') : '—')}</td>
         <td style="font-size:12px;color:#aaa;white-space:nowrap;">${fmtDate(m.createdAt)}</td>
         <td style="white-space:nowrap;">
           <button class="btn-sm btn-edit"   onclick="openModal('${m._id}')">Edit</button>
@@ -160,8 +263,11 @@
       </tr>
     `).join('');
     renderPager('marketing-pager', filtered.length, _page, 'goPage', MKT_PAGE_SIZE);
+    syncSelectAll();
+    updateBulkBar();
   }
 
+  /* ── Modal ── */
   function openModal(id) {
     editingId = id || null;
     document.getElementById('modal-title').textContent = id ? 'Edit Marketing Contact' : 'New Marketing Contact';
@@ -172,13 +278,10 @@
       document.getElementById('f-person').value  = m.contactPerson || '';
       document.getElementById('f-email').value   = m.email || '';
       document.getElementById('f-phone').value   = m.phone || '';
+      document.getElementById('f-country').value = m.country || '';
       document.getElementById('f-notes').value   = m.notes || '';
     } else {
-      document.getElementById('f-company').value = '';
-      document.getElementById('f-person').value  = '';
-      document.getElementById('f-email').value   = '';
-      document.getElementById('f-phone').value   = '';
-      document.getElementById('f-notes').value   = '';
+      ['f-company','f-person','f-email','f-phone','f-country','f-notes'].forEach(id => document.getElementById(id).value = '');
     }
     document.getElementById('form-modal').classList.add('open');
   }
@@ -193,6 +296,7 @@
     const contactPerson = document.getElementById('f-person').value.trim();
     const email         = document.getElementById('f-email').value.trim();
     const phone         = document.getElementById('f-phone').value.trim();
+    const country       = document.getElementById('f-country').value.trim();
     const notes         = document.getElementById('f-notes').value.trim();
 
     const errEl = document.getElementById('modal-error');
@@ -208,7 +312,7 @@
     btn.disabled = true; btn.textContent = 'Saving…';
 
     try {
-      const body = { companyName, contactPerson, email, phone, notes };
+      const body = { companyName, contactPerson, email, phone, country, notes };
       if (editingId) {
         const updated = await api.updateMarketing(editingId, body);
         allItems = allItems.map(x => x._id === editingId ? updated : x);
@@ -231,6 +335,7 @@
     try {
       await api.deleteMarketing(id);
       allItems = allItems.filter(x => x._id !== id);
+      selected.delete(id);
       onSearch(false);
     } catch (err) { alert(err.message); }
   }
@@ -280,7 +385,7 @@
     const headerMap = {
       companyname: 'companyName', company: 'companyName',
       contactperson: 'contactPerson', contact: 'contactPerson', name: 'contactPerson',
-      email: 'email', phone: 'phone', notes: 'notes',
+      email: 'email', phone: 'phone', country: 'country', notes: 'notes',
     };
     const headers = rawHeaders.map(h => headerMap[h] || h);
     const dataRows = rows.slice(hi + 1).filter(r => r.some(c => c));
@@ -304,7 +409,7 @@
       allItems = data.items || data;
       onSearch(false);
     } catch (err) {
-      document.getElementById('marketing-tbody').innerHTML = `<tr><td colspan="7" class="empty-cell">${esc(err.message)}</td></tr>`;
+      document.getElementById('marketing-tbody').innerHTML = `<tr><td colspan="9" class="empty-cell">${esc(err.message)}</td></tr>`;
     }
   }
 

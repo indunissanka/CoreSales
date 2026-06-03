@@ -6,6 +6,7 @@ const marketingSchema = new mongoose.Schema({
   contactPerson: { type: String, required: true, trim: true },
   email:         { type: String, required: true, trim: true, lowercase: true },
   phone:         { type: String, default: '' },
+  country:       { type: String, default: '' },
   notes:         { type: String, default: '' },
 }, { timestamps: true });
 

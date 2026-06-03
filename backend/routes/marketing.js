@@ -38,12 +38,12 @@ router.get('/:id', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { companyName, contactPerson, email, phone, notes } = req.body;
+    const { companyName, contactPerson, email, phone, country, notes } = req.body;
     if (!companyName || !contactPerson || !email)
       return res.status(400).json({ error: 'companyName, contactPerson and email are required' });
     if (!EMAIL_RE.test(email))
       return res.status(400).json({ error: 'Invalid email address' });
-    const item = await Marketing.create({ companyName, contactPerson, email, phone, notes, createdBy: req.userId });
+    const item = await Marketing.create({ companyName, contactPerson, email, phone, country, notes, createdBy: req.userId });
     res.status(201).json(item);
   } catch (err) {
     if (err.code === 11000) return res.status(400).json({ error: 'This email already exists in your marketing list' });
