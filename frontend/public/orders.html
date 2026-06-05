@@ -88,16 +88,24 @@
     </div>
   </div>
 
+  <div id="orders-bulk-bar" style="display:none;align-items:center;gap:12px;background:#fff3e0;border:1px solid #ffb74d;border-radius:8px;padding:8px 16px;margin-bottom:12px;font-size:13px;">
+    <span id="orders-bulk-count">0 selected</span>
+    <span id="orders-bulk-revenue" style="font-weight:700;color:#1a3a5c;"></span>
+    <button class="btn-sm btn-delete" onclick="bulkDeleteOrders()">Delete Selected</button>
+    <button class="btn-sm" style="background:#e0e0e0;color:#444;" onclick="clearOrderSelection()">Cancel</button>
+  </div>
+
   <div class="report-paper" style="padding:0;overflow:hidden;">
     <table class="data-table">
       <thead>
         <tr>
+          <th style="width:36px;"><input type="checkbox" id="orders-select-all" onclick="toggleOrderSelectAll(this)" title="Select all on this page"></th>
           <th>Order No</th><th>Quotation No</th><th>Company</th><th>Products</th>
           <th>Total</th><th>Incoterm</th><th>Destination</th>
           <th>Status</th><th>Date</th><th>Actions</th>
         </tr>
       </thead>
-      <tbody id="orders-tbody"><tr><td colspan="10" class="empty-cell">Loading…</td></tr></tbody>
+      <tbody id="orders-tbody"><tr><td colspan="11" class="empty-cell">Loading…</td></tr></tbody>
     </table>
   </div>
   <div id="orders-pager"></div>
@@ -130,6 +138,74 @@
   let currentStatus = '';
   let _allOrders = [];
   let _ordersPage = parseInt(new URLSearchParams(location.search).get('page')) || 1;
+  let _selectedOrders = new Set();
+
+  function toggleOrderSelect(id, cb) {
+    cb.checked ? _selectedOrders.add(id) : _selectedOrders.delete(id);
+    updateOrderBulkBar();
+    syncOrderSelectAll();
+  }
+  function toggleOrderSelectAll(cb) {
+    const page = pageSlice(getFilteredOrders(), _ordersPage);
+    page.forEach(o => cb.checked ? _selectedOrders.add(o._id) : _selectedOrders.delete(o._id));
+    updateOrderBulkBar();
+    renderOrdersTable();
+  }
+  function updateOrderBulkBar() {
+    const bar = document.getElementById('orders-bulk-bar');
+    document.getElementById('orders-bulk-count').textContent = `${_selectedOrders.size} selected`;
+    if (_selectedOrders.size > 0) {
+      const sel = _allOrders.filter(o => _selectedOrders.has(o._id));
+      const byCurrency = {};
+      sel.forEach(o => {
+        const cur = o.currency || 'USD';
+        byCurrency[cur] = (byCurrency[cur] || 0) + (o.totalAmount || 0);
+      });
+      const totals = Object.entries(byCurrency).map(([cur, amt]) =>
+        `${cur} ${amt.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`
+      ).join(' | ');
+      document.getElementById('orders-bulk-revenue').textContent = `Total: ${totals}`;
+      bar.style.display = 'flex';
+    } else {
+      bar.style.display = 'none';
+    }
+  }
+  function syncOrderSelectAll() {
+    const page = pageSlice(getFilteredOrders(), _ordersPage);
+    document.getElementById('orders-select-all').checked = page.length > 0 && page.every(o => _selectedOrders.has(o._id));
+  }
+  function clearOrderSelection() {
+    _selectedOrders.clear();
+    renderOrdersTable();
+  }
+  async function bulkDeleteOrders() {
+    if (!_selectedOrders.size) return;
+    if (!confirm(`Delete ${_selectedOrders.size} order(s)? This cannot be undone.`)) return;
+    for (const id of [..._selectedOrders]) {
+      try { await api.deleteOrder(id); _allOrders = _allOrders.filter(o => o._id !== id); } catch (_) {}
+    }
+    _selectedOrders.clear();
+    renderOrdersTable();
+  }
+  function getFilteredOrders() {
+    const tag      = document.getElementById('tag-filter').value;
+    const dateFrom = document.getElementById('date-from').value;
+    const dateTo   = document.getElementById('date-to').value;
+    let orders = _allOrders;
+    if (tag) orders = orders.filter(o => (o.shippingSchedule?.tags || []).includes(tag));
+    if (dateFrom || dateTo) {
+      const from = dateFrom ? new Date(dateFrom) : null;
+      const to   = dateTo   ? new Date(dateTo + 'T23:59:59') : null;
+      orders = orders.filter(o => {
+        const d = o.createdAt ? new Date(o.createdAt) : null;
+        if (!d) return false;
+        if (from && d < from) return false;
+        if (to   && d > to)   return false;
+        return true;
+      });
+    }
+    return orders;
+  }
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '—'; }
   function dateFromOrderNo(orderNo) {
@@ -445,29 +521,15 @@
 
   function renderOrdersTable() {
     const tbody = document.getElementById('orders-tbody');
-    const tag      = document.getElementById('tag-filter').value;
-    const dateFrom = document.getElementById('date-from').value;
-    const dateTo   = document.getElementById('date-to').value;
 
-    let orders = _allOrders;
-    if (tag) {
-      orders = orders.filter(o => (o.shippingSchedule?.tags || []).includes(tag));
-    }
-    if (dateFrom || dateTo) {
-      const from = dateFrom ? new Date(dateFrom) : null;
-      const to   = dateTo   ? new Date(dateTo + 'T23:59:59') : null;
-      orders = orders.filter(o => {
-        const d = o.createdAt ? new Date(o.createdAt) : null;
-        if (!d) return false;
-        if (from && d < from) return false;
-        if (to   && d > to)   return false;
-        return true;
-      });
-    }
+    const orders = getFilteredOrders();
 
     // Revenue summary
     const revenueBar = document.getElementById('revenue-bar');
-    const isFiltered = tag || dateFrom || dateTo;
+    const tag2 = document.getElementById('tag-filter').value;
+    const df2  = document.getElementById('date-from').value;
+    const dt2  = document.getElementById('date-to').value;
+    const isFiltered = tag2 || df2 || dt2;
     if (isFiltered && orders.length) {
       const byCurrency = {};
       orders.forEach(o => {
@@ -482,12 +544,14 @@
       revenueBar.style.display = 'none';
     }
 
-    if (!orders.length) { tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">No orders found.</td></tr>`; document.getElementById('orders-pager').innerHTML=''; return; }
+    if (!orders.length) { tbody.innerHTML = `<tr><td colspan="11" class="empty-cell">No orders found.</td></tr>`; document.getElementById('orders-pager').innerHTML=''; document.getElementById('orders-select-all').checked=false; updateOrderBulkBar(); return; }
     const page = pageSlice(orders, _ordersPage);
     tbody.innerHTML = page.map(o => {
       const products = (o.items||[]).map(i=>i.product?.name||'').filter(Boolean).join(', ')||'—';
+      const checked = _selectedOrders.has(o._id) ? 'checked' : '';
       return `
-        <tr style="cursor:pointer;" onclick="location.href='/order-edit.html?id=${o._id}&page=${_ordersPage}'">
+        <tr style="cursor:pointer;${_selectedOrders.has(o._id)?'background:#fff8e1;':''}" onclick="location.href='/order-edit.html?id=${o._id}&page=${_ordersPage}'">
+          <td onclick="event.stopPropagation()"><input type="checkbox" ${checked} onclick="toggleOrderSelect('${o._id}',this)"></td>
           <td><strong>${esc(o.orderNo)}</strong></td>
           <td>${esc(o.quotationNo||'—')}</td>
           <td>${esc(o.contact?.company||'—')}</td>
@@ -497,7 +561,7 @@
           <td>${esc(o.portOfDestination||'—')}</td>
           <td style="text-align:center;">
             <span class="badge badge-status-${statusSlug(o.status)}">${esc(o.status)}</span>
-            ${(o.tags||[]).map(t=>`<span class="badge" style="background:#fff3e0;color:#e65100;margin-left:3px;">${esc(t)}</span>`).join('')}
+            ${(o.shippingSchedule?.tags||[]).map(t=>`<span class="badge" style="background:#fff3e0;color:#e65100;margin-left:3px;">${esc(t)}</span>`).join('')}
           </td>
           <td>${dateFromOrderNo(o.orderNo)}</td>
           <td style="white-space:nowrap;" onclick="event.stopPropagation()">
@@ -509,6 +573,8 @@
         </tr>`;
     }).join('');
     renderPager('orders-pager', orders.length, _ordersPage, 'goOrdersPage');
+    syncOrderSelectAll();
+    updateOrderBulkBar();
   }
 
   async function load() {
