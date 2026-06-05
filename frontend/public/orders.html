@@ -559,10 +559,7 @@
           <td style="text-align:right;">${esc(o.currency||'USD')} ${(o.totalAmount||0).toLocaleString()}</td>
           <td style="text-align:center;">${esc(o.incoterm||'—')}</td>
           <td>${esc(o.portOfDestination||'—')}</td>
-          <td style="text-align:center;">
-            <span class="badge badge-status-${statusSlug(o.status)}">${esc(o.status)}</span>
-            ${(o.shippingSchedule?.tags||[]).map(t=>`<span class="badge" style="background:#fff3e0;color:#e65100;margin-left:3px;">${esc(t)}</span>`).join('')}
-          </td>
+          <td style="text-align:center;"><span class="badge badge-status-${statusSlug(o.status)}">${esc(o.status)}</span></td>
           <td>${dateFromOrderNo(o.orderNo)}</td>
           <td style="white-space:nowrap;" onclick="event.stopPropagation()">
             <button class="btn-sm btn-preview" onclick="openPreview('${o._id}')">Preview</button>
