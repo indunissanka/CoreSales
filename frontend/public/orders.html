@@ -61,6 +61,33 @@
     <button class="status-tab" onclick="setStatus('Rejected')">Rejected</button>
   </div>
 
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
+    <label style="font-size:12px;font-weight:600;color:#555;">Tag</label>
+    <select id="tag-filter" onchange="renderOrdersTable()" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;">
+      <option value="">All Tags</option>
+      <option>DA</option>
+      <option>DP</option>
+      <option>EXW</option>
+      <option>Factory Exit</option>
+      <option>L/C</option>
+      <option>FOB</option>
+      <option>CIF</option>
+      <option>CFR</option>
+      <option>Shipped</option>
+      <option>Customs Cleared</option>
+      <option>Commissioned</option>
+    </select>
+    <label style="font-size:12px;font-weight:600;color:#555;">From</label>
+    <input type="date" id="date-from" onchange="renderOrdersTable()" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;">
+    <label style="font-size:12px;font-weight:600;color:#555;">To</label>
+    <input type="date" id="date-to" onchange="renderOrdersTable()" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;">
+    <button class="btn-back" onclick="clearFilters()">Clear</button>
+    <div id="revenue-bar" style="display:none;background:#1a3a5c;color:#fff;border-radius:6px;padding:6px 14px;font-size:13px;gap:10px;align-items:center;white-space:nowrap;">
+      <span id="revenue-count" style="opacity:.8;"></span>
+      <span id="revenue-total" style="font-weight:700;margin-left:6px;"></span>
+    </div>
+  </div>
+
   <div class="report-paper" style="padding:0;overflow:hidden;">
     <table class="data-table">
       <thead>
@@ -408,10 +435,55 @@
     await load();
   }
 
+  function clearFilters() {
+    document.getElementById('tag-filter').value = '';
+    document.getElementById('date-from').value = '';
+    document.getElementById('date-to').value = '';
+    _ordersPage = 1;
+    renderOrdersTable();
+  }
+
   function renderOrdersTable() {
     const tbody = document.getElementById('orders-tbody');
-    if (!_allOrders.length) { tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">No orders found.</td></tr>`; document.getElementById('orders-pager').innerHTML=''; return; }
-    const page = pageSlice(_allOrders, _ordersPage);
+    const tag      = document.getElementById('tag-filter').value;
+    const dateFrom = document.getElementById('date-from').value;
+    const dateTo   = document.getElementById('date-to').value;
+
+    let orders = _allOrders;
+    if (tag) {
+      orders = orders.filter(o => (o.shippingSchedule?.tags || []).includes(tag));
+    }
+    if (dateFrom || dateTo) {
+      const from = dateFrom ? new Date(dateFrom) : null;
+      const to   = dateTo   ? new Date(dateTo + 'T23:59:59') : null;
+      orders = orders.filter(o => {
+        const d = o.createdAt ? new Date(o.createdAt) : null;
+        if (!d) return false;
+        if (from && d < from) return false;
+        if (to   && d > to)   return false;
+        return true;
+      });
+    }
+
+    // Revenue summary
+    const revenueBar = document.getElementById('revenue-bar');
+    const isFiltered = tag || dateFrom || dateTo;
+    if (isFiltered && orders.length) {
+      const byCurrency = {};
+      orders.forEach(o => {
+        const cur = o.currency || 'USD';
+        byCurrency[cur] = (byCurrency[cur] || 0) + (o.totalAmount || 0);
+      });
+      const totals = Object.entries(byCurrency).map(([cur, amt]) => `${cur} ${amt.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`).join('  |  ');
+      document.getElementById('revenue-count').textContent = `${orders.length} order${orders.length !== 1 ? 's' : ''}`;
+      document.getElementById('revenue-total').textContent = `Total: ${totals}`;
+      revenueBar.style.display = 'inline-flex';
+    } else {
+      revenueBar.style.display = 'none';
+    }
+
+    if (!orders.length) { tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">No orders found.</td></tr>`; document.getElementById('orders-pager').innerHTML=''; return; }
+    const page = pageSlice(orders, _ordersPage);
     tbody.innerHTML = page.map(o => {
       const products = (o.items||[]).map(i=>i.product?.name||'').filter(Boolean).join(', ')||'—';
       return `
@@ -423,7 +495,10 @@
           <td style="text-align:right;">${esc(o.currency||'USD')} ${(o.totalAmount||0).toLocaleString()}</td>
           <td style="text-align:center;">${esc(o.incoterm||'—')}</td>
           <td>${esc(o.portOfDestination||'—')}</td>
-          <td style="text-align:center;"><span class="badge badge-status-${statusSlug(o.status)}">${esc(o.status)}</span></td>
+          <td style="text-align:center;">
+            <span class="badge badge-status-${statusSlug(o.status)}">${esc(o.status)}</span>
+            ${(o.tags||[]).map(t=>`<span class="badge" style="background:#fff3e0;color:#e65100;margin-left:3px;">${esc(t)}</span>`).join('')}
+          </td>
           <td>${dateFromOrderNo(o.orderNo)}</td>
           <td style="white-space:nowrap;" onclick="event.stopPropagation()">
             <button class="btn-sm btn-preview" onclick="openPreview('${o._id}')">Preview</button>
@@ -433,7 +508,7 @@
           </td>
         </tr>`;
     }).join('');
-    renderPager('orders-pager', _allOrders.length, _ordersPage, 'goOrdersPage');
+    renderPager('orders-pager', orders.length, _ordersPage, 'goOrdersPage');
   }
 
   async function load() {
