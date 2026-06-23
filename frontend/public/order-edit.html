@@ -136,6 +136,7 @@
           <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:right;color:#1a3a5c;width:60px;">Qty</th>
           <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:right;color:#1a3a5c;width:80px;">Unit price</th>
           <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:right;color:#1a3a5c;width:80px;">Drums price</th>
+          <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:left;color:#1a3a5c;width:80px;">Drum size</th>
           <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:right;color:#1a3a5c;width:80px;">Bank charge</th>
           <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:right;color:#1a3a5c;width:75px;">Shipping</th>
           <th style="padding:7px 8px;border:1px solid #b0bac4;text-align:right;color:#1a3a5c;width:80px;">Commission</th>
@@ -332,7 +333,7 @@
   function renderItems() {
     const tbody = document.getElementById('items-tbody');
     if (!items.length) {
-      tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:20px;color:#aaa;font-style:italic;">No items yet. Click "+ Add another line".</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:20px;color:#aaa;font-style:italic;">No items yet. Click "+ Add another line".</td></tr>`;
       calcTotal(); return;
     }
     tbody.innerHTML = items.map((item, idx) => `
@@ -346,6 +347,7 @@
         <td style="padding:4px 6px;border:1px solid #ddd;"><input type="number" value="${item.qty||1}" min="0" step="0.001" style="width:100%;padding:3px 4px;text-align:right;border:1px solid #ccc;border-radius:3px;font-size:12px;" oninput="items[${idx}].qty=parseFloat(this.value)||0;calcTotal()"></td>
         <td style="padding:4px 6px;border:1px solid #ddd;">${numInput(item.unitPrice,  idx,'unitPrice')}</td>
         <td style="padding:4px 6px;border:1px solid #ddd;">${numInput(item.drumsPrice, idx,'drumsPrice')}</td>
+        <td style="padding:4px 6px;border:1px solid #ddd;"><input type="text" value="${esc(item.drumSize||'')}" placeholder="e.g. 200L" style="width:100%;padding:3px 4px;border:1px solid #ccc;border-radius:3px;font-size:12px;" oninput="items[${idx}].drumSize=this.value;"></td>
         <td style="padding:4px 6px;border:1px solid #ddd;">${numInput(item.bankCharge, idx,'bankCharge')}</td>
         <td style="padding:4px 6px;border:1px solid #ddd;">${numInput(item.shipping,   idx,'shipping')}</td>
         <td style="padding:4px 6px;border:1px solid #ddd;">${numInput(item.commission, idx,'commission')}</td>
@@ -362,7 +364,7 @@
   function addItem() {
     let defUnit = 'kg';
     try { defUnit = JSON.parse(localStorage.getItem('companySettings') || '{}').defaultUnit || 'kg'; } catch(_) {}
-    items.push({ productId:'', qty:1, unit:defUnit, unitPrice:0, drumsPrice:0, bankCharge:0, shipping:0, commission:0 }); renderItems();
+    items.push({ productId:'', qty:1, unit:defUnit, unitPrice:0, drumsPrice:0, drumSize:'', bankCharge:0, shipping:0, commission:0 }); renderItems();
   }
   function removeItem(idx) { items.splice(idx,1); renderItems(); }
 
@@ -408,6 +410,7 @@
         unit:       i.unit || 'kg',
         unitPrice:  parseFloat(i.unitPrice)  || 0,
         drumsPrice: parseFloat(i.drumsPrice) || 0,
+        drumSize:   i.drumSize || '',
         bankCharge: parseFloat(i.bankCharge) || 0,
         shipping:   parseFloat(i.shipping)   || 0,
         commission: parseFloat(i.commission) || 0,
@@ -543,6 +546,7 @@
           unit:       i.unit,
           unitPrice:  i.unitPrice  || 0,
           drumsPrice: i.drumsPrice || 0,
+          drumSize:   i.drumSize   || '',
           bankCharge: i.bankCharge || 0,
           shipping:   i.shipping   || 0,
           commission: i.commission || 0,

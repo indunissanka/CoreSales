@@ -103,7 +103,7 @@
     grid.innerHTML = pageSlice(contacts, _contactsPage, 25).map(c => `
       <div class="report-card" onclick="location.href='/contact-detail.html?id=${c._id}&page=${_contactsPage}'">
         <div class="week-label">${esc(c.company)}</div>
-        <div class="meta">${esc(c.name)}</div>
+        <div class="meta">${esc(c.name)}${(c.contactPersons||[]).length ? ` <span style="color:#2d6a9f;font-size:11px;">+${c.contactPersons.length} more</span>` : ''}</div>
         <div class="meta" style="display:flex;gap:8px;align-items:center;margin-top:4px;">
           <span class="badge badge-contact-status-${(c.status||'prospect').toLowerCase()}">${esc(c.status||'Prospect')}</span>
           <span class="badge badge-role">${esc(c.role||'Other')}</span>

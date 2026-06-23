@@ -6,6 +6,7 @@ const orderItemSchema = new mongoose.Schema({
   unit:       { type: String, enum: ['kg', 'ton'], default: 'kg' },
   unitPrice:  { type: Number, required: true },
   drumsPrice: { type: Number, default: 0 },
+  drumSize:   String,
   bankCharge: { type: Number, default: 0 },
   shipping:   { type: Number, default: 0 },
   commission: { type: Number, default: 0 },
