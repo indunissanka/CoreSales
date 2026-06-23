@@ -155,6 +155,8 @@
           <div><span class="preview-label">Location</span><span>${esc([c.city,c.country].filter(Boolean).join(', ')||'—')}</span></div>
           <div><span class="preview-label">Logs</span><span>${(c.commHistory||[]).length}</span></div>
         </div>
+        ${(c.additionalCompanies||[]).length ? `<div class="preview-section-title">Additional Companies</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">${c.additionalCompanies.map(co=>`<span style="background:#e8f0fe;color:#1a3a5c;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;">${esc(co)}</span>`).join('')}</div>` : ''}
+        ${(c.contactPersons||[]).length ? `<div class="preview-section-title">Additional Contacts</div><div style="font-size:13px;margin-bottom:8px;">${c.contactPersons.map(p=>`<div style="margin-bottom:4px;"><strong>${esc(p.name)}</strong>${p.role?' — '+esc(p.role):''}${p.email?' · '+esc(p.email):''}${p.phone?' · '+esc(p.phone):''}</div>`).join('')}</div>` : ''}
         ${c.notes ? `<div class="preview-section-title">Notes</div><p style="font-size:13px;">${esc(c.notes)}</p>` : ''}
         <div class="preview-section-title">Recent Communication</div>
         ${logsHtml}
