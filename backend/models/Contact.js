@@ -19,6 +19,7 @@ const contactSchema = new mongoose.Schema({
   country:     { type: String, default: 'Bangladesh' },
   city:        String,
   notes:       String,
+  additionalCompanies: [String],
   contactPersons: [{ name: String, role: String, email: String, phone: String }],
   commHistory: [commLogSchema],
 }, { timestamps: true });
