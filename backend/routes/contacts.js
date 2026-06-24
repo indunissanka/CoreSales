@@ -45,9 +45,12 @@ router.post('/', async (req, res) => {
 
 router.put('/:id', async (req, res) => {
   try {
+    const updates = { ...req.body };
+    if (!('additionalCompanies' in updates)) delete updates.additionalCompanies;
+    if (!('contactPersons' in updates)) delete updates.contactPersons;
     const contact = await Contact.findOneAndUpdate(
       { _id: req.params.id, createdBy: req.userId },
-      req.body,
+      updates,
       { new: true, runValidators: true }
     );
     if (!contact) return res.status(404).json({ error: 'Not found' });
