@@ -164,11 +164,12 @@
   }
 
   let _additionalCompanies = [];
+  let _allContactsForLookup = [];
 
   async function loadCompanyDropdown() {
     try {
-      const contacts = await api.getContacts();
-      const companies = [...new Set(contacts.map(c => c.company).filter(Boolean))].sort();
+      _allContactsForLookup = await api.getContacts();
+      const companies = [...new Set(_allContactsForLookup.map(c => c.company).filter(Boolean))].sort();
       const sel = document.getElementById('ac-dropdown');
       sel.innerHTML = '<option value="">-- Select company --</option>' + companies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
     } catch (_) {}
@@ -181,6 +182,21 @@
     _additionalCompanies.push(val);
     renderACChips();
     sel.value = '';
+
+    const existingNames = getContactPersons().map(p => p.name.toLowerCase());
+    const matches = _allContactsForLookup.filter(c => c.company === val);
+    matches.forEach(c => {
+      if (c.name && !existingNames.includes(c.name.toLowerCase())) {
+        addContactPerson({ name: c.name, role: c.role || '', email: c.email || '', phone: c.phone || '' });
+        existingNames.push(c.name.toLowerCase());
+      }
+      (c.contactPersons || []).forEach(p => {
+        if (p.name && !existingNames.includes(p.name.toLowerCase())) {
+          addContactPerson(p);
+          existingNames.push(p.name.toLowerCase());
+        }
+      });
+    });
   }
 
   function removeAC(idx) {
