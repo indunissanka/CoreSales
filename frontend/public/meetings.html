@@ -39,6 +39,14 @@
     .mtodo-row input[type="text"].done-text { text-decoration:line-through; color:#aaa; }
     .mtodo-remove { background:none; border:none; color:#c62828; font-size:16px; cursor:pointer; padding:0 4px; line-height:1; }
 
+    /* ── Meeting task rows (inside meeting modal) ── */
+    .mtask-row { display:flex; align-items:center; gap:8px; }
+    .mtask-row input[type="text"].mtask-text { flex:2; padding:5px 8px; border:1px solid #c0c8d4; border-radius:4px; font-size:13px; }
+    .mtask-row input[type="text"].mtask-assignee { flex:1; padding:5px 8px; border:1px solid #c0c8d4; border-radius:4px; font-size:13px; }
+    .mtask-row input[type="date"] { padding:5px 8px; border:1px solid #c0c8d4; border-radius:4px; font-size:13px; }
+    .mtask-row select { padding:5px 8px; border:1px solid #c0c8d4; border-radius:4px; font-size:13px; }
+    .mtask-remove { background:none; border:none; color:#c62828; font-size:16px; cursor:pointer; padding:0 4px; line-height:1; }
+
     /* ── To-Do tab ── */
     .todo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px; }
     .todo-card { border-radius:8px; padding:16px; border:1px solid #d0d8e4; box-shadow:0 2px 6px rgba(0,0,0,.06); position:relative; display:flex; flex-direction:column; gap:10px; transition:box-shadow .15s; }
@@ -173,6 +181,13 @@
             <button type="button" onclick="addMtodoRow()" style="background:#1a3a5c;color:#fff;border:none;padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer;">+ Add Item</button>
           </label>
           <div id="mtodo-list" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;"></div>
+        </div>
+        <div class="full">
+          <label style="display:flex;justify-content:space-between;align-items:center;">
+            Tasks
+            <button type="button" onclick="addMtaskRow()" style="background:#1a3a5c;color:#fff;border:none;padding:3px 10px;border-radius:4px;font-size:11px;cursor:pointer;">+ Add Task</button>
+          </label>
+          <div id="mtask-list" style="display:flex;flex-direction:column;gap:6px;margin-top:4px;"></div>
         </div>
       </div>
       <div class="modal-actions">
@@ -359,6 +374,7 @@
       document.getElementById('f-location').value = m.location||'';
       document.getElementById('f-notes').value    = m.notes||'';
       (m.todoItems||[]).forEach(t => addMtodoRow(t.text, t.done));
+      (m.taskItems||[]).forEach(t => addMtaskRow(t.text, t.assignee, t.dueDate, t.status));
       if (m.contact) document.getElementById('f-contact').value = m.contact._id||m.contact;
     } else if (prefillDate) {
       document.getElementById('f-date').value = prefillDate.slice(0,10);
@@ -376,6 +392,7 @@
     document.getElementById('f-status').value = 'Scheduled';
     document.getElementById('f-contact').value = '';
     document.getElementById('mtodo-list').innerHTML = '';
+    document.getElementById('mtask-list').innerHTML = '';
   }
 
   function addMtodoRow(text, done) {
@@ -396,6 +413,32 @@
     })).filter(t => t.text);
   }
 
+  function addMtaskRow(text, assignee, dueDate, status) {
+    const list = document.getElementById('mtask-list');
+    const row  = document.createElement('div');
+    row.className = 'mtask-row';
+    row.innerHTML = `
+      <input type="text" class="mtask-text" value="${esc(text||'')}" placeholder="Task…">
+      <input type="text" class="mtask-assignee" value="${esc(assignee||'')}" placeholder="Assignee">
+      <input type="date" value="${dueDate ? new Date(dueDate).toISOString().slice(0,10) : ''}">
+      <select>
+        <option ${status==='Open'||!status?'selected':''}>Open</option>
+        <option ${status==='In Progress'?'selected':''}>In Progress</option>
+        <option ${status==='Done'?'selected':''}>Done</option>
+      </select>
+      <button type="button" class="mtask-remove" onclick="this.parentElement.remove()">×</button>`;
+    list.appendChild(row);
+  }
+
+  function getMtaskItems() {
+    return [...document.querySelectorAll('#mtask-list .mtask-row')].map(row => ({
+      text:     row.querySelector('.mtask-text').value.trim(),
+      assignee: row.querySelector('.mtask-assignee').value.trim(),
+      dueDate:  row.querySelector('input[type="date"]').value || undefined,
+      status:   row.querySelector('select').value,
+    })).filter(t => t.text);
+  }
+
   document.getElementById('meeting-form').addEventListener('submit', async e => {
     e.preventDefault();
     const dateStr = document.getElementById('f-date').value;
@@ -410,6 +453,7 @@
       location:  document.getElementById('f-location').value.trim()||undefined,
       notes:     document.getElementById('f-notes').value.trim()||undefined,
       todoItems: getMtodoItems(),
+      taskItems: getMtaskItems(),
     };
     try {
       if (meetingEditId) await api.updateMeeting(meetingEditId, body);
