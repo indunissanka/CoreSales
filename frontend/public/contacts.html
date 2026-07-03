@@ -229,7 +229,7 @@
   }
 
   async function load() {
-    try { allContacts=await api.getContacts(); filterContacts(false); }
+    try { allContacts=await api.getContacts({limit:1000}); filterContacts(false); }
     catch(err){ document.getElementById('contacts-grid').innerHTML=`<div class="empty-state"><p>${err.message}</p></div>`; }
   }
 
