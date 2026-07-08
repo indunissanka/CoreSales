@@ -13,7 +13,7 @@ const contactSchema = new mongoose.Schema({
   company:     { type: String, required: true },
   name:        { type: String, required: true },
   status:      { type: String, enum: ['Active', 'Prospect', 'Inactive'], default: 'Prospect' },
-  role:        { type: String, enum: ['Purchasing Manager', 'Lab Technician', 'Director', 'Other'], default: 'Other' },
+  role:        { type: String, default: 'Other' },
   email:       String,
   phone:       String,
   country:     { type: String, default: 'Bangladesh' },

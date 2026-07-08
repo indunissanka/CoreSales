@@ -98,6 +98,7 @@ const api = {
   // Settings
   getSettings:      ()       => apiFetch('/settings'),
   saveSettings:     (body)   => apiFetch('/settings', { method: 'PUT', body: JSON.stringify(body) }),
+  getContactRoles:  ()       => apiFetch('/settings/contact-roles'),
 
   // Notes
   getNotes:         ()        => apiFetch('/notes'),

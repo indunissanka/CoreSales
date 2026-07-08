@@ -1,7 +1,8 @@
-const express  = require('express');
-const router   = express.Router();
-const auth     = require('../middleware/auth');
-const Settings = require('../models/Settings');
+const express        = require('express');
+const router         = express.Router();
+const auth           = require('../middleware/auth');
+const Settings       = require('../models/Settings');
+const SystemSettings = require('../models/SystemSettings');
 
 // Public — returns only the company name (used on login page before auth)
 router.get('/public', async (req, res) => {
@@ -14,6 +15,15 @@ router.get('/public', async (req, res) => {
 });
 
 router.use(auth);
+
+router.get('/contact-roles', async (req, res) => {
+  try {
+    const ss = await SystemSettings.get();
+    res.json({ contactRoles: ss.contactRoles });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 router.get('/', async (req, res) => {
   try {

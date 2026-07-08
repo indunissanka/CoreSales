@@ -13,7 +13,7 @@ router.use(adminAuth);
 router.get('/system', async (req, res) => {
   try {
     const ss = await SystemSettings.get();
-    res.json({ registrationOpen: ss.registrationOpen });
+    res.json({ registrationOpen: ss.registrationOpen, contactRoles: ss.contactRoles });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -25,8 +25,10 @@ router.put('/system', async (req, res) => {
     const ss = await SystemSettings.get();
     if (typeof req.body.registrationOpen === 'boolean')
       ss.registrationOpen = req.body.registrationOpen;
+    if (Array.isArray(req.body.contactRoles))
+      ss.contactRoles = req.body.contactRoles.map(r => String(r).trim()).filter(Boolean);
     await ss.save();
-    res.json({ registrationOpen: ss.registrationOpen });
+    res.json({ registrationOpen: ss.registrationOpen, contactRoles: ss.contactRoles });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
