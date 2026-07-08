@@ -246,6 +246,19 @@
 
   <div id="page-status" class="status-msg"></div>
 
+  <!-- Contact Roles -->
+  <div class="admin-card" style="margin-bottom:20px;">
+    <div class="admin-card-header">👤 Contact Roles</div>
+    <div class="admin-card-body">
+      <div class="setting-desc" style="margin-bottom:10px;">Roles selectable on a contact's profile.</div>
+      <div id="role-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
+      <div style="display:flex;gap:8px;max-width:400px;">
+        <input type="text" id="role-new" placeholder="New role name" style="flex:1;">
+        <button class="btn-new" onclick="addContactRole()">Add</button>
+      </div>
+    </div>
+  </div>
+
   <div class="admin-grid">
 
     <!-- Left column: System Settings + Create User -->
@@ -264,19 +277,6 @@
               <input type="checkbox" id="reg-toggle" onchange="toggleRegistration(this.checked)">
               <span class="toggle-track"></span>
             </label>
-          </div>
-        </div>
-      </div>
-
-      <!-- Contact Roles -->
-      <div class="admin-card">
-        <div class="admin-card-header">👤 Contact Roles</div>
-        <div class="admin-card-body">
-          <div class="setting-desc" style="margin-bottom:10px;">Roles selectable on a contact's profile.</div>
-          <div id="role-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;"></div>
-          <div style="display:flex;gap:8px;">
-            <input type="text" id="role-new" placeholder="New role name" style="flex:1;">
-            <button class="btn-new" onclick="addContactRole()">Add</button>
           </div>
         </div>
       </div>
