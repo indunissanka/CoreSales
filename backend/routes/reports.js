@@ -17,6 +17,7 @@ router.get('/:id', auth, async (req, res) => {
   try {
     const report = await Report.findOne({ _id: req.params.id, userId: req.userId });
     if (!report) return res.status(404).json({ error: 'Report not found' });
+    report.entries.sort((a, b) => new Date(a.date) - new Date(b.date));
     res.json(report);
   } catch (err) {
     res.status(500).json({ error: err.message });
