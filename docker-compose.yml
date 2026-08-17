@@ -30,6 +30,21 @@ services:
     networks:
       - app-network
 
+  mcp-server:
+    build: ./mcp-server
+    container_name: coresales-mcp
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    environment:
+      PORT: 3100
+      CORESALES_API_BASE_URL: http://backend:3000
+      CORESALES_API_KEY: ${CORESALES_API_KEY}
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
   frontend:
     build: ./frontend
     container_name: coresales-frontend
