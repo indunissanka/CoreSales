@@ -496,7 +496,7 @@
 
   async function load() {
     try {
-      const [contacts, products] = await Promise.all([api.getContacts(), api.getProducts()]);
+      const [contacts, products] = await Promise.all([api.getContacts({limit:1000}), api.getProducts()]);
       allProducts = products;
       contacts.forEach(c => { if (c.country) contactCountryMap[c._id] = c.country; });
       const sel = document.getElementById('f-contact');
