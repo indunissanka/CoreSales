@@ -200,6 +200,13 @@
 </div>
 
 <!-- ══════════════════════════════════════════
+     MEETING PREVIEW MODAL
+════════════════════════════════════════════ -->
+<div class="modal-overlay" id="preview-overlay" onclick="if(event.target===this)closePreviewModal()">
+  <div class="modal-box" id="preview-box"></div>
+</div>
+
+<!-- ══════════════════════════════════════════
      TO-DO MODAL
 ════════════════════════════════════════════ -->
 <div class="modal-overlay" id="todo-overlay" onclick="if(event.target===this)closeTodoModal()">
@@ -351,7 +358,10 @@
         <td>${esc(contact)}</td>
         <td><span class="badge badge-${(m.status||'scheduled').toLowerCase()}">${esc(m.status)}</span></td>
         <td>${esc(m.location||'—')}</td>
-        <td><button class="btn-sm btn-edit" onclick="openMeetingModal('${m._id}')">Edit</button></td>
+        <td>
+          <button class="btn-sm" onclick="previewMeeting('${m._id}')">Preview</button>
+          <button class="btn-sm btn-edit" onclick="openMeetingModal('${m._id}')">Edit</button>
+        </td>
       </tr>`;
     }).join('');
     renderPager('meetings-pager', allMeetings.length, _meetingsPage, 'goMeetingsPage');
@@ -462,6 +472,27 @@
       await loadMeetings();
     } catch (err) { alert(err.message); }
   });
+
+  async function previewMeeting(id) {
+    const m = await api.getMeeting(id);
+    const contact = m.contact ? (m.contact.company||m.contact.name||'') : '—';
+    document.getElementById('preview-box').innerHTML = `
+      <h3>${esc(m.title)}</h3>
+      <p><strong>Date &amp; Time:</strong> ${fmtDateTime(m.date)}</p>
+      <p><strong>Type:</strong> ${esc(m.type)} &nbsp; <strong>Status:</strong> <span class="badge badge-${(m.status||'scheduled').toLowerCase()}">${esc(m.status)}</span></p>
+      <p><strong>Contact:</strong> ${esc(contact)}</p>
+      <p><strong>Location:</strong> ${esc(m.location||'—')}</p>
+      ${m.notes ? `<p><strong>Notes:</strong><br>${esc(m.notes).replace(/\n/g,'<br>')}</p>` : ''}
+      ${(m.todoItems||[]).length ? `<p><strong>To-Do Items:</strong></p><ul>${m.todoItems.map(t=>`<li${t.done?' style="text-decoration:line-through;color:#aaa;"':''}>${esc(t.text)}</li>`).join('')}</ul>` : ''}
+      ${(m.taskItems||[]).length ? `<p><strong>Tasks:</strong></p><ul>${m.taskItems.map(t=>`<li>${esc(t.text)}${t.assignee?` — ${esc(t.assignee)}`:''} (${esc(t.status||'Open')})</li>`).join('')}</ul>` : ''}
+      <div class="modal-actions">
+        <button style="background:#ccc;color:#333;border:none;padding:7px 18px;border-radius:4px;cursor:pointer;font-size:13px;" onclick="closePreviewModal()">Close</button>
+        <button class="btn-save" onclick="closePreviewModal();openMeetingModal('${id}')">Edit</button>
+      </div>`;
+    document.getElementById('preview-overlay').classList.add('open');
+  }
+
+  function closePreviewModal() { document.getElementById('preview-overlay').classList.remove('open'); }
 
   async function deleteMeeting() {
     if (!meetingEditId || !confirm('Delete this meeting?')) return;
