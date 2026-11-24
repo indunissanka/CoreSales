@@ -50,6 +50,9 @@
         <div class="form-group"><label>Quotation No</label>
           <input id="f-quotation-no" type="text" placeholder="Auto-generated…" style="font-weight:bold;letter-spacing:1px;">
         </div>
+        <div class="form-group"><label>Customer PO No</label>
+          <input id="f-customer-po" type="text" placeholder="Customer's PO number">
+        </div>
         <div class="form-group" style="grid-column:1/-1"><label>Contact / Company *</label>
           <select id="f-contact" class="select-input" onchange="onContactChange(this.value)"><option value="">Loading contacts…</option></select>
         </div>
@@ -420,6 +423,7 @@
       contact, items: orderItems,
       orderNo:           document.getElementById('f-order-no').value.trim(),
       quotationNo:       document.getElementById('f-quotation-no').value.trim(),
+      customerPO:        document.getElementById('f-customer-po').value.trim(),
       exchangeRate:      parseFloat(document.getElementById('f-exchange-rate').value) || null,
       status:            document.getElementById('f-status').value,
       currency:          document.getElementById('f-currency').value,
@@ -525,6 +529,7 @@
         document.getElementById('page-title').textContent = order.orderNo;
         document.getElementById('f-order-no').value      = order.orderNo     || '';
         document.getElementById('f-quotation-no').value  = order.quotationNo || '';
+        document.getElementById('f-customer-po').value   = order.customerPO || '';
         document.getElementById('f-exchange-rate').value = order.exchangeRate != null ? order.exchangeRate : '';
         document.getElementById('f-contact').value   = order.contact?._id || order.contact || '';
         const statusSel = document.getElementById('f-status');

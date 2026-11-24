@@ -64,6 +64,8 @@
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
     <label style="font-size:12px;font-weight:600;color:#555;">Company</label>
     <input type="text" id="company-search" placeholder="Search company…" oninput="renderOrdersTable()" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;">
+    <label style="font-size:12px;font-weight:600;color:#555;">Customer PO</label>
+    <input type="text" id="po-search" placeholder="Search PO no…" oninput="renderOrdersTable()" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;">
     <label style="font-size:12px;font-weight:600;color:#555;">Tag</label>
     <select id="tag-filter" onchange="renderOrdersTable()" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;">
       <option value="">All Tags</option>
@@ -102,12 +104,12 @@
       <thead>
         <tr>
           <th style="width:36px;"><input type="checkbox" id="orders-select-all" onclick="toggleOrderSelectAll(this)" title="Select all on this page"></th>
-          <th>Order No</th><th>Quotation No</th><th>Company</th><th>Products</th>
+          <th>Order No</th><th>Quotation No</th><th>Customer PO</th><th>Company</th><th>Products</th>
           <th>Total</th><th>Incoterm</th><th>Destination</th>
           <th>Status</th><th>Date</th><th>Actions</th>
         </tr>
       </thead>
-      <tbody id="orders-tbody"><tr><td colspan="11" class="empty-cell">Loading…</td></tr></tbody>
+      <tbody id="orders-tbody"><tr><td colspan="12" class="empty-cell">Loading…</td></tr></tbody>
     </table>
   </div>
   <div id="orders-pager"></div>
@@ -192,11 +194,13 @@
   function getFilteredOrders() {
     const tag      = document.getElementById('tag-filter').value;
     const company  = document.getElementById('company-search').value.trim().toLowerCase();
+    const po       = document.getElementById('po-search').value.trim().toLowerCase();
     const dateFrom = document.getElementById('date-from').value;
     const dateTo   = document.getElementById('date-to').value;
     let orders = _allOrders;
     if (tag) orders = orders.filter(o => (o.shippingSchedule?.tags || []).includes(tag));
     if (company) orders = orders.filter(o => (o.contact?.company || '').toLowerCase().includes(company));
+    if (po) orders = orders.filter(o => (o.customerPO || '').toLowerCase().includes(po));
     if (dateFrom || dateTo) {
       const from = dateFrom ? new Date(dateFrom) : null;
       const to   = dateTo   ? new Date(dateTo + 'T23:59:59') : null;
@@ -374,6 +378,7 @@
 
       document.getElementById('preview-body').innerHTML = `
         <div class="preview-meta-grid" style="grid-template-columns:1fr 1fr 1fr;">
+          <div><span class="preview-label">Customer PO</span><span>${esc(o.customerPO||'—')}</span></div>
           <div><span class="preview-label">Company</span><span>${esc(o.contact?.company||'—')}</span></div>
           <div><span class="preview-label">Contact Name</span><span>${esc(o.contact?.name||'—')}</span></div>
           <div><span class="preview-label">Status</span><span><span class="badge badge-status-${statusSlug(o.status)}">${esc(o.status)}</span></span></div>
@@ -518,6 +523,7 @@
   function clearFilters() {
     document.getElementById('tag-filter').value = '';
     document.getElementById('company-search').value = '';
+    document.getElementById('po-search').value = '';
     document.getElementById('date-from').value = '';
     document.getElementById('date-to').value = '';
     _ordersPage = 1;
@@ -532,7 +538,7 @@
     // Revenue summary
     const revenueBar = document.getElementById('revenue-bar');
     const tag2 = document.getElementById('tag-filter').value;
-    const company2 = document.getElementById('company-search').value;
+    const company2 = document.getElementById('company-search').value || document.getElementById('po-search').value;
     const df2  = document.getElementById('date-from').value;
     const dt2  = document.getElementById('date-to').value;
     const isFiltered = tag2 || company2 || df2 || dt2;
@@ -550,7 +556,7 @@
       revenueBar.style.display = 'none';
     }
 
-    if (!orders.length) { tbody.innerHTML = `<tr><td colspan="11" class="empty-cell">No orders found.</td></tr>`; document.getElementById('orders-pager').innerHTML=''; document.getElementById('orders-select-all').checked=false; updateOrderBulkBar(); return; }
+    if (!orders.length) { tbody.innerHTML = `<tr><td colspan="12" class="empty-cell">No orders found.</td></tr>`; document.getElementById('orders-pager').innerHTML=''; document.getElementById('orders-select-all').checked=false; updateOrderBulkBar(); return; }
     const page = pageSlice(orders, _ordersPage);
     tbody.innerHTML = page.map(o => {
       const products = (o.items||[]).map(i=>i.product?.name||'').filter(Boolean).join(', ')||'—';
@@ -560,6 +566,7 @@
           <td onclick="event.stopPropagation()"><input type="checkbox" ${checked} onclick="toggleOrderSelect('${o._id}',this)"></td>
           <td><strong>${esc(o.orderNo)}</strong></td>
           <td>${esc(o.quotationNo||'—')}</td>
+          <td>${esc(o.customerPO||'—')}</td>
           <td>${esc(o.contact?.company||'—')}</td>
           <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(products)}">${esc(products)}</td>
           <td style="text-align:right;">${esc(o.currency||'USD')} ${(o.totalAmount||0).toLocaleString()}</td>

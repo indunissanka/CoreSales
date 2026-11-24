@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
     const [orders, contacts, products, meetings, notes, samples] = await Promise.all([
       Order.find({
         createdBy: uid,
-        $or: [{ orderNo: re }, { quotationNo: re }],
+        $or: [{ orderNo: re }, { quotationNo: re }, { customerPO: re }],
       }).populate('contact', 'company').limit(8).lean(),
 
       Contact.find({
