@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    name: SSH & Docker Compose Up
+    name: SSH & PM2 Restart
     runs-on: ubuntu-latest
 
     steps:
@@ -19,7 +19,6 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd ${{ secrets.DEPLOY_PATH }}
-            git pull origin main
-            docker compose up -d --build
-            docker image prune -f
+            # Live site (coresales.markwu.uk) runs from /home/ubuntu under PM2 + nginx, not Docker
+            if [ "$(whoami)" = "root" ]; then RUN="su - ubuntu -c"; else RUN="bash -c"; fi
+            $RUN 'cd /home/ubuntu/myapps/CoreSales && git pull --no-rebase --no-edit origin main && pm2 restart CoreSales'
